@@ -5006,6 +5006,85 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '</select>' +
         '</div>' +
 
+        // Deferred Payment Section
+        '<div class="sow-form-section" id="deferredPaymentSection">' +
+        '<h5><span class="section-icon">🔄</span> Deferred Payment Option</h5>' +
+
+        '<label class="sow-checkbox deferred-toggle" style="margin-bottom: 10px; padding: 8px 12px; background: rgba(99, 102, 241, 0.1); border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.3);">' +
+        '<input type="checkbox" id="sowDeferredPayment" onchange="toggleDeferredPaymentFields()" />' +
+        '<span style="color: #6366f1; font-weight: 500;">Enable Deferred Payment</span>' +
+        '<span style="font-size: 0.8em; color: #888; margin-left: 8px;">(client pays later with terms)</span>' +
+        '</label>' +
+
+        '<div id="deferredPaymentFields" style="display: none; margin-top: 10px; padding: 15px; background: rgba(99, 102, 241, 0.05); border-radius: 8px; border: 1px dashed rgba(99, 102, 241, 0.3);">' +
+
+        '<div class="deferred-split-type">' +
+        '<label style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; display: block;">Payment Type</label>' +
+        '<div class="deferred-radio-group">' +
+        '<label class="sow-radio" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; cursor: pointer;">' +
+        '<input type="radio" name="deferred_split" value="lump_sum" checked onchange="toggleDeferredSplitType()" />' +
+        '<span>Lump Sum (Single Due Date)</span>' +
+        '</label>' +
+        '<label class="sow-radio" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; margin-top: 6px; cursor: pointer;">' +
+        '<input type="radio" name="deferred_split" value="custom" onchange="toggleDeferredSplitType()" />' +
+        '<span>Custom Split (Multiple Payments)</span>' +
+        '</label>' +
+        '</div>' +
+        '</div>' +
+
+        '<div id="lumpSumFields" style="margin-top: 15px;">' +
+        '<div class="sow-input-group" style="display: flex; gap: 10px;">' +
+        '<div style="flex: 1;">' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Amount to Defer</label>' +
+        '<input type="number" id="sowDeferredAmount" placeholder="Amount $" class="sow-input" min="0" step="0.01" onchange="calculateLateFee()" oninput="calculateLateFee()" />' +
+        '</div>' +
+        '<div style="flex: 1;">' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Due Date</label>' +
+        '<input type="date" id="sowDeferredDueDate" class="sow-input" />' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+
+        '<div id="customSplitFields" style="display: none; margin-top: 15px;">' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Custom Payment Schedule</label>' +
+        '<div id="customPaymentsList" class="custom-payments-list"></div>' +
+        '<button type="button" class="btn-add-payment" onclick="addCustomPaymentRow()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 8px 16px; background: rgba(99, 102, 241, 0.15); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 6px; color: #818cf8; cursor: pointer; font-size: 0.9em;">' +
+        '<span>+ Add Payment</span>' +
+        '</button>' +
+        '</div>' +
+
+        '<div class="late-fee-section" style="margin-top: 15px; padding: 12px; background: rgba(245, 158, 11, 0.08); border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+        '<div>' +
+        '<span style="color: #f59e0b; font-weight: 500;">Late Fee (10%):</span>' +
+        '<span id="lateFeeDisplay" style="color: #fff; margin-left: 8px;">$0</span>' +
+        '<span style="font-size: 0.75em; color: #94a3b8; margin-left: 6px;">(if payment is late)</span>' +
+        '</div>' +
+        '<label class="sow-checkbox" style="margin: 0; display: flex; align-items: center; gap: 6px;">' +
+        '<input type="checkbox" id="sowWaiveLateFee" onchange="calculateLateFee()" />' +
+        '<span style="font-size: 0.85em; color: #f59e0b;">Waive Late Fee</span>' +
+        '</label>' +
+        '</div>' +
+        '<div style="margin-top: 8px;">' +
+        '<span style="color: #94a3b8; font-size: 0.85em;">Total Deferred Amount:</span>' +
+        '<span id="totalDeferredDisplay" style="color: #10b981; font-weight: 600; margin-left: 8px;">$0</span>' +
+        '</div>' +
+        '</div>' +
+
+        '<div class="deferred-options" style="margin-top: 15px;">' +
+        '<label class="sow-checkbox" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">' +
+        '<input type="checkbox" id="sowAllowPartialPayments" checked />' +
+        '<span>Allow partial payments toward balance during deferral</span>' +
+        '</label>' +
+        '<label class="sow-checkbox" style="display: flex; align-items: center; gap: 8px;">' +
+        '<input type="checkbox" id="sowMaintenanceDuringDeferral" checked />' +
+        '<span>Client pays monthly maintenance during deferral period</span>' +
+        '</label>' +
+        '</div>' +
+
+        '</div>' +
+        '</div>' +
+
         // Coupon / Discount Code
         '<div class="sow-form-section coupon-section">' +
         '<h5><span class="section-icon">🎟️</span> Discount Code</h5>' +
@@ -5052,7 +5131,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '</div>' +
         '</div>' +
         '</div>' +
-        
+
         // Action Buttons
         '<div class="sow-form-actions">' +
         '<button class="btn-cancel-sow btn-secondary">Cancel</button>' +
@@ -5220,6 +5299,104 @@ ContractFormHandler.prototype.showSOWCreator = function() {
             if (milestoneRow && milestoneRow.parentElement) milestoneRow.parentElement.style.display = 'flex';
             if (finalRow && finalRow.parentElement) finalRow.parentElement.style.display = 'flex';
         }
+    };
+
+    // Toggle deferred payment fields visibility
+    window.toggleDeferredPaymentFields = function() {
+        var checkbox = $('#sowDeferredPayment');
+        var fieldsContainer = $('#deferredPaymentFields');
+
+        if (checkbox && checkbox.checked) {
+            if (fieldsContainer) fieldsContainer.style.display = 'block';
+            // Auto-populate deferred amount with total price if empty
+            var totalPriceEl = $('#sowTotalPrice');
+            if (totalPriceEl) {
+                var totalAmount = parseFloat(totalPriceEl.textContent.replace(/[^0-9.-]/g, '')) || 0;
+                var deferredAmountInput = $('#sowDeferredAmount');
+                if (deferredAmountInput && !deferredAmountInput.value) {
+                    deferredAmountInput.value = totalAmount;
+                }
+            }
+            calculateLateFee();
+        } else {
+            if (fieldsContainer) fieldsContainer.style.display = 'none';
+        }
+    };
+
+    // Toggle between lump sum and custom split
+    window.toggleDeferredSplitType = function() {
+        var splitType = document.querySelector('input[name="deferred_split"]:checked');
+        var lumpSumFields = $('#lumpSumFields');
+        var customSplitFields = $('#customSplitFields');
+
+        if (splitType && splitType.value === 'custom') {
+            if (lumpSumFields) lumpSumFields.style.display = 'none';
+            if (customSplitFields) customSplitFields.style.display = 'block';
+            // Initialize with one payment row if empty
+            var list = $('#customPaymentsList');
+            if (list && list.children.length === 0) {
+                addCustomPaymentRow();
+            }
+        } else {
+            if (lumpSumFields) lumpSumFields.style.display = 'block';
+            if (customSplitFields) customSplitFields.style.display = 'none';
+        }
+        calculateLateFee();
+    };
+
+    // Calculate and display late fee (applied only if payment is late)
+    window.calculateLateFee = function() {
+        var splitType = document.querySelector('input[name="deferred_split"]:checked');
+        var waiveCheckbox = $('#sowWaiveLateFee');
+        var feeWaived = waiveCheckbox && waiveCheckbox.checked;
+
+        var deferredAmount = 0;
+
+        if (splitType && splitType.value === 'custom') {
+            // Sum all custom payment amounts
+            var customInputs = document.querySelectorAll('.custom-payment-amount');
+            customInputs.forEach(function(input) {
+                deferredAmount += parseFloat(input.value) || 0;
+            });
+        } else {
+            var amountInput = $('#sowDeferredAmount');
+            deferredAmount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+        }
+
+        var lateFee = feeWaived ? 0 : (deferredAmount * 0.10);
+
+        var feeDisplay = $('#lateFeeDisplay');
+        var totalDisplay = $('#totalDeferredDisplay');
+
+        if (feeDisplay) {
+            feeDisplay.textContent = '$' + lateFee.toFixed(0);
+            feeDisplay.style.textDecoration = feeWaived ? 'line-through' : 'none';
+        }
+        if (totalDisplay) {
+            totalDisplay.textContent = '$' + deferredAmount.toFixed(0);
+        }
+    };
+
+    // Add custom payment row
+    window.addCustomPaymentRow = function() {
+        var list = $('#customPaymentsList');
+        if (!list) return;
+
+        var row = document.createElement('div');
+        row.className = 'custom-payment-row';
+        row.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+        row.innerHTML =
+            '<input type="number" class="sow-input custom-payment-amount" placeholder="Amount $" style="flex: 1;" onchange="calculateLateFee()" oninput="calculateLateFee()" />' +
+            '<input type="date" class="sow-input custom-payment-date" style="flex: 1;" />' +
+            '<button type="button" onclick="removeCustomPaymentRow(this)" style="padding: 8px 12px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; color: #ef4444; cursor: pointer; font-size: 1em;">✕</button>';
+        list.appendChild(row);
+    };
+
+    // Remove custom payment row
+    window.removeCustomPaymentRow = function(button) {
+        var row = button.parentElement;
+        row.remove();
+        calculateLateFee();
     };
 
     // Populate coupon dropdown with available coupons
@@ -6517,6 +6694,70 @@ ContractFormHandler.prototype.saveSOW = function() {
     var devDurationUnit = $('#sowDevDurationUnit') ? $('#sowDevDurationUnit').value : 'weeks';
     var devDurationParsed = devDuration ? parseInt(devDuration) || null : null;
 
+    // Get deferred payment settings
+    var deferredEnabled = $('#sowDeferredPayment') && $('#sowDeferredPayment').checked;
+    var deferredData = {
+        enabled: deferredEnabled,
+        splitType: 'lump_sum',
+        dueDate: null,
+        deferredAmount: 0,
+        lateFee: 0,
+        lateFeeWaived: false,
+        allowPartialPayments: true,
+        maintenanceDuringDeferral: true,
+        customSchedule: [],
+        acknowledgmentSigned: false,
+        acknowledgmentDate: null
+    };
+
+    if (deferredEnabled) {
+        var splitTypeRadio = document.querySelector('input[name="deferred_split"]:checked');
+        deferredData.splitType = splitTypeRadio ? splitTypeRadio.value : 'lump_sum';
+        deferredData.lateFeeWaived = $('#sowWaiveLateFee') && $('#sowWaiveLateFee').checked;
+        deferredData.allowPartialPayments = $('#sowAllowPartialPayments') ? $('#sowAllowPartialPayments').checked : true;
+        deferredData.maintenanceDuringDeferral = $('#sowMaintenanceDuringDeferral') ? $('#sowMaintenanceDuringDeferral').checked : true;
+
+        if (deferredData.splitType === 'custom') {
+            var schedule = [];
+            var customRows = document.querySelectorAll('.custom-payment-row');
+            customRows.forEach(function(row) {
+                var amountInput = row.querySelector('.custom-payment-amount');
+                var dateInput = row.querySelector('.custom-payment-date');
+                var amount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+                var date = dateInput ? dateInput.value : null;
+                if (amount > 0) {
+                    schedule.push({ amount: amount, dueDate: date });
+                }
+            });
+            deferredData.customSchedule = schedule;
+            deferredData.deferredAmount = schedule.reduce(function(sum, item) { return sum + item.amount; }, 0);
+        } else {
+            deferredData.deferredAmount = parseFloat($('#sowDeferredAmount') ? $('#sowDeferredAmount').value : 0) || 0;
+            deferredData.dueDate = $('#sowDeferredDueDate') ? $('#sowDeferredDueDate').value : null;
+        }
+
+        // Late fee only applies if payment is late (stored for PDF terms)
+        deferredData.lateFee = deferredData.lateFeeWaived ? 0 : (deferredData.deferredAmount * 0.10);
+
+        // Validation
+        if (deferredData.deferredAmount <= 0) {
+            alert('Please enter a valid deferred amount.');
+            return;
+        }
+        if (deferredData.splitType === 'lump_sum' && !deferredData.dueDate) {
+            alert('Please select a due date for the deferred payment.');
+            return;
+        }
+        if (deferredData.splitType === 'custom' && deferredData.customSchedule.length === 0) {
+            alert('Please add at least one payment to the custom schedule.');
+            return;
+        }
+        if (deferredData.deferredAmount > totalPrice) {
+            alert('Deferred amount cannot exceed the total project price.');
+            return;
+        }
+    }
+
     var sowData = {
         // Use business name as primary if business entity, otherwise individual name
         clientName: isBusinessEntity ? businessName : clientName,
@@ -6553,7 +6794,8 @@ ContractFormHandler.prototype.saveSOW = function() {
                 ecommercePrice: pricingData.ecommercePrice,
                 couponCode: selectedCouponCode || null,
                 couponDiscount: pricingData.couponDiscount || 0
-            }
+            },
+            deferred: deferredData
         },
         createdBy: firebase.auth().currentUser.email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -7380,7 +7622,8 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.info-box h3 { margin-top: 0; }' +
     '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin-top: 6px; }' +
     '.info-item { font-size: 9pt; word-wrap: break-word; overflow-wrap: break-word; }' +
-    '.section { margin-bottom: 10px; page-break-inside: avoid; }' +
+    '.section { margin-bottom: 10px; }' +
+    '.section-compact { page-break-inside: avoid; }' +
     '.package-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; }' +
     '.package-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #000; }' +
     '.package-name { font-size: 11pt; font-weight: bold; }' +
@@ -7727,6 +7970,90 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     sectionNum++;
 
+    // DEFERRED PAYMENT AGREEMENT (if enabled)
+    if (sowData.payment && sowData.payment.deferred && sowData.payment.deferred.enabled) {
+        var deferred = sowData.payment.deferred;
+
+        htmlContent += '<div class="section">' +
+        '<h2>' + sectionNum + '. Deferred Payment Agreement</h2>' +
+
+        '<div style="background: #fff8e6; border: 2px solid #f59e0b; padding: 10px; margin-bottom: 10px;">' +
+        '<p style="font-size: 9pt; margin: 0 0 5px; color: #92400e; font-weight: bold;">DEFERRED PAYMENT TERMS</p>' +
+        '<p style="font-size: 8pt; margin: 0; color: #78350f;">Client has elected to defer a portion of payment. The following terms apply to the deferred amount and are binding upon both parties.</p>' +
+        '</div>' +
+
+        '<table class="payment-table">' +
+        '<thead>' +
+        '<tr>' +
+        '<th style="width: 50%;">Description</th>' +
+        '<th style="width: 25%;">Due Date</th>' +
+        '<th style="width: 25%;">Amount</th>' +
+        '</tr>' +
+        '</thead>' +
+        '<tbody>';
+
+        if (deferred.splitType === 'custom' && deferred.customSchedule && deferred.customSchedule.length > 0) {
+            deferred.customSchedule.forEach(function(payment, index) {
+                var formattedDate = payment.dueDate ? new Date(payment.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
+                htmlContent += '<tr>' +
+                '<td>Deferred Payment ' + (index + 1) + '</td>' +
+                '<td>' + formattedDate + '</td>' +
+                '<td><strong>$' + (payment.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
+                '</tr>';
+            });
+        } else {
+            var formattedDueDate = deferred.dueDate ? new Date(deferred.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
+            htmlContent += '<tr>' +
+            '<td>Deferred Payment (Lump Sum)</td>' +
+            '<td>' + formattedDueDate + '</td>' +
+            '<td><strong>$' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
+            '</tr>';
+        }
+
+        // Total deferred amount row
+        htmlContent += '<tr class="total-row">' +
+        '<td colspan="2"><strong>TOTAL DEFERRED AMOUNT</strong></td>' +
+        '<td><strong>$' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
+        '</tr>';
+
+        // Late fee row (only applies if payment is late)
+        var lateFeeWaived = deferred.lateFeeWaived || deferred.feeWaived;
+        var lateFeeAmount = deferred.deferredAmount * 0.10;
+        htmlContent += '<tr style="background: #fef3c7;">' +
+        '<td>Late Fee (10%)' + (lateFeeWaived ? ' <em style="color:#666;">(WAIVED)</em>' : '') + '</td>' +
+        '<td style="font-size: 8pt; color: #92400e;">If payment is late</td>' +
+        '<td>' + (lateFeeWaived ? '<s>$' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</s> $0' : '<strong>$' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong>') + '</td>' +
+        '</tr>' +
+        '</tbody></table>';
+
+        // Terms and conditions
+        htmlContent += '<h3 style="font-size: 9pt; margin-top: 10px; margin-bottom: 5px;">Terms and Conditions:</h3>' +
+        '<ol style="font-size: 8pt; margin: 5px 0; padding-left: 18px; line-height: 1.3;">' +
+        '<li><strong>Due Date & Grace Period:</strong> Payments due by specified date(s). 5-day grace period before fees apply.</li>' +
+        '<li><strong>Late Fee:</strong> ' + (lateFeeWaived ? 'Waived for this agreement.' : 'One-time 10% fee ($' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') if payment exceeds grace period.') + '</li>' +
+        '<li><strong>Interest (30+ Days):</strong> 1.5% monthly (18% annually) on balances 30+ days overdue. Compounds monthly.</li>' +
+        '<li><strong>Service Suspension (60+ Days):</strong> Website may be taken offline after 60 days non-payment. 7-day written notice provided. Restored within 24-48 hrs of payment.</li>' +
+        '<li><strong>Collection Costs:</strong> Client pays all collection costs, attorney fees, court costs if collection action required.</li>' +
+        '<li><strong>IP Rights:</strong> All intellectual property rights retained by Developer until full payment received.</li>' +
+        '<li><strong>Default Remedies:</strong> Upon default, Developer may: (a) accelerate payments, (b) apply fees/interest, (c) suspend services, (d) disable website, (e) pursue legal remedies.</li>';
+
+        if (deferred.allowPartialPayments) {
+            htmlContent += '<li><strong>Partial Payments:</strong> Accepted anytime. Applied to: (1) collection costs, (2) interest, (3) late fees, (4) principal.</li>';
+        }
+
+        if (deferred.maintenanceDuringDeferral) {
+            htmlContent += '<li><strong>Maintenance:</strong> Monthly maintenance fees due during deferral. Separate from deferred project payments.</li>';
+        } else {
+            htmlContent += '<li><strong>Maintenance:</strong> Maintenance fees deferred with project payments.</li>';
+        }
+
+        htmlContent += '<li><strong>Notice:</strong> 7-day written notice via email before any fees or suspension.</li>' +
+        '</ol>' +
+        '</div>';
+
+        sectionNum++;
+    }
+
     // MAINTENANCE PLAN (Required for all projects)
     htmlContent += '<div class="section">' +
         '<h2>' + sectionNum + '. Ongoing Maintenance Plan</h2>' +
@@ -7837,10 +8164,45 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '</div>' +
 
     '</div>' +
-    '</div>' +
+    '</div>';
+
+    // DEFERRED PAYMENT ACKNOWLEDGMENT (if enabled)
+    if (sowData.payment && sowData.payment.deferred && sowData.payment.deferred.enabled) {
+        var deferred = sowData.payment.deferred;
+        var lateFeeWaivedAck = deferred.lateFeeWaived || deferred.feeWaived;
+        var lateFeeAmountAck = deferred.deferredAmount * 0.10;
+        var monthlyInterest = deferred.deferredAmount * 0.015;
+
+        htmlContent += '<div class="signature-section" style="margin-top: 15px; border-top: 2px solid #f59e0b; padding-top: 10px;">' +
+        '<h2 style="color: #92400e; font-size: 11pt; margin-bottom: 8px;">Deferred Payment Acknowledgment</h2>' +
+        '<div style="background: #fff8e6; padding: 10px; margin-bottom: 10px; border: 1px solid #f59e0b;">' +
+        '<p style="font-size: 8pt; margin: 0 0 5px; font-weight: bold;">By signing below, Client acknowledges:</p>' +
+        '<ul style="font-size: 8pt; margin: 0; padding-left: 18px; line-height: 1.4;">' +
+        '<li><strong>Deferred:</strong> $' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' per schedule above</li>' +
+        '<li><strong>Late Fee:</strong> ' + (lateFeeWaivedAck ? 'Waived' : '10% ($' + lateFeeAmountAck.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') if 5+ days late') + '</li>' +
+        '<li><strong>Interest:</strong> 1.5%/month (~$' + monthlyInterest.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '/mo) after 30 days</li>' +
+        '<li><strong>Suspension:</strong> Site offline after 60 days non-payment</li>' +
+        '<li><strong>Collection:</strong> Client pays all collection/legal costs</li>' +
+        '<li><strong>IP Rights:</strong> Retained by Developer until paid</li>' +
+        '</ul>' +
+        '</div>' +
+
+        '<div class="signature-grid">' +
+        '<div class="signature-block">' +
+        '<h3>CLIENT ACKNOWLEDGMENT</h3>' +
+        '<div class="signature-line">' +
+        (deferred.acknowledgmentSigned && clientSignature ? '<img src="' + clientSignature + '" alt="Client Acknowledgment" />' : '<span style="font-style: italic;">Awaiting Acknowledgment</span>') +
+        '</div>' +
+        '<div class="signature-label">Client Signature</div>' +
+        '<div class="signature-name">' + (isBusinessEntity ? 'By: ' + representativeName : clientSignerName) + '</div>' +
+        '<div class="signature-date">Date: ' + (deferred.acknowledgmentDate || '_______________') + '</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+    }
 
     // FOOTER
-    '<div class="footer">' +
+    htmlContent += '<div class="footer">' +
     '<p><strong>© ' + new Date().getFullYear() + ' Scarlo</strong> — Professional Web Development | Fresno, CA</p>' +
     '<p class="sow-id">SOW: ' + sowId + ' | Generated: ' + new Date().toLocaleString() + '</p>' +
     '<p style="font-size: 7pt; font-style: italic;">Valid for 30 days. Must be signed with the Website Development Agreement.</p>' +
@@ -8041,6 +8403,66 @@ ContractFormHandler.prototype.editSOW = function(sow) {
             if (individualFields) individualFields.style.display = 'block';
             if (businessLabel) businessLabel.classList.remove('active');
             if (individualLabel) individualLabel.classList.add('active');
+        }
+
+        // Populate deferred payment fields
+        if (sow.payment && sow.payment.deferred && sow.payment.deferred.enabled) {
+            var deferred = sow.payment.deferred;
+            var deferredCheckbox = $('#sowDeferredPayment');
+            var deferredFields = $('#deferredPaymentFields');
+
+            if (deferredCheckbox) {
+                deferredCheckbox.checked = true;
+                if (deferredFields) deferredFields.style.display = 'block';
+
+                // Set split type
+                var splitRadio = document.querySelector('input[name="deferred_split"][value="' + deferred.splitType + '"]');
+                if (splitRadio) splitRadio.checked = true;
+
+                if (deferred.splitType === 'custom') {
+                    var lumpSumFields = $('#lumpSumFields');
+                    var customSplitFields = $('#customSplitFields');
+                    if (lumpSumFields) lumpSumFields.style.display = 'none';
+                    if (customSplitFields) customSplitFields.style.display = 'block';
+
+                    // Populate custom schedule
+                    var list = $('#customPaymentsList');
+                    if (list && deferred.customSchedule && deferred.customSchedule.length > 0) {
+                        list.innerHTML = '';
+                        deferred.customSchedule.forEach(function(payment) {
+                            if (typeof addCustomPaymentRow === 'function') {
+                                addCustomPaymentRow();
+                                var lastRow = list.lastElementChild;
+                                if (lastRow) {
+                                    var amountInput = lastRow.querySelector('.custom-payment-amount');
+                                    var dateInput = lastRow.querySelector('.custom-payment-date');
+                                    if (amountInput) amountInput.value = payment.amount || '';
+                                    if (dateInput) dateInput.value = payment.dueDate || '';
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    var deferredAmountField = $('#sowDeferredAmount');
+                    var deferredDueDateField = $('#sowDeferredDueDate');
+                    if (deferredAmountField) deferredAmountField.value = deferred.deferredAmount || '';
+                    if (deferredDueDateField) deferredDueDateField.value = deferred.dueDate || '';
+                }
+
+                // Set options
+                var waiveLateFeeCheckbox = $('#sowWaiveLateFee');
+                var allowPartialCheckbox = $('#sowAllowPartialPayments');
+                var maintenanceDuringCheckbox = $('#sowMaintenanceDuringDeferral');
+
+                if (waiveLateFeeCheckbox) waiveLateFeeCheckbox.checked = deferred.lateFeeWaived || deferred.feeWaived || false;
+                if (allowPartialCheckbox) allowPartialCheckbox.checked = deferred.allowPartialPayments !== false;
+                if (maintenanceDuringCheckbox) maintenanceDuringCheckbox.checked = deferred.maintenanceDuringDeferral !== false;
+
+                // Recalculate display
+                if (typeof calculateLateFee === 'function') {
+                    calculateLateFee();
+                }
+            }
         }
 
         // Pricing data structures (2025 Scarlo Pricing Guide - Revised)
@@ -8351,6 +8773,70 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
     var devDurationUnit = $('#sowDevDurationUnit') ? $('#sowDevDurationUnit').value : 'weeks';
     var devDurationParsed = devDuration ? parseInt(devDuration) || null : null;
 
+    // Get deferred payment settings
+    var deferredEnabled = $('#sowDeferredPayment') && $('#sowDeferredPayment').checked;
+    var deferredData = {
+        enabled: deferredEnabled,
+        splitType: 'lump_sum',
+        dueDate: null,
+        deferredAmount: 0,
+        lateFee: 0,
+        lateFeeWaived: false,
+        allowPartialPayments: true,
+        maintenanceDuringDeferral: true,
+        customSchedule: [],
+        acknowledgmentSigned: false,
+        acknowledgmentDate: null
+    };
+
+    if (deferredEnabled) {
+        var splitTypeRadio = document.querySelector('input[name="deferred_split"]:checked');
+        deferredData.splitType = splitTypeRadio ? splitTypeRadio.value : 'lump_sum';
+        deferredData.lateFeeWaived = $('#sowWaiveLateFee') && $('#sowWaiveLateFee').checked;
+        deferredData.allowPartialPayments = $('#sowAllowPartialPayments') ? $('#sowAllowPartialPayments').checked : true;
+        deferredData.maintenanceDuringDeferral = $('#sowMaintenanceDuringDeferral') ? $('#sowMaintenanceDuringDeferral').checked : true;
+
+        if (deferredData.splitType === 'custom') {
+            var schedule = [];
+            var customRows = document.querySelectorAll('.custom-payment-row');
+            customRows.forEach(function(row) {
+                var amountInput = row.querySelector('.custom-payment-amount');
+                var dateInput = row.querySelector('.custom-payment-date');
+                var amount = parseFloat(amountInput ? amountInput.value : 0) || 0;
+                var date = dateInput ? dateInput.value : null;
+                if (amount > 0) {
+                    schedule.push({ amount: amount, dueDate: date });
+                }
+            });
+            deferredData.customSchedule = schedule;
+            deferredData.deferredAmount = schedule.reduce(function(sum, item) { return sum + item.amount; }, 0);
+        } else {
+            deferredData.deferredAmount = parseFloat($('#sowDeferredAmount') ? $('#sowDeferredAmount').value : 0) || 0;
+            deferredData.dueDate = $('#sowDeferredDueDate') ? $('#sowDeferredDueDate').value : null;
+        }
+
+        // Late fee only applies if payment is late (stored for PDF terms)
+        deferredData.lateFee = deferredData.lateFeeWaived ? 0 : (deferredData.deferredAmount * 0.10);
+
+        // Validation
+        if (deferredData.deferredAmount <= 0) {
+            alert('Please enter a valid deferred amount.');
+            return;
+        }
+        if (deferredData.splitType === 'lump_sum' && !deferredData.dueDate) {
+            alert('Please select a due date for the deferred payment.');
+            return;
+        }
+        if (deferredData.splitType === 'custom' && deferredData.customSchedule.length === 0) {
+            alert('Please add at least one payment to the custom schedule.');
+            return;
+        }
+        if (deferredData.deferredAmount > totalPrice) {
+            alert('Deferred amount cannot exceed the total project price.');
+            return;
+        }
+    }
+
     var sowData = {
         // Use business name as primary if business entity, otherwise individual name
         clientName: isBusinessEntity ? businessName : clientName,
@@ -8387,7 +8873,8 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
                 ecommercePrice: pricingData.ecommercePrice,
                 couponCode: selectedCouponCode || null,
                 couponDiscount: pricingData.couponDiscount || 0
-            }
+            },
+            deferred: deferredData
         },
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     };
