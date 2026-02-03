@@ -4891,7 +4891,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         // Package Selection
         '<div class="sow-form-section">' +
         '<h5><span class="section-icon">📦</span> Package Tier</h5>' +
-        '<select id="sowPackage" class="sow-select">' +
+        '<select id="sowPackage" class="sow-select" onchange="setTimeout(syncDeferredWithTotal, 50)">' +
         '<option value="">Select a package tier...</option>' +
         '<option value="essential">Essential — Landing Page ($1,000 - $3,000)</option>' +
         '<option value="starter">Tier 1 — Starter ($3,000 - $6,000)</option>' +
@@ -4903,7 +4903,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         
         // Custom pricing (only shown if custom selected)
         '<div id="customPricingSection" style="display: none; margin-top: 15px;">' +
-        '<input type="number" id="sowCustomPrice" placeholder="Enter custom total price" class="sow-input" step="0.01" min="0" />' +
+        '<input type="number" id="sowCustomPrice" placeholder="Enter custom total price" class="sow-input" step="0.01" min="0" oninput="setTimeout(syncDeferredWithTotal, 50)" />' +
         '</div>' +
         '</div>' +
         
@@ -5089,7 +5089,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<div class="sow-form-section coupon-section">' +
         '<h5><span class="section-icon">🎟️</span> Discount Code</h5>' +
         '<div class="coupon-input-group">' +
-        '<select id="sowCouponSelect" class="sow-select coupon-select">' +
+        '<select id="sowCouponSelect" class="sow-select coupon-select" onchange="setTimeout(syncDeferredWithTotal, 50)">' +
         '<option value="">No discount applied</option>' +
         '</select>' +
         '<div id="couponValidationMessage" class="coupon-validation-message"></div>' +
@@ -5343,6 +5343,54 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         }
         calculateLateFee();
     };
+
+    // Sync deferred amount with current total price (for lump sum mode)
+    window.syncDeferredWithTotal = function() {
+        var deferredCheckbox = $('#sowDeferredPayment');
+        var deferredFieldsContainer = $('#deferredPaymentFields');
+        var isDeferredEnabled = (deferredCheckbox && deferredCheckbox.checked) ||
+                                (deferredFieldsContainer && deferredFieldsContainer.style.display === 'block');
+
+        if (!isDeferredEnabled) return;
+
+        // Only sync for lump sum mode, not custom split
+        var splitType = document.querySelector('input[name="deferred_split"]:checked');
+        if (splitType && splitType.value === 'custom') return;
+
+        // Get current total from the pricing display
+        var totalPriceEl = $('#sowTotalPrice');
+        if (totalPriceEl) {
+            var totalPrice = parseFloat(totalPriceEl.textContent.replace(/[^0-9.-]/g, '')) || 0;
+            var deferredAmountInput = $('#sowDeferredAmount');
+            if (deferredAmountInput && totalPrice > 0) {
+                deferredAmountInput.value = totalPrice;
+                calculateLateFee();
+            }
+        }
+    };
+
+    // Set up MutationObserver to watch for total price changes
+    var setupTotalPriceObserver = function() {
+        var totalPriceEl = $('#sowTotalPrice');
+        if (!totalPriceEl) return;
+
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    syncDeferredWithTotal();
+                }
+            });
+        });
+
+        observer.observe(totalPriceEl, {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+    };
+
+    // Initialize observer when SOW form is ready
+    setTimeout(setupTotalPriceObserver, 500);
 
     // Calculate and display late fee (applied only if payment is late)
     window.calculateLateFee = function() {
@@ -6549,6 +6597,24 @@ ContractFormHandler.prototype.updateSOWPricing = function(packagePricing, mainte
         if (maintenanceEl) maintenanceEl.textContent = '$' + maintenanceCost + '/month';
     } else {
         if (maintenanceEl) maintenanceEl.textContent = 'Select plan';
+    }
+
+    // Update deferred amount if deferred payment is enabled
+    var deferredCheckbox = $('#sowDeferredPayment');
+    var deferredFieldsContainer = $('#deferredPaymentFields');
+    var isDeferredEnabled = (deferredCheckbox && deferredCheckbox.checked) ||
+                            (deferredFieldsContainer && deferredFieldsContainer.style.display === 'block');
+
+    if (isDeferredEnabled) {
+        // Only update lump sum amount (not custom split)
+        var splitType = document.querySelector('input[name="deferred_split"]:checked');
+        if (!splitType || splitType.value !== 'custom') {
+            var deferredAmountInput = $('#sowDeferredAmount');
+            if (deferredAmountInput) {
+                deferredAmountInput.value = totalPrice;
+            }
+        }
+        calculateLateFee();
     }
 
     // Store pricing data for save
