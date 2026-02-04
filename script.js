@@ -5000,9 +5000,9 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<select id="sowMaintenance" class="sow-select" required>' +
         '<option value="">Select a maintenance plan...</option>' +
         '<option value="none">No Maintenance — $0/month</option>' +
-        '<option value="basic" selected>Basic Care — $110-$225/month (2-3 hrs/mo)</option>' +
-        '<option value="professional">Professional Care — $220-$450/month (4-6 hrs/mo)</option>' +
-        '<option value="premium">Premium Care — $440-$900/month (8-12 hrs/mo)</option>' +
+        '<option value="basic" selected>Basic Care — $167/month (2-3 hrs/mo)</option>' +
+        '<option value="professional">Professional Care — $335/month (4-6 hrs/mo)</option>' +
+        '<option value="premium">Premium Care — $670/month (8-12 hrs/mo)</option>' +
         '</select>' +
         '</div>' +
 
@@ -5020,14 +5020,24 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
         '<div class="deferred-split-type">' +
         '<label style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; display: block;">Payment Type</label>' +
-        '<div class="deferred-radio-group">' +
-        '<label class="sow-radio" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; cursor: pointer;">' +
-        '<input type="radio" name="deferred_split" value="lump_sum" checked onchange="toggleDeferredSplitType()" />' +
-        '<span>Lump Sum (Single Due Date)</span>' +
+        '<div class="deferred-radio-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">' +
+        '<label class="sow-radio deferred-type-card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">' +
+        '<input type="radio" name="deferred_split" value="lump_sum" checked onchange="toggleDeferredSplitType()" style="display: none;" />' +
+        '<span style="font-size: 1.5em;">💵</span>' +
+        '<span style="font-weight: 500; font-size: 0.85em;">Lump Sum</span>' +
+        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">Single payment on one date</span>' +
         '</label>' +
-        '<label class="sow-radio" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border-radius: 6px; margin-top: 6px; cursor: pointer;">' +
-        '<input type="radio" name="deferred_split" value="custom" onchange="toggleDeferredSplitType()" />' +
-        '<span>Custom Split (Multiple Payments)</span>' +
+        '<label class="sow-radio deferred-type-card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">' +
+        '<input type="radio" name="deferred_split" value="recurring" onchange="toggleDeferredSplitType()" style="display: none;" />' +
+        '<span style="font-size: 1.5em;">📅</span>' +
+        '<span style="font-weight: 500; font-size: 0.85em;">Payment Plan</span>' +
+        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">Recurring schedule</span>' +
+        '</label>' +
+        '<label class="sow-radio deferred-type-card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">' +
+        '<input type="radio" name="deferred_split" value="custom" onchange="toggleDeferredSplitType()" style="display: none;" />' +
+        '<span style="font-size: 1.5em;">✏️</span>' +
+        '<span style="font-weight: 500; font-size: 0.85em;">Custom</span>' +
+        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">Manual dates & amounts</span>' +
         '</label>' +
         '</div>' +
         '</div>' +
@@ -5042,6 +5052,61 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Due Date</label>' +
         '<input type="date" id="sowDeferredDueDate" class="sow-input" />' +
         '</div>' +
+        '</div>' +
+        '</div>' +
+
+        '<div id="recurringFields" style="display: none; margin-top: 15px;">' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">' +
+        '<div>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Total Amount to Defer</label>' +
+        '<input type="number" id="sowRecurringTotalAmount" placeholder="Total $" class="sow-input" min="0" step="0.01" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
+        '</div>' +
+        '<div>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">First Payment Date</label>' +
+        '<input type="date" id="sowRecurringStartDate" class="sow-input" onchange="updateRecurringSchedule()" />' +
+        '</div>' +
+        '</div>' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">' +
+        '<div>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Payment Frequency</label>' +
+        '<select id="sowRecurringFrequency" class="sow-select" onchange="updateRecurringSchedule()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">' +
+        '<option value="weekly">Weekly</option>' +
+        '<option value="biweekly" selected>Bi-Weekly (Every 2 Weeks)</option>' +
+        '<option value="semimonthly">Semi-Monthly (1st & 15th)</option>' +
+        '<option value="monthly">Monthly</option>' +
+        '<option value="bimonthly">Bi-Monthly (Every 2 Months)</option>' +
+        '</select>' +
+        '</div>' +
+        '<div>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Calculate By</label>' +
+        '<select id="sowRecurringCalcMode" class="sow-select" onchange="toggleRecurringCalcMode(); updateRecurringSchedule();" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">' +
+        '<option value="amount">Fixed Payment Amount</option>' +
+        '<option value="count">Number of Payments</option>' +
+        '</select>' +
+        '</div>' +
+        '</div>' +
+        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">' +
+        '<div id="recurringAmountField">' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Amount Per Payment</label>' +
+        '<input type="number" id="sowRecurringPaymentAmount" placeholder="e.g. 300" class="sow-input" min="1" step="0.01" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
+        '</div>' +
+        '<div id="recurringCountField" style="display: none;">' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Number of Payments</label>' +
+        '<input type="number" id="sowRecurringPaymentCount" placeholder="e.g. 6" class="sow-input" min="2" max="52" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
+        '</div>' +
+        '<div id="recurringCalcResult" style="display: flex; align-items: flex-end;">' +
+        '<div style="padding: 10px 14px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; width: 100%;">' +
+        '<span style="font-size: 0.75em; color: #10b981; display: block;">Calculated</span>' +
+        '<span id="recurringCalcDisplay" style="font-size: 1.1em; font-weight: 600; color: #10b981;">--</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div id="recurringSchedulePreview" style="display: none; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;">' +
+        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
+        '<span style="font-size: 0.85em; font-weight: 500; color: #6366f1;">Payment Schedule Preview</span>' +
+        '<span id="recurringScheduleSummary" style="font-size: 0.75em; color: #94a3b8;"></span>' +
+        '</div>' +
+        '<div id="recurringScheduleList" style="display: grid; gap: 6px;"></div>' +
         '</div>' +
         '</div>' +
 
@@ -5127,7 +5192,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<div class="pricing-divider"></div>' +
         '<div class="pricing-row maintenance-row" id="maintenanceRow">' +
         '<span>Monthly Maintenance:</span>' +
-        '<span id="sowMaintenanceCalc" class="price-value">$110-$225/month</span>' +
+        '<span id="sowMaintenanceCalc" class="price-value">$167/month</span>' +
         '</div>' +
         '</div>' +
         '</div>' +
@@ -5313,38 +5378,237 @@ ContractFormHandler.prototype.showSOWCreator = function() {
             if (totalPriceEl) {
                 var totalAmount = parseFloat(totalPriceEl.textContent.replace(/[^0-9.-]/g, '')) || 0;
                 var deferredAmountInput = $('#sowDeferredAmount');
+                var recurringTotalInput = $('#sowRecurringTotalAmount');
                 if (deferredAmountInput && !deferredAmountInput.value) {
                     deferredAmountInput.value = totalAmount;
                 }
+                if (recurringTotalInput && !recurringTotalInput.value) {
+                    recurringTotalInput.value = totalAmount;
+                }
             }
+            // Initialize card styling
+            var cards = document.querySelectorAll('.deferred-type-card');
+            cards.forEach(function(card) {
+                var radio = card.querySelector('input[type="radio"]');
+                if (radio && radio.checked) {
+                    card.style.borderColor = '#6366f1';
+                    card.style.background = 'rgba(99, 102, 241, 0.15)';
+                } else {
+                    card.style.borderColor = 'transparent';
+                    card.style.background = 'rgba(255, 255, 255, 0.03)';
+                }
+            });
             calculateLateFee();
         } else {
             if (fieldsContainer) fieldsContainer.style.display = 'none';
         }
     };
 
-    // Toggle between lump sum and custom split
+    // Toggle between lump sum, recurring, and custom split
     window.toggleDeferredSplitType = function() {
         var splitType = document.querySelector('input[name="deferred_split"]:checked');
         var lumpSumFields = $('#lumpSumFields');
+        var recurringFields = $('#recurringFields');
         var customSplitFields = $('#customSplitFields');
 
-        if (splitType && splitType.value === 'custom') {
-            if (lumpSumFields) lumpSumFields.style.display = 'none';
-            if (customSplitFields) customSplitFields.style.display = 'block';
-            // Initialize with one payment row if empty
-            var list = $('#customPaymentsList');
-            if (list && list.children.length === 0) {
-                addCustomPaymentRow();
+        // Update card styling
+        var cards = document.querySelectorAll('.deferred-type-card');
+        cards.forEach(function(card) {
+            var radio = card.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                card.style.borderColor = '#6366f1';
+                card.style.background = 'rgba(99, 102, 241, 0.15)';
+            } else {
+                card.style.borderColor = 'transparent';
+                card.style.background = 'rgba(255, 255, 255, 0.03)';
             }
-        } else {
-            if (lumpSumFields) lumpSumFields.style.display = 'block';
-            if (customSplitFields) customSplitFields.style.display = 'none';
+        });
+
+        // Hide all field sections first
+        if (lumpSumFields) lumpSumFields.style.display = 'none';
+        if (recurringFields) recurringFields.style.display = 'none';
+        if (customSplitFields) customSplitFields.style.display = 'none';
+
+        if (splitType) {
+            if (splitType.value === 'lump_sum') {
+                if (lumpSumFields) lumpSumFields.style.display = 'block';
+            } else if (splitType.value === 'recurring') {
+                if (recurringFields) recurringFields.style.display = 'block';
+                // Auto-populate total amount if empty
+                var totalPriceEl = $('#sowTotalPrice');
+                var recurringTotalInput = $('#sowRecurringTotalAmount');
+                if (totalPriceEl && recurringTotalInput && !recurringTotalInput.value) {
+                    var totalAmount = parseFloat(totalPriceEl.textContent.replace(/[^0-9.-]/g, '')) || 0;
+                    recurringTotalInput.value = totalAmount;
+                }
+                updateRecurringSchedule();
+            } else if (splitType.value === 'custom') {
+                if (customSplitFields) customSplitFields.style.display = 'block';
+                // Initialize with one payment row if empty
+                var list = $('#customPaymentsList');
+                if (list && list.children.length === 0) {
+                    addCustomPaymentRow();
+                }
+            }
         }
         calculateLateFee();
     };
 
-    // Sync deferred amount with current total price (for lump sum mode)
+    // Toggle recurring calculation mode (by amount vs by count)
+    window.toggleRecurringCalcMode = function() {
+        var calcMode = $('#sowRecurringCalcMode');
+        var amountField = $('#recurringAmountField');
+        var countField = $('#recurringCountField');
+
+        if (calcMode && calcMode.value === 'count') {
+            if (amountField) amountField.style.display = 'none';
+            if (countField) countField.style.display = 'block';
+        } else {
+            if (amountField) amountField.style.display = 'block';
+            if (countField) countField.style.display = 'none';
+        }
+    };
+
+    // Generate recurring payment schedule
+    window.generateRecurringSchedule = function(totalAmount, startDate, frequency, calcMode, amountOrCount) {
+        var schedule = [];
+        if (!totalAmount || totalAmount <= 0 || !startDate) return schedule;
+
+        var currentDate = new Date(startDate);
+        var remaining = totalAmount;
+        var paymentAmount, numPayments;
+
+        if (calcMode === 'amount') {
+            paymentAmount = parseFloat(amountOrCount) || 0;
+            if (paymentAmount <= 0) return schedule;
+            numPayments = Math.ceil(totalAmount / paymentAmount);
+        } else {
+            numPayments = parseInt(amountOrCount) || 0;
+            if (numPayments <= 0) return schedule;
+            paymentAmount = Math.ceil(totalAmount / numPayments);
+        }
+
+        // Limit to reasonable number of payments
+        if (numPayments > 52) numPayments = 52;
+
+        for (var i = 0; i < numPayments; i++) {
+            var thisPayment = Math.min(paymentAmount, remaining);
+            if (thisPayment <= 0) break;
+
+            schedule.push({
+                amount: thisPayment,
+                dueDate: currentDate.toISOString().split('T')[0]
+            });
+
+            remaining -= thisPayment;
+
+            // Calculate next date based on frequency
+            switch (frequency) {
+                case 'weekly':
+                    currentDate.setDate(currentDate.getDate() + 7);
+                    break;
+                case 'biweekly':
+                    currentDate.setDate(currentDate.getDate() + 14);
+                    break;
+                case 'semimonthly':
+                    // 1st and 15th of each month
+                    if (currentDate.getDate() < 15) {
+                        currentDate.setDate(15);
+                    } else {
+                        currentDate.setMonth(currentDate.getMonth() + 1);
+                        currentDate.setDate(1);
+                    }
+                    break;
+                case 'monthly':
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                    break;
+                case 'bimonthly':
+                    currentDate.setMonth(currentDate.getMonth() + 2);
+                    break;
+                default:
+                    currentDate.setDate(currentDate.getDate() + 14);
+            }
+        }
+
+        return schedule;
+    };
+
+    // Update recurring schedule preview
+    window.updateRecurringSchedule = function() {
+        var totalAmount = parseFloat($('#sowRecurringTotalAmount') ? $('#sowRecurringTotalAmount').value : 0) || 0;
+        var startDate = $('#sowRecurringStartDate') ? $('#sowRecurringStartDate').value : null;
+        var frequency = $('#sowRecurringFrequency') ? $('#sowRecurringFrequency').value : 'biweekly';
+        var calcMode = $('#sowRecurringCalcMode') ? $('#sowRecurringCalcMode').value : 'amount';
+        var amountOrCount = calcMode === 'amount'
+            ? ($('#sowRecurringPaymentAmount') ? $('#sowRecurringPaymentAmount').value : 0)
+            : ($('#sowRecurringPaymentCount') ? $('#sowRecurringPaymentCount').value : 0);
+
+        var calcDisplay = $('#recurringCalcDisplay');
+        var previewContainer = $('#recurringSchedulePreview');
+        var scheduleList = $('#recurringScheduleList');
+        var scheduleSummary = $('#recurringScheduleSummary');
+
+        // Validate inputs
+        if (!totalAmount || !startDate || !amountOrCount) {
+            if (calcDisplay) calcDisplay.textContent = '--';
+            if (previewContainer) previewContainer.style.display = 'none';
+            calculateLateFee();
+            return;
+        }
+
+        var schedule = generateRecurringSchedule(totalAmount, startDate, frequency, calcMode, amountOrCount);
+
+        if (schedule.length === 0) {
+            if (calcDisplay) calcDisplay.textContent = '--';
+            if (previewContainer) previewContainer.style.display = 'none';
+            calculateLateFee();
+            return;
+        }
+
+        // Update calculated display
+        if (calcMode === 'amount') {
+            if (calcDisplay) calcDisplay.textContent = schedule.length + ' payments';
+        } else {
+            var perPayment = schedule.length > 0 ? schedule[0].amount : 0;
+            if (calcDisplay) calcDisplay.textContent = '$' + perPayment.toLocaleString() + '/payment';
+        }
+
+        // Frequency labels
+        var freqLabels = {
+            'weekly': 'Weekly',
+            'biweekly': 'Bi-Weekly',
+            'semimonthly': 'Semi-Monthly',
+            'monthly': 'Monthly',
+            'bimonthly': 'Bi-Monthly'
+        };
+
+        // Update summary
+        if (scheduleSummary) {
+            var lastDate = schedule[schedule.length - 1].dueDate;
+            scheduleSummary.textContent = freqLabels[frequency] + ' • Final payment: ' + new Date(lastDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // Show preview
+        if (previewContainer) previewContainer.style.display = 'block';
+
+        // Build schedule list
+        if (scheduleList) {
+            var html = '';
+            schedule.forEach(function(payment, index) {
+                var formattedDate = new Date(payment.dueDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 4px;">' +
+                    '<span style="font-size: 0.8em; color: #94a3b8;">#' + (index + 1) + '</span>' +
+                    '<span style="font-size: 0.85em; color: #e2e8f0;">' + formattedDate + '</span>' +
+                    '<span style="font-size: 0.9em; font-weight: 600; color: #10b981;">$' + payment.amount.toLocaleString() + '</span>' +
+                    '</div>';
+            });
+            scheduleList.innerHTML = html;
+        }
+
+        calculateLateFee();
+    };
+
+    // Sync deferred amount with current total price (for lump sum and recurring modes)
     window.syncDeferredWithTotal = function() {
         var deferredCheckbox = $('#sowDeferredPayment');
         var deferredFieldsContainer = $('#deferredPaymentFields');
@@ -5353,7 +5617,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
         if (!isDeferredEnabled) return;
 
-        // Only sync for lump sum mode, not custom split
+        // Only sync for lump sum and recurring modes, not custom split
         var splitType = document.querySelector('input[name="deferred_split"]:checked');
         if (splitType && splitType.value === 'custom') return;
 
@@ -5361,10 +5625,19 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         var totalPriceEl = $('#sowTotalPrice');
         if (totalPriceEl) {
             var totalPrice = parseFloat(totalPriceEl.textContent.replace(/[^0-9.-]/g, '')) || 0;
-            var deferredAmountInput = $('#sowDeferredAmount');
-            if (deferredAmountInput && totalPrice > 0) {
-                deferredAmountInput.value = totalPrice;
-                calculateLateFee();
+
+            if (splitType && splitType.value === 'recurring') {
+                var recurringTotalInput = $('#sowRecurringTotalAmount');
+                if (recurringTotalInput && totalPrice > 0) {
+                    recurringTotalInput.value = totalPrice;
+                    updateRecurringSchedule();
+                }
+            } else {
+                var deferredAmountInput = $('#sowDeferredAmount');
+                if (deferredAmountInput && totalPrice > 0) {
+                    deferredAmountInput.value = totalPrice;
+                    calculateLateFee();
+                }
             }
         }
     };
@@ -5406,6 +5679,10 @@ ContractFormHandler.prototype.showSOWCreator = function() {
             customInputs.forEach(function(input) {
                 deferredAmount += parseFloat(input.value) || 0;
             });
+        } else if (splitType && splitType.value === 'recurring') {
+            // Get recurring total amount
+            var recurringTotalInput = $('#sowRecurringTotalAmount');
+            deferredAmount = parseFloat(recurringTotalInput ? recurringTotalInput.value : 0) || 0;
         } else {
             var amountInput = $('#sowDeferredAmount');
             deferredAmount = parseFloat(amountInput ? amountInput.value : 0) || 0;
@@ -6772,6 +7049,12 @@ ContractFormHandler.prototype.saveSOW = function() {
         allowPartialPayments: true,
         maintenanceDuringDeferral: true,
         customSchedule: [],
+        // Recurring payment plan fields
+        frequency: null,
+        startDate: null,
+        calculationMode: null,
+        amountPerPayment: null,
+        numberOfPayments: null,
         acknowledgmentSigned: false,
         acknowledgmentDate: null
     };
@@ -6797,7 +7080,30 @@ ContractFormHandler.prototype.saveSOW = function() {
             });
             deferredData.customSchedule = schedule;
             deferredData.deferredAmount = schedule.reduce(function(sum, item) { return sum + item.amount; }, 0);
+        } else if (deferredData.splitType === 'recurring') {
+            // Recurring payment plan
+            deferredData.deferredAmount = parseFloat($('#sowRecurringTotalAmount') ? $('#sowRecurringTotalAmount').value : 0) || 0;
+            deferredData.startDate = $('#sowRecurringStartDate') ? $('#sowRecurringStartDate').value : null;
+            deferredData.frequency = $('#sowRecurringFrequency') ? $('#sowRecurringFrequency').value : 'biweekly';
+            deferredData.calculationMode = $('#sowRecurringCalcMode') ? $('#sowRecurringCalcMode').value : 'amount';
+
+            if (deferredData.calculationMode === 'amount') {
+                deferredData.amountPerPayment = parseFloat($('#sowRecurringPaymentAmount') ? $('#sowRecurringPaymentAmount').value : 0) || 0;
+            } else {
+                deferredData.numberOfPayments = parseInt($('#sowRecurringPaymentCount') ? $('#sowRecurringPaymentCount').value : 0) || 0;
+            }
+
+            // Generate the schedule using the same function used for preview
+            var amountOrCount = deferredData.calculationMode === 'amount' ? deferredData.amountPerPayment : deferredData.numberOfPayments;
+            deferredData.customSchedule = generateRecurringSchedule(
+                deferredData.deferredAmount,
+                deferredData.startDate,
+                deferredData.frequency,
+                deferredData.calculationMode,
+                amountOrCount
+            );
         } else {
+            // Lump sum
             deferredData.deferredAmount = parseFloat($('#sowDeferredAmount') ? $('#sowDeferredAmount').value : 0) || 0;
             deferredData.dueDate = $('#sowDeferredDueDate') ? $('#sowDeferredDueDate').value : null;
         }
@@ -6817,6 +7123,24 @@ ContractFormHandler.prototype.saveSOW = function() {
         if (deferredData.splitType === 'custom' && deferredData.customSchedule.length === 0) {
             alert('Please add at least one payment to the custom schedule.');
             return;
+        }
+        if (deferredData.splitType === 'recurring') {
+            if (!deferredData.startDate) {
+                alert('Please select a first payment date for the payment plan.');
+                return;
+            }
+            if (deferredData.calculationMode === 'amount' && (!deferredData.amountPerPayment || deferredData.amountPerPayment <= 0)) {
+                alert('Please enter a valid payment amount.');
+                return;
+            }
+            if (deferredData.calculationMode === 'count' && (!deferredData.numberOfPayments || deferredData.numberOfPayments < 2)) {
+                alert('Please enter a valid number of payments (minimum 2).');
+                return;
+            }
+            if (deferredData.customSchedule.length === 0) {
+                alert('Could not generate payment schedule. Please check your inputs.');
+                return;
+            }
         }
         if (deferredData.deferredAmount > totalPrice) {
             alert('Deferred amount cannot exceed the total project price.');
@@ -7577,7 +7901,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         },
         'basic': {
             name: 'Basic Care',
-            price: '$110-$225/month',
+            price: '$167/month',
             description: 'Ideal for websites requiring occasional updates and minor adjustments (2-3 hrs/month).',
             includes: [
                 'Minor text and image updates (up to 2-3 hours/month)',
@@ -7590,7 +7914,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         },
         'professional': {
             name: 'Professional Care',
-            price: '$220-$450/month',
+            price: '$335/month',
             description: 'For businesses requiring regular updates and more hands-on support (4-6 hrs/month).',
             includes: [
                 'Everything in Basic Care',
@@ -7605,7 +7929,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         },
         'premium': {
             name: 'Premium Care',
-            price: '$440-$900/month',
+            price: '$670/month',
             description: 'Comprehensive support for mission-critical websites and applications (8-12 hrs/month).',
             includes: [
                 'Everything in Professional Care',
@@ -7684,13 +8008,14 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #000; }' +
     '.subtitle { font-size: 11pt; margin-top: 6px; font-style: italic; }' +
     '.meta-date { font-size: 9pt; margin-top: 6px; font-style: italic; }' +
-    '.info-box { padding: 8px 12px; border: 1px solid #000; border-left: 3px solid #000; margin: 8px 0; }' +
+    '.info-box { padding: 8px 12px; border: 1px solid #000; border-left: 3px solid #000; margin: 8px 0; page-break-inside: avoid; break-inside: avoid; }' +
     '.info-box h3 { margin-top: 0; }' +
     '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin-top: 6px; }' +
     '.info-item { font-size: 9pt; word-wrap: break-word; overflow-wrap: break-word; }' +
     '.section { margin-bottom: 10px; }' +
-    '.section-compact { page-break-inside: avoid; }' +
-    '.package-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; }' +
+    '.deferred-terms { page-break-inside: avoid; break-inside: avoid; }' +
+    '.section-compact { page-break-inside: avoid; break-inside: avoid; }' +
+    '.package-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; page-break-inside: avoid; break-inside: avoid; }' +
     '.package-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #000; }' +
     '.package-name { font-size: 11pt; font-weight: bold; }' +
     '.package-price { font-size: 10pt; font-weight: bold; }' +
@@ -7698,11 +8023,11 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.feature-list li { break-inside: avoid; margin-bottom: 1px; }' +
     '.not-included { border-left: 3px solid #000; }' +
     '.not-included h3 { font-style: italic; }' +
-    '.payment-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9pt; }' +
+    '.payment-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 9pt; page-break-inside: avoid; break-inside: avoid; }' +
     '.payment-table th, .payment-table td { border: 1px solid #000; padding: 5px 8px; text-align: left; }' +
     '.payment-table th { font-weight: bold; background: #f5f5f5; }' +
     '.payment-table .total-row { font-weight: bold; font-size: 10pt; border-top: 2px solid #000; }' +
-    '.timeline-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; }' +
+    '.timeline-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; page-break-inside: avoid; break-inside: avoid; }' +
     '.timeline-header { font-weight: bold; margin-bottom: 8px; font-size: 10pt; border-bottom: 1px solid #000; padding-bottom: 4px; }' +
     '.milestone { margin-bottom: 6px; padding-left: 8px; border-left: 2px solid #000; }' +
     '.milestone:last-child { margin-bottom: 0; }' +
@@ -7724,13 +8049,13 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.footer { margin-top: 20px; text-align: center; font-size: 8pt; border-top: 1px solid #000; padding-top: 10px; }' +
     '.sow-id { font-size: 7pt; margin-top: 4px; font-style: italic; }' +
     '.highlight { font-weight: bold; }' +
-    '.maintenance-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; }' +
+    '.maintenance-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; page-break-inside: avoid; break-inside: avoid; }' +
     '.maintenance-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid #000; margin-bottom: 6px; }' +
     '.maintenance-name { font-weight: bold; font-size: 10pt; }' +
     '.maintenance-price { font-weight: bold; }' +
     '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
     '@media screen and (max-width: 768px) { body { padding: 0.3in 0.25in; } .sow-container { max-width: 100%; } }' +
-    '@media print { body { padding: 0.4in 0.6in; } @page { margin: 0.5in 0.75in 0.5in 0.75in; } }' +
+    '@media print { body { padding: 0.4in 0.6in; } @page { margin: 0.5in 0.75in 0.5in 0.75in; } .info-box, .package-box, .timeline-box, .maintenance-box, .payment-table, .legal-notice, .deferred-terms { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; } }' +
     '@page { margin: 0.5in 0.75in; size: letter; }' +
     '</style>' +
     '</head><body>' +
@@ -8058,11 +8383,29 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         '</thead>' +
         '<tbody>';
 
-        if (deferred.splitType === 'custom' && deferred.customSchedule && deferred.customSchedule.length > 0) {
+        // Frequency labels for recurring payments
+        var freqLabels = {
+            'weekly': 'Weekly',
+            'biweekly': 'Bi-Weekly',
+            'semimonthly': 'Semi-Monthly',
+            'monthly': 'Monthly',
+            'bimonthly': 'Bi-Monthly'
+        };
+
+        if ((deferred.splitType === 'custom' || deferred.splitType === 'recurring') && deferred.customSchedule && deferred.customSchedule.length > 0) {
+            // Show payment plan summary for recurring type
+            if (deferred.splitType === 'recurring' && deferred.frequency) {
+                var freqLabel = freqLabels[deferred.frequency] || deferred.frequency;
+                htmlContent += '<tr style="background: #e0f2fe;">' +
+                '<td colspan="3" style="font-size: 8pt; color: #0369a1; padding: 6px 8px;">' +
+                '<strong>Payment Plan:</strong> ' + deferred.customSchedule.length + ' ' + freqLabel.toLowerCase() + ' payments of $' +
+                (deferred.customSchedule[0].amount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) +
+                '</td></tr>';
+            }
             deferred.customSchedule.forEach(function(payment, index) {
                 var formattedDate = payment.dueDate ? new Date(payment.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
                 htmlContent += '<tr>' +
-                '<td>Deferred Payment ' + (index + 1) + '</td>' +
+                '<td>Payment ' + (index + 1) + '</td>' +
                 '<td>' + formattedDate + '</td>' +
                 '<td><strong>$' + (payment.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
                 '</tr>';
@@ -8093,10 +8436,17 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         '</tbody></table>';
 
         // Terms and conditions
-        htmlContent += '<h3 style="font-size: 9pt; margin-top: 10px; margin-bottom: 5px;">Terms and Conditions:</h3>' +
+        var isRecurringPlan = deferred.splitType === 'recurring' || (deferred.splitType === 'custom' && deferred.customSchedule && deferred.customSchedule.length > 1);
+        var lateFeeText = lateFeeWaived ? 'Waived for this agreement.' :
+            (isRecurringPlan ?
+                '10% of missed payment amount per late payment. Applied after 5-day grace period.' :
+                'One-time 10% fee ($' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') if payment exceeds grace period.');
+
+        htmlContent += '<div class="deferred-terms">' +
+        '<h3 style="font-size: 9pt; margin-top: 10px; margin-bottom: 5px;">Terms and Conditions:</h3>' +
         '<ol style="font-size: 8pt; margin: 5px 0; padding-left: 18px; line-height: 1.3;">' +
         '<li><strong>Due Date & Grace Period:</strong> Payments due by specified date(s). 5-day grace period before fees apply.</li>' +
-        '<li><strong>Late Fee:</strong> ' + (lateFeeWaived ? 'Waived for this agreement.' : 'One-time 10% fee ($' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') if payment exceeds grace period.') + '</li>' +
+        '<li><strong>Late Fee:</strong> ' + lateFeeText + '</li>' +
         '<li><strong>Interest (30+ Days):</strong> 1.5% monthly (18% annually) on balances 30+ days overdue. Compounds monthly.</li>' +
         '<li><strong>Service Suspension (60+ Days):</strong> Website may be taken offline after 60 days non-payment. 7-day written notice provided. Restored within 24-48 hrs of payment.</li>' +
         '<li><strong>Collection Costs:</strong> Client pays all collection costs, attorney fees, court costs if collection action required.</li>' +
@@ -8115,6 +8465,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
         htmlContent += '<li><strong>Notice:</strong> 7-day written notice via email before any fees or suspension.</li>' +
         '</ol>' +
+        '</div>' +
         '</div>';
 
         sectionNum++;
@@ -8485,10 +8836,15 @@ ContractFormHandler.prototype.editSOW = function(sow) {
                 var splitRadio = document.querySelector('input[name="deferred_split"][value="' + deferred.splitType + '"]');
                 if (splitRadio) splitRadio.checked = true;
 
+                // Hide all field sections first
+                var lumpSumFields = $('#lumpSumFields');
+                var recurringFields = $('#recurringFields');
+                var customSplitFields = $('#customSplitFields');
+                if (lumpSumFields) lumpSumFields.style.display = 'none';
+                if (recurringFields) recurringFields.style.display = 'none';
+                if (customSplitFields) customSplitFields.style.display = 'none';
+
                 if (deferred.splitType === 'custom') {
-                    var lumpSumFields = $('#lumpSumFields');
-                    var customSplitFields = $('#customSplitFields');
-                    if (lumpSumFields) lumpSumFields.style.display = 'none';
                     if (customSplitFields) customSplitFields.style.display = 'block';
 
                     // Populate custom schedule
@@ -8508,12 +8864,58 @@ ContractFormHandler.prototype.editSOW = function(sow) {
                             }
                         });
                     }
+                } else if (deferred.splitType === 'recurring') {
+                    if (recurringFields) recurringFields.style.display = 'block';
+
+                    // Populate recurring fields
+                    var recurringTotalField = $('#sowRecurringTotalAmount');
+                    var recurringStartField = $('#sowRecurringStartDate');
+                    var recurringFrequencyField = $('#sowRecurringFrequency');
+                    var recurringCalcModeField = $('#sowRecurringCalcMode');
+                    var recurringAmountField = $('#sowRecurringPaymentAmount');
+                    var recurringCountField = $('#sowRecurringPaymentCount');
+
+                    if (recurringTotalField) recurringTotalField.value = deferred.deferredAmount || '';
+                    if (recurringStartField) recurringStartField.value = deferred.startDate || '';
+                    if (recurringFrequencyField) recurringFrequencyField.value = deferred.frequency || 'biweekly';
+                    if (recurringCalcModeField) recurringCalcModeField.value = deferred.calculationMode || 'amount';
+
+                    // Toggle calc mode fields
+                    if (typeof toggleRecurringCalcMode === 'function') {
+                        toggleRecurringCalcMode();
+                    }
+
+                    if (deferred.calculationMode === 'amount') {
+                        if (recurringAmountField) recurringAmountField.value = deferred.amountPerPayment || '';
+                    } else {
+                        if (recurringCountField) recurringCountField.value = deferred.numberOfPayments || '';
+                    }
+
+                    // Update schedule preview
+                    if (typeof updateRecurringSchedule === 'function') {
+                        updateRecurringSchedule();
+                    }
                 } else {
+                    // Lump sum
+                    if (lumpSumFields) lumpSumFields.style.display = 'block';
                     var deferredAmountField = $('#sowDeferredAmount');
                     var deferredDueDateField = $('#sowDeferredDueDate');
                     if (deferredAmountField) deferredAmountField.value = deferred.deferredAmount || '';
                     if (deferredDueDateField) deferredDueDateField.value = deferred.dueDate || '';
                 }
+
+                // Update card styling for selected type
+                var cards = document.querySelectorAll('.deferred-type-card');
+                cards.forEach(function(card) {
+                    var radio = card.querySelector('input[type="radio"]');
+                    if (radio && radio.checked) {
+                        card.style.borderColor = '#6366f1';
+                        card.style.background = 'rgba(99, 102, 241, 0.15)';
+                    } else {
+                        card.style.borderColor = 'transparent';
+                        card.style.background = 'rgba(255, 255, 255, 0.03)';
+                    }
+                });
 
                 // Set options
                 var waiveLateFeeCheckbox = $('#sowWaiveLateFee');
@@ -8851,6 +9253,12 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         allowPartialPayments: true,
         maintenanceDuringDeferral: true,
         customSchedule: [],
+        // Recurring payment plan fields
+        frequency: null,
+        startDate: null,
+        calculationMode: null,
+        amountPerPayment: null,
+        numberOfPayments: null,
         acknowledgmentSigned: false,
         acknowledgmentDate: null
     };
@@ -8876,7 +9284,30 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
             });
             deferredData.customSchedule = schedule;
             deferredData.deferredAmount = schedule.reduce(function(sum, item) { return sum + item.amount; }, 0);
+        } else if (deferredData.splitType === 'recurring') {
+            // Recurring payment plan
+            deferredData.deferredAmount = parseFloat($('#sowRecurringTotalAmount') ? $('#sowRecurringTotalAmount').value : 0) || 0;
+            deferredData.startDate = $('#sowRecurringStartDate') ? $('#sowRecurringStartDate').value : null;
+            deferredData.frequency = $('#sowRecurringFrequency') ? $('#sowRecurringFrequency').value : 'biweekly';
+            deferredData.calculationMode = $('#sowRecurringCalcMode') ? $('#sowRecurringCalcMode').value : 'amount';
+
+            if (deferredData.calculationMode === 'amount') {
+                deferredData.amountPerPayment = parseFloat($('#sowRecurringPaymentAmount') ? $('#sowRecurringPaymentAmount').value : 0) || 0;
+            } else {
+                deferredData.numberOfPayments = parseInt($('#sowRecurringPaymentCount') ? $('#sowRecurringPaymentCount').value : 0) || 0;
+            }
+
+            // Generate the schedule using the same function used for preview
+            var amountOrCount = deferredData.calculationMode === 'amount' ? deferredData.amountPerPayment : deferredData.numberOfPayments;
+            deferredData.customSchedule = generateRecurringSchedule(
+                deferredData.deferredAmount,
+                deferredData.startDate,
+                deferredData.frequency,
+                deferredData.calculationMode,
+                amountOrCount
+            );
         } else {
+            // Lump sum
             deferredData.deferredAmount = parseFloat($('#sowDeferredAmount') ? $('#sowDeferredAmount').value : 0) || 0;
             deferredData.dueDate = $('#sowDeferredDueDate') ? $('#sowDeferredDueDate').value : null;
         }
@@ -8896,6 +9327,24 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         if (deferredData.splitType === 'custom' && deferredData.customSchedule.length === 0) {
             alert('Please add at least one payment to the custom schedule.');
             return;
+        }
+        if (deferredData.splitType === 'recurring') {
+            if (!deferredData.startDate) {
+                alert('Please select a first payment date for the payment plan.');
+                return;
+            }
+            if (deferredData.calculationMode === 'amount' && (!deferredData.amountPerPayment || deferredData.amountPerPayment <= 0)) {
+                alert('Please enter a valid payment amount.');
+                return;
+            }
+            if (deferredData.calculationMode === 'count' && (!deferredData.numberOfPayments || deferredData.numberOfPayments < 2)) {
+                alert('Please enter a valid number of payments (minimum 2).');
+                return;
+            }
+            if (deferredData.customSchedule.length === 0) {
+                alert('Could not generate payment schedule. Please check your inputs.');
+                return;
+            }
         }
         if (deferredData.deferredAmount > totalPrice) {
             alert('Deferred amount cannot exceed the total project price.');
@@ -11472,9 +11921,9 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
     
     var maintenanceDetails = {
         'none': { name: 'No Maintenance Plan', cost: '$0/month' },
-        'basic': { name: 'Basic Care', cost: '$110-$225/month', desc: 'Minor updates, security patches (2-3 hrs/month)' },
-        'professional': { name: 'Professional Care', cost: '$220-$450/month', desc: 'Regular updates, performance optimization (4-6 hrs/month)' },
-        'premium': { name: 'Premium Care', cost: '$440-$900/month', desc: 'Priority support, new components, SEO optimization (8-12 hrs/month)' }
+        'basic': { name: 'Basic Care', cost: '$167/month', desc: 'Minor updates, security patches (2-3 hrs/month)' },
+        'professional': { name: 'Professional Care', cost: '$335/month', desc: 'Regular updates, performance optimization (4-6 hrs/month)' },
+        'premium': { name: 'Premium Care', cost: '$670/month', desc: 'Priority support, new components, SEO optimization (8-12 hrs/month)' }
     };
     
     var maintenanceInfo = maintenanceDetails[sowData.maintenancePlan || 'none'] || maintenanceDetails['none'];

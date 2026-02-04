@@ -5478,9 +5478,9 @@ body.modal-open .custom-cursor {
 }
 
 .deferred-radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     margin-top: 0.5rem;
 }
 
@@ -5493,6 +5493,52 @@ body.modal-open .custom-cursor {
 
 .deferred-radio-group .sow-radio:hover {
     background: rgba(255, 255, 255, 0.06);
+}
+
+/* Deferred Type Card Selection */
+.deferred-type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.deferred-type-card:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.deferred-type-card input[type="radio"]:checked + span {
+    color: #818cf8;
+}
+
+/* Recurring Schedule Preview */
+#recurringSchedulePreview {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+#recurringSchedulePreview::-webkit-scrollbar {
+    width: 6px;
+}
+
+#recurringSchedulePreview::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#recurringSchedulePreview::-webkit-scrollbar-thumb {
+    background-color: rgba(99, 102, 241, 0.3);
+    border-radius: 3px;
+}
+
+#recurringScheduleList > div:hover {
+    background: rgba(99, 102, 241, 0.1) !important;
 }
 
 .deferral-fee-section {
@@ -9392,7 +9438,6 @@ section.separator-visible::after {
     background: rgba(251, 191, 36, 0.05);
     border: 1px solid rgba(251, 191, 36, 0.2);
     border-radius: 12px;
-    padding: 1rem 1.25rem;
 }
 
 .coupon-section h5 {
