@@ -4085,34 +4085,34 @@ ContractFormHandler.prototype.showChangeRequestModal = function(sowData) {
             '</label>';
     }).join('');
 
-    var modalHtml = '<div id="changeRequestModal" class="modal-overlay" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(10px); z-index: 10000; justify-content: center; align-items: center;">' +
-        '<div class="modal-content" style="max-width: 800px; padding: 2rem;">' +
-        '<div class="modal-header" style="position: relative; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">' +
-        '<h2 style="margin: 0; font-size: 1.5rem; color: #fff;">📝 Request SOW Change</h2>' +
-        '<button type="button" class="modal-close" onclick="window.contractFormHandler.closeChangeRequestModal()" style="position: absolute; top: 0; right: 0; background: rgba(255, 255, 255, 0.1); border: none; width: 36px; height: 36px; border-radius: 50%; color: #fff; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">×</button>' +
+    var modalHtml = '<div id="changeRequestModal" class="modal-overlay" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">' +
+        '<div class="modal-content change-request-modal-content" style="max-width: 720px; width: 100%; padding: 0; background: linear-gradient(165deg, rgba(30, 30, 30, 0.95) 0%, rgba(18, 18, 18, 0.98) 100%); border: 1px solid rgba(228, 216, 196, 0.15); border-radius: 20px; box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(228, 216, 196, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.05); overflow: hidden;">' +
+        '<div class="modal-header" style="position: relative; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(228, 216, 196, 0.1); background: linear-gradient(180deg, rgba(228, 216, 196, 0.03) 0%, transparent 100%);">' +
+        '<h2 style="margin: 0; font-size: 1.25rem; color: #fff; font-weight: 600; letter-spacing: -0.02em;">Request SOW Change</h2>' +
+        '<button type="button" class="modal-close" onclick="window.contractFormHandler.closeChangeRequestModal()" style="position: absolute; top: 0.75rem; right: 1rem; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); width: 32px; height: 32px; border-radius: 50%; color: rgba(255,255,255,0.7); font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s ease;">×</button>' +
         '</div>' +
-        '<div class="modal-body" style="color: #fff;">' +
+        '<div class="modal-body" style="color: #fff; padding: 1.25rem 1.5rem; max-height: 65vh; overflow-y: auto;">' +
 
-        '<div class="change-request-info" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">' +
-        '<p style="margin: 0; font-size: 0.9rem;"><strong>📋 SOW:</strong> ' + (sowData.packageType || 'N/A') + ' Package</p>' +
-        '<p style="margin: 0.5rem 0 0; font-size: 0.9rem;"><strong>💰 Current Total:</strong> $' + (sowData.payment ? sowData.payment.total.toFixed(0) : '0') + '</p>' +
+        '<div class="change-request-info" style="background: linear-gradient(135deg, rgba(228, 216, 196, 0.08) 0%, rgba(228, 216, 196, 0.03) 100%); border: 1px solid rgba(228, 216, 196, 0.15); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; gap: 2rem; align-items: center;">' +
+        '<p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);"><span style="color: rgba(228, 216, 196, 0.7); font-weight: 500;">SOW</span> <strong style="color: #E4D8C4; margin-left: 0.5rem;">' + (sowData.packageType || 'N/A') + ' Package</strong></p>' +
+        '<p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);"><span style="color: rgba(228, 216, 196, 0.7); font-weight: 500;">Current Total</span> <strong style="color: #E4D8C4; margin-left: 0.5rem;">$' + (sowData.payment ? sowData.payment.total.toFixed(0) : '0') + '</strong></p>' +
         '</div>' +
 
-        '<div class="form-group">' +
-        '<label class="form-label" style="display: block; margin-bottom: 0.75rem; font-weight: 600;">Which sections do you want to modify?</label>' +
-        '<div class="change-sections-grid" style="display: grid; gap: 0.75rem;">' +
+        '<div class="form-group" style="margin: 0;">' +
+        '<label class="form-label" style="display: block; margin-bottom: 0.6rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Which sections do you want to modify?</label>' +
+        '<div class="change-sections-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">' +
         sectionsHtml +
         '</div>' +
         '</div>' +
 
-        '<div class="form-group" style="margin-top: 1.5rem;">' +
-        '<label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Describe the changes you need:</label>' +
-        '<textarea id="changeRequestDescription" class="form-input" rows="5" placeholder="Please describe in detail what changes you would like to make. Be as specific as possible to help the developer understand your request." style="width: 100%; resize: vertical; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.75rem; color: #fff; font-size: 0.95rem;"></textarea>' +
+        '<div class="form-group" style="margin: 1rem 0 0;">' +
+        '<label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Describe the changes you need</label>' +
+        '<textarea id="changeRequestDescription" class="form-input" rows="3" placeholder="Please describe in detail what changes you would like to make..." style="width: 100%; resize: vertical; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem; color: #fff; font-size: 0.9rem; transition: all 0.2s ease; outline: none;"></textarea>' +
         '</div>' +
 
-        '<div class="form-group" style="margin-top: 1rem;">' +
-        '<label class="form-label" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Priority Level:</label>' +
-        '<select id="changeRequestPriority" class="form-input" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.75rem; color: #fff; font-size: 0.95rem;">' +
+        '<div class="form-group" style="margin: 0.75rem 0 0;">' +
+        '<label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Priority Level</label>' +
+        '<select id="changeRequestPriority" class="form-input" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem; color: #fff; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease; outline: none;">' +
         '<option value="normal" style="background: #1a1a1a; color: #fff;">Normal - Can wait for next review cycle</option>' +
         '<option value="high" style="background: #1a1a1a; color: #fff;">High - Needed before project continues</option>' +
         '<option value="urgent" style="background: #1a1a1a; color: #fff;">Urgent - Critical blocker</option>' +
@@ -4120,9 +4120,9 @@ ContractFormHandler.prototype.showChangeRequestModal = function(sowData) {
         '</div>' +
 
         '</div>' +
-        '<div class="modal-footer" style="display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1.5rem; margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">' +
-        '<button type="button" class="btn btn-secondary" onclick="window.contractFormHandler.closeChangeRequestModal()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600;">Cancel</button>' +
-        '<button type="button" class="btn btn-primary" onclick="window.contractFormHandler.submitChangeRequest()" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; color: #fff; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 600;">Submit Request</button>' +
+        '<div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05);">' +
+        '<button type="button" class="btn btn-secondary" onclick="window.contractFormHandler.closeChangeRequestModal()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); padding: 0.6rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: all 0.2s ease;">Cancel</button>' +
+        '<button type="button" class="btn btn-primary" onclick="window.contractFormHandler.submitChangeRequest()" style="background: linear-gradient(135deg, rgba(228, 216, 196, 0.9) 0%, rgba(228, 216, 196, 0.7) 100%); border: none; color: #121212; padding: 0.6rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s ease;">Submit Request</button>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -4131,24 +4131,37 @@ ContractFormHandler.prototype.showChangeRequestModal = function(sowData) {
     if (!document.getElementById('changeRequestStyles')) {
         var styleEl = document.createElement('style');
         styleEl.id = 'changeRequestStyles';
-        styleEl.textContent = '.change-section-option { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: all 0.2s; }' +
-            '.change-section-option:hover { background: rgba(255,255,255,0.08); border-color: rgba(99, 102, 241, 0.5); }' +
-            '.change-section-option input[type="checkbox"] { margin-top: 3px; }' +
-            '.change-section-option input[type="checkbox"]:checked + .section-option-content { color: #6366f1; }' +
-            '.section-option-content { display: flex; flex-direction: column; }' +
-            '.section-option-label { font-weight: 600; font-size: 0.95rem; }' +
-            '.section-option-desc { font-size: 0.8rem; opacity: 0.7; margin-top: 2px; }' +
+        styleEl.textContent = '#changeRequestModal .modal-content { height: auto; max-height: 90vh; }' +
+            '#changeRequestModal .modal-footer { margin-top: 0; }' +
+            '.change-section-option { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; cursor: pointer; transition: all 0.25s ease; position: relative; overflow: hidden; }' +
+            '.change-section-option::before { content: ""; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(228, 216, 196, 0.06) 0%, transparent 100%); opacity: 0; transition: opacity 0.25s ease; border-radius: 12px; pointer-events: none; }' +
+            '.change-section-option:hover { background: rgba(228, 216, 196, 0.05); border-color: rgba(228, 216, 196, 0.2); }' +
+            '.change-section-option:hover::before { opacity: 1; }' +
+            '.change-section-option input[type="checkbox"] { margin-top: 2px; accent-color: #E4D8C4; width: 16px; height: 16px; flex-shrink: 0; }' +
+            '.change-section-option input[type="checkbox"]:checked + .section-option-content .section-option-label { color: #E4D8C4; }' +
+            '.change-section-option:has(input:checked) { border-color: rgba(228, 216, 196, 0.3); background: rgba(228, 216, 196, 0.06); }' +
+            '.section-option-content { display: flex; flex-direction: column; gap: 2px; }' +
+            '.section-option-label { font-weight: 600; font-size: 0.85rem; color: rgba(255,255,255,0.95); transition: color 0.2s ease; }' +
+            '.section-option-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); line-height: 1.3; }' +
+            '.change-request-modal-content .modal-body::-webkit-scrollbar { width: 4px; }' +
+            '.change-request-modal-content .modal-body::-webkit-scrollbar-track { background: transparent; }' +
+            '.change-request-modal-content .modal-body::-webkit-scrollbar-thumb { background: rgba(228, 216, 196, 0.15); border-radius: 4px; }' +
+            '.change-request-modal-content .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(228, 216, 196, 0.3); }' +
+            '.change-request-modal-content textarea:focus, .change-request-modal-content select:focus { border-color: rgba(228, 216, 196, 0.3); box-shadow: 0 0 0 3px rgba(228, 216, 196, 0.05); }' +
+            '.change-request-modal-content .btn-secondary:hover { background: rgba(255,255,255,0.1) !important; border-color: rgba(255,255,255,0.2) !important; }' +
+            '.change-request-modal-content .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(228, 216, 196, 0.2); }' +
+            '@media (max-width: 600px) { .change-sections-grid { grid-template-columns: 1fr !important; } .change-request-info { flex-direction: column; gap: 0.5rem !important; } }' +
             '.change-request-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }' +
             '.change-request-badge.pending { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }' +
             '.change-request-badge.approved { background: rgba(16, 185, 129, 0.2); color: #10b981; }' +
             '.change-request-badge.rejected { background: rgba(239, 68, 68, 0.2); color: #ef4444; }' +
             '.change-request-badge.change-order { background: rgba(99, 102, 241, 0.2); color: #6366f1; }' +
             '.change-request-badge.completed { background: rgba(16, 185, 129, 0.2); color: #10b981; }' +
-            '.change-request-card { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; padding: 1rem; margin-top: 1rem; }' +
+            '.change-request-card { background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 1rem; margin-top: 1rem; }' +
             '.change-request-card.approved { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }' +
             '.change-request-card.rejected { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); }' +
             '.btn-change-request { cursor: pointer !important; pointer-events: auto !important; }' +
-            '.btn-change-request:hover { background: linear-gradient(135deg, rgba(251, 191, 36, 0.4) 0%, rgba(245, 158, 11, 0.4) 100%) !important; border-color: rgba(251, 191, 36, 0.6) !important; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2); }';
+            '.btn-change-request:hover { background: linear-gradient(135deg, rgba(228, 216, 196, 0.3) 0%, rgba(228, 216, 196, 0.15) 100%) !important; border-color: rgba(228, 216, 196, 0.5) !important; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(228, 216, 196, 0.15); }';
         document.head.appendChild(styleEl);
     }
 
@@ -8249,7 +8262,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     var htmlContent = '<!DOCTYPE html>' +
     '<html><head>' +
     '<meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<meta name="viewport" content="width=1024">' +
     '<title>Statement of Work - ' + clientName + '</title>' +
     '<link rel="icon" type="image/png" href="https://scarlo.dev/favicons/favicon-96x96.png">' +
     '<style>' +
@@ -8311,7 +8324,6 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.maintenance-name { font-weight: bold; font-size: 10pt; }' +
     '.maintenance-price { font-weight: bold; }' +
     '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-    '@media screen and (max-width: 768px) { body { padding: 0.3in 0.25in; } .sow-container { max-width: 100%; } }' +
     '@media print { body { padding: 0.4in 0.6in; } @page { margin: 0.5in 0.75in 0.5in 0.75in; } .info-box, .package-box, .timeline-box, .maintenance-box, .payment-table, .legal-notice, .deferred-terms { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; } }' +
     '@page { margin: 0.5in 0.75in; size: letter; }' +
     '</style>' +
@@ -11505,10 +11517,12 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
     var paymentBadgeText = paymentInfo.allPaid ? 'Paid' : (paymentInfo.paidCount + '/' + paymentInfo.totalCount);
 
     // Build tabbed interface
+    var bothFullySigned = isFullySigned && sowData && sowData.devSignature && sowData.clientSignature;
     var html = '<div class="completion-header">' +
         '<div class="completion-icon">✅</div>' +
         '<h2>' + headerText + '</h2>' +
         '<p class="completion-note">' + headerNote + '</p>' +
+        (bothFullySigned ? '<button class="download-all-btn" id="downloadBothBtn">📦 Download All</button>' : '') +
         '</div>' +
 
         // Tab Navigation
@@ -11539,9 +11553,9 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
         '</div>' +
         '<div class="doc-card-body">' +
         '<div class="doc-field-row"><span class="field-label">Client:</span><span class="field-value">' + (contractData.clientName || 'N/A') + '</span></div>' +
+        '<div class="doc-field-row"><span class="field-label">' + (contractData.clientEmail ? 'Email:' : 'Phone:') + '</span><span class="field-value">' + (contractData.clientEmail || (contractData.clientPhone ? formatPhoneNumber(contractData.clientPhone) : 'N/A')) + '</span></div>' +
         '<div class="doc-field-row"><span class="field-label">Client Signed:</span><span class="field-value">' + (contractData.clientDate || 'N/A') + '</span></div>' +
         (isFullySigned ? '<div class="doc-field-row"><span class="field-label">Developer Signed:</span><span class="field-value">' + (contractData.devDate || 'N/A') + '</span></div>' : '') +
-        '<div class="doc-field-row"><span class="field-label">' + (contractData.clientEmail ? 'Email:' : 'Phone:') + '</span><span class="field-value">' + (contractData.clientEmail || (contractData.clientPhone ? formatPhoneNumber(contractData.clientPhone) : 'N/A')) + '</span></div>' +
         '</div>' +
         '<div class="doc-signature-preview">' +
         '<p class="signature-label">Your Signature:</p>' +
@@ -11550,9 +11564,11 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
 
     // Add download button ONLY if fully signed
     if (isFullySigned) {
-        html += '<button class="btn btn-primary download-doc-btn" id="downloadContractBtn" style="width: 100%; margin-top: 1rem;">' +
-            '<span>📄 Download Contract PDF</span>' +
-            '</button>';
+        html += '<div class="doc-actions">' +
+            '<button class="doc-action-btn doc-download-btn" id="downloadContractBtn">' +
+            '📄 Download Contract' +
+            '</button>' +
+            '</div>';
     }
 
     html += '</div>'; // Close contract card
@@ -11588,8 +11604,8 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
             var sowDataId = 'sowData_' + sowData.id.replace(/[^a-zA-Z0-9]/g, '_');
             window[sowDataId] = sowData;
 
-            html += '<div style="display: flex; gap: 0.75rem; margin-top: 1rem;">' +
-                '<button type="button" class="sow-action-btn sow-download-btn" onclick="window.contractFormHandler.generateSOWPDF(window.' + sowDataId + ')">' +
+            html += '<div class="doc-actions doc-actions-split">' +
+                '<button type="button" class="doc-action-btn doc-download-btn" onclick="window.contractFormHandler.generateSOWPDF(window.' + sowDataId + ')">' +
                 '📋 Download SOW' +
                 '</button>';
 
@@ -11602,11 +11618,11 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
                     'change_order': { bg: 'linear-gradient(135deg, #6366f1, #4f46e5)', text: '📋 View Order' }
                 };
                 var btnStyle = statusColors[sowData.changeRequestStatus] || statusColors.pending;
-                html += '<button type="button" id="changeRequestBtn-' + sowData.id + '" class="sow-action-btn" style="background: ' + btnStyle.bg + '; color: white; border: none;" onclick="window.contractFormHandler.viewChangeRequest(\'' + sowData.changeRequestId + '\')">' +
+                html += '<button type="button" id="changeRequestBtn-' + sowData.id + '" class="doc-action-btn doc-change-btn" style="background: ' + btnStyle.bg + ';" onclick="window.contractFormHandler.viewChangeRequest(\'' + sowData.changeRequestId + '\')">' +
                     btnStyle.text +
                     '</button>';
             } else {
-                html += '<button type="button" id="changeRequestBtn-' + sowData.id + '" class="sow-action-btn sow-change-btn" onclick="window.contractFormHandler.showChangeRequestModal(window.' + sowDataId + ')">' +
+                html += '<button type="button" id="changeRequestBtn-' + sowData.id + '" class="doc-action-btn doc-change-btn" onclick="window.contractFormHandler.showChangeRequestModal(window.' + sowDataId + ')">' +
                     '📝 Request Change' +
                     '</button>';
             }
@@ -11618,16 +11634,6 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
     }
 
     html += '</div>'; // Close completed-documents
-
-    // Action buttons for documents tab
-    html += '<div class="completion-actions">';
-    if (isFullySigned && sowData && sowData.devSignature && sowData.clientSignature) {
-        html += '<button class="btn btn-primary" id="downloadBothBtn">' +
-            '<span>📦 Download Both PDFs</span>' +
-            '</button>';
-    }
-    html += '</div>';
-
     html += '</div>'; // Close documents tab pane
 
     // Payment Status Tab Pane
@@ -11760,80 +11766,115 @@ ContractFormHandler.prototype.renderPaymentStatusContent = function(sowData, pay
             '</div>';
     }
 
-    var progressPercent = paymentInfo.totalCount > 0
-        ? Math.round((paymentInfo.paidCount / paymentInfo.totalCount) * 100)
+    // Format due date with relative days
+    function formatDueDate(dateStr) {
+        if (!dateStr) return '';
+        var date = new Date(dateStr + 'T00:00:00');
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var formatted = months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var diffTime = date.getTime() - today.getTime();
+        var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        var relative = '';
+        if (diffDays === 0) {
+            relative = 'today';
+        } else if (diffDays === 1) {
+            relative = 'tomorrow';
+        } else if (diffDays > 0) {
+            relative = 'in ' + diffDays + ' days';
+        } else if (diffDays === -1) {
+            relative = '1 day ago';
+        } else {
+            relative = Math.abs(diffDays) + ' days ago';
+        }
+
+        return 'Due ' + formatted + ' (' + relative + ')';
+    }
+
+    // Separate paid and pending payments
+    var paidPayments = [];
+    var pendingPayments = [];
+    paymentInfo.payments.forEach(function(payment) {
+        if (payment.paid) {
+            paidPayments.push(payment);
+        } else {
+            pendingPayments.push(payment);
+        }
+    });
+
+    var nextPayment = pendingPayments.length > 0 ? pendingPayments[0] : null;
+    var futurePayments = pendingPayments.slice(1);
+
+    // Calculate progress
+    var progressPercent = paymentInfo.totalAmount > 0
+        ? Math.round((paymentInfo.paidAmount / paymentInfo.totalAmount) * 100)
         : 0;
 
     var html = '<div class="payment-status-container">';
 
-    // Summary Card
-    html += '<div class="payment-summary-card">' +
-        '<div class="payment-summary-header">' +
-        '<h3>Payment Overview</h3>' +
-        '<span class="payment-progress-badge ' + (paymentInfo.allPaid ? 'complete' : '') + '">' +
-        (paymentInfo.allPaid ? '✅ Fully Paid' : paymentInfo.paidCount + ' of ' + paymentInfo.totalCount + ' payments') +
-        '</span>' +
+    // Payment Progress Summary - minimal bar
+    html += '<div class="payment-progress-summary">' +
+        '<div class="progress-amounts">' +
+        '<span class="progress-paid">$' + paymentInfo.paidAmount.toFixed(2) + '</span>' +
+        '<span class="progress-total">of $' + paymentInfo.totalAmount.toFixed(2) + '</span>' +
         '</div>' +
-
-        '<div class="payment-progress-bar">' +
-        '<div class="payment-progress-fill" style="width: ' + progressPercent + '%;"></div>' +
-        '</div>' +
-
-        '<div class="payment-summary-stats">' +
-        '<div class="payment-stat">' +
-        '<span class="stat-label">Total Project</span>' +
-        '<span class="stat-value">$' + paymentInfo.totalAmount.toFixed(2) + '</span>' +
-        '</div>' +
-        '<div class="payment-stat paid">' +
-        '<span class="stat-label">Amount Paid</span>' +
-        '<span class="stat-value">$' + paymentInfo.paidAmount.toFixed(2) + '</span>' +
-        '</div>' +
-        '<div class="payment-stat owed">' +
-        '<span class="stat-label">Amount Owed</span>' +
-        '<span class="stat-value">$' + paymentInfo.owedAmount.toFixed(2) + '</span>' +
-        '</div>' +
+        '<div class="progress-bar-minimal">' +
+        '<div class="progress-bar-fill" style="width: ' + progressPercent + '%;"></div>' +
         '</div>' +
         '</div>';
 
-    // Payment Schedule
-    html += '<div class="payment-schedule-card">' +
-        '<h3>Payment Schedule</h3>' +
-        '<div class="payment-schedule-list">';
+    // Completed Payments - minimal pills
+    if (paidPayments.length > 0) {
+        html += '<div class="completed-payments-section">' +
+            '<div class="completed-payments-row">';
 
-    paymentInfo.payments.forEach(function(payment, index) {
-        var statusClass = payment.paid ? 'paid' : 'pending';
-        var statusIcon = payment.paid ? '✅' : '⏳';
-        var statusText = payment.paid ? 'Paid' : 'Pending';
+        paidPayments.forEach(function(payment) {
+            html += '<div class="completed-payment-chip">' +
+                '<span class="chip-name">' + payment.name + '</span>' +
+                '<span class="chip-amount">$' + payment.amount.toFixed(2) + '</span>' +
+                '</div>';
+        });
 
-        html += '<div class="payment-schedule-item ' + statusClass + '">' +
-            '<div class="payment-item-indicator">' +
-            '<span class="payment-step">' + (index + 1) + '</span>' +
+        html += '</div></div>';
+    }
+
+    // Next Payment - Hero focus
+    if (nextPayment) {
+        html += '<div class="next-payment-card">' +
+            '<div class="next-payment-label">Next Payment</div>' +
+            '<div class="next-payment-main">' +
+            '<div class="next-payment-amount">$' + nextPayment.amount.toFixed(2) + '</div>' +
+            '<div class="next-payment-info">' +
+            '<span class="next-payment-name">' + nextPayment.name + '</span>' +
+            (nextPayment.dueDate ? '<span class="next-payment-due">' + formatDueDate(nextPayment.dueDate) + '</span>' : '') +
             '</div>' +
-            '<div class="payment-item-details">' +
-            '<div class="payment-item-header">' +
-            '<span class="payment-item-name">' + payment.name + '</span>' +
-            '<span class="payment-item-amount">$' + payment.amount.toFixed(2) + '</span>' +
-            '</div>' +
-            '<div class="payment-item-meta">';
-
-        if (payment.dueDate) {
-            html += '<span class="payment-due-date">Due: ' + payment.dueDate + '</span>';
-        }
-
-        if (payment.paid && payment.paidDate) {
-            html += '<span class="payment-paid-date">Paid: ' + payment.paidDate + '</span>';
-        }
-
-        html += '</div>' +
-            '</div>' +
-            '<div class="payment-item-status ' + statusClass + '">' +
-            '<span class="status-icon">' + statusIcon + '</span>' +
-            '<span class="status-text">' + statusText + '</span>' +
             '</div>' +
             '</div>';
-    });
+    } else if (paymentInfo.allPaid) {
+        // All paid state
+        html += '<div class="next-payment-card">' +
+            '<div class="next-payment-label">Complete</div>' +
+            '<div class="next-payment-main">' +
+            '<div class="next-payment-amount" style="color: #10b981;">✓</div>' +
+            '<div class="next-payment-info">' +
+            '<span class="next-payment-name">All payments received</span>' +
+            '<span class="next-payment-due">Thank you</span>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+    }
 
-    html += '</div></div>'; // Close payment-schedule-list and payment-schedule-card
+    // Future Payments Summary (collapsed, not overwhelming)
+    if (futurePayments.length > 0) {
+        var futureTotal = futurePayments.reduce(function(sum, p) { return sum + p.amount; }, 0);
+        html += '<div class="future-payments-summary">' +
+            '<span class="future-count">' + futurePayments.length + ' more payment' + (futurePayments.length > 1 ? 's' : '') + '</span>' +
+            '<span class="future-total">$' + futureTotal.toFixed(2) + ' remaining</span>' +
+            '</div>';
+    }
 
     html += '</div>'; // Close payment-status-container
 
@@ -12114,7 +12155,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         var htmlContent = '<!DOCTYPE html>' +
         '<html><head>' +
         '<meta charset="UTF-8">' +
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '<meta name="viewport" content="width=1024">' +
         '<title>Website Development Agreement - ' + (isBusinessEntity ? businessName : clientName) + '</title>' +
         '<link rel="icon" type="image/png" href="https://scarlo.dev/favicons/favicon-96x96.png">' +
         '<style>' +
@@ -12146,7 +12187,6 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         '.important { font-weight: bold; text-transform: uppercase; }' +
         '.indented { margin-left: 25px; }' +
         '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-        '@media screen and (max-width: 768px) { body { padding: 0.3in 0.25in; } .contract-container { max-width: 100%; } }' +
         '@media print { body { padding: 0.5in 0.75in; } .signature-page { page-break-before: always; } }' +
         '@page { margin: 0.75in 1in; size: letter; }' +
         '</style>' +
@@ -12400,7 +12440,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
     var htmlContent = '<!DOCTYPE html>' +
         '<html><head>' +
         '<meta charset="UTF-8">' +
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '<meta name="viewport" content="width=1024">' +
         '<title>Complete Agreement Package - ' + (isBusinessEntity ? businessName : clientName) + '</title>' +
         '<link rel="icon" type="image/png" href="https://scarlo.dev/favicons/favicon-96x96.png">' +
         '<style>' +
@@ -12435,7 +12475,6 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         '.total-row { font-weight: bold; font-size: 11pt; border-top: 2px solid #000; }' +
         '.highlight { font-weight: bold; }' +
         '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-        '@media screen and (max-width: 768px) { body { padding: 0.3in 0.25in; } }' +
         '@media print { body { padding: 0.5in 0.75in; } .signature-page, .page-break { page-break-before: always; } }' +
         '@page { margin: 0.75in 1in; size: letter; }' +
         '</style>' +
@@ -13076,18 +13115,18 @@ var SectionSeparatorGlow = function() {
     console.log('Device: ' + (DeviceDetector.isMobile() ? 'Mobile' : 'Desktop'));
     console.log('Screen width:', window.innerWidth);
 
-    // Sync navbar ambient animations
+    // Sync navbar ambient animations (double-rAF to avoid mobile flicker)
     var logoAmbient = $('.navbar-logo-ambient');
     var textAmbient = $('.navbar-text-ambient');
     if (logoAmbient && textAmbient) {
-        logoAmbient.style.animation = 'none';
-        textAmbient.style.animation = 'none';
-        // Force reflow
-        logoAmbient.offsetHeight;
-        textAmbient.offsetHeight;
-        // Restart animations together
-        logoAmbient.style.animation = 'navbarAmbientPulse 3s ease-in-out infinite';
-        textAmbient.style.animation = 'navbarAmbientPulse 3s ease-in-out infinite';
+        requestAnimationFrame(function() {
+            logoAmbient.style.animation = 'none';
+            textAmbient.style.animation = 'none';
+            requestAnimationFrame(function() {
+                logoAmbient.style.animation = 'navbarAmbientPulse 3s ease-in-out infinite';
+                textAmbient.style.animation = 'navbarAmbientPulse 3s ease-in-out infinite';
+            });
+        });
     }
 
     new HelpRequestHandler();

@@ -54,23 +54,26 @@
         init() {
             // Set all frames to hidden, show first - for logo, text, and footer
             this.logos.forEach((logo, i) => {
-                logo.classList.remove('visible');
                 if (i === 0) {
                     logo.classList.add('visible');
+                } else {
+                    logo.classList.remove('visible');
                 }
             });
 
             this.texts.forEach((text, i) => {
-                text.classList.remove('visible');
                 if (i === 0) {
                     text.classList.add('visible');
+                } else {
+                    text.classList.remove('visible');
                 }
             });
 
             this.footerLogos.forEach((logo, i) => {
-                logo.classList.remove('visible');
                 if (i === 0) {
                     logo.classList.add('visible');
+                } else {
+                    logo.classList.remove('visible');
                 }
             });
 
