@@ -3904,7 +3904,9 @@ ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
         '<div class="payment-manager-list">' +
         '<h4>Payment Schedule</h4>' +
         '<p class="payment-manager-hint">Check the box to mark a payment as received</p>' +
+        '<div class="payment-grid">' +
         paymentRowsHtml +
+        '</div>' +
         '</div>' +
 
         '<div class="payment-manager-actions">' +
@@ -3918,6 +3920,68 @@ ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
 
     // Store current SOW data for saving
     self.currentPaymentSOW = sowData;
+
+    // Make entire payment row clickable
+    var paymentRows = document.querySelectorAll('.admin-payment-row');
+    paymentRows.forEach(function(row) {
+        row.style.cursor = 'pointer';
+        row.addEventListener('click', function(e) {
+            // Don't toggle if clicking directly on checkbox
+            if (e.target.type === 'checkbox') return;
+            var checkbox = row.querySelector('.payment-checkbox');
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    });
+
+    // Real-time calculation updates
+    var checkboxes = document.querySelectorAll('.payment-checkbox');
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            var row = checkbox.closest('.admin-payment-row');
+            var index = parseInt(checkbox.dataset.index);
+
+            // Update row styling
+            if (checkbox.checked) {
+                row.classList.add('paid');
+                row.classList.remove('pending');
+            } else {
+                row.classList.remove('paid');
+                row.classList.add('pending');
+            }
+
+            // Recalculate totals
+            var paidAmount = 0;
+            var paidCount = 0;
+            var totalAmount = 0;
+            var totalCount = paymentInfo.payments.length;
+
+            paymentInfo.payments.forEach(function(payment, i) {
+                var cb = document.querySelector('.payment-checkbox[data-index="' + i + '"]');
+                totalAmount += payment.amount;
+                if (cb && cb.checked) {
+                    paidAmount += payment.amount;
+                    paidCount++;
+                }
+            });
+
+            var owedAmount = totalAmount - paidAmount;
+            var progressPercent = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0;
+
+            // Update UI
+            var paidValueEl = document.querySelector('.summary-amount.paid .amount-value');
+            var owedValueEl = document.querySelector('.summary-amount.owed .amount-value');
+            var progressFillEl = document.querySelector('.summary-progress-fill');
+            var progressTextEl = document.querySelector('.summary-progress-text');
+
+            if (paidValueEl) paidValueEl.textContent = '$' + paidAmount.toFixed(2);
+            if (owedValueEl) owedValueEl.textContent = '$' + owedAmount.toFixed(2);
+            if (progressFillEl) progressFillEl.style.width = progressPercent + '%';
+            if (progressTextEl) progressTextEl.textContent = paidCount + ' of ' + totalCount + ' payments completed';
+        });
+    });
 };
 
 ContractFormHandler.prototype.closePaymentManager = function() {
