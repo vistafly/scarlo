@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import DomeGallery from './DomeGallery.jsx';
+import DomeGallery from '../components/DomeGallery.jsx';
 
 // Get the base URL from Vite config
 const BASE_URL = import.meta.env.BASE_URL;

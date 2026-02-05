@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import StaggeredMenu from './StaggeredMenu.jsx';
+import StaggeredMenu from '../components/StaggeredMenu.jsx';
 
 // Menu items matching your existing navigation
 const menuItems = [

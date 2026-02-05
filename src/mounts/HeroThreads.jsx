@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import Threads from './Threads';
+import Threads from '../components/Threads';
 
 function HeroThreadsBackground() {
   const mousePositionRef = useRef({ x: 0.5, y: 0.5 });

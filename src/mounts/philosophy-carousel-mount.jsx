@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import PhilosophyCarousel from './PhilosophyCarousel';
+import PhilosophyCarousel from '../components/PhilosophyCarousel';
 
 const mountPhilosophyCarousel = () => {
   const rootElement = document.getElementById('philosophy-carousel-root');
