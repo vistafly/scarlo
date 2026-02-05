@@ -3721,25 +3721,18 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                 '<div class="sow-item-actions">' +
 // Sign button (if not fully signed)
 ((!sow.clientSignature || !sow.devSignature) ?
-    '<button class="btn-sign-sow" onclick="window.contractFormHandler.showSOWSigningModal(\'' + sow.id + '\')" title="Sign SOW">' +
-    '<span>✍️ Sign</span>' +
-    '</button>' : '') +
+    '<button class="sow-action-icon" onclick="window.contractFormHandler.showSOWSigningModal(\'' + sow.id + '\')" title="Sign SOW">✍️</button>' : '') +
 
 // View Change Request button (if there's a change request)
 (sow.hasChangeRequest && sow.changeRequestId ?
-    '<button class="btn-view-request" onclick="window.contractFormHandler.viewChangeRequest(\'' + sow.changeRequestId + '\')" title="View Change Request">' +
-    '<span>📝 View Request' + (sow.changeRequestData && sow.changeRequestData.hasUnreadMessages ? ' <span class="unread-badge">New</span>' : '') + '</span>' +
+    '<button class="sow-action-icon has-badge" onclick="window.contractFormHandler.viewChangeRequest(\'' + sow.changeRequestId + '\')" title="View Change Request">' +
+    '💬' + (sow.changeRequestData && sow.changeRequestData.hasUnreadMessages ? '<span class="action-badge"></span>' : '') +
     '</button>' : '') +
 
-'<button class="btn-edit-sow" onclick="window.contractFormHandler.editSOW(window.' + sowDataId + ')" title="Edit SOW">' +
-'<span>✏️ Edit</span>' +
-'</button>' +
-'<button class="btn-download-sow" onclick="window.contractFormHandler.generateSOWPDF(window.' + sowDataId + ')" title="Download PDF">' +
-'<span>📄 PDF</span>' +
-'</button>' +
-'<button class="btn-delete-sow" onclick="window.contractFormHandler.deleteSOW(\'' + sow.id + '\')" title="Delete SOW">' +
-'<span>🗑️</span>' +
-'</button>' +
+'<button class="sow-action-icon" onclick="window.contractFormHandler.showPaymentManager(\'' + sow.id + '\')" title="Manage Payments">💳</button>' +
+'<button class="sow-action-icon" onclick="window.contractFormHandler.editSOW(window.' + sowDataId + ')" title="Edit SOW">✏️</button>' +
+'<button class="sow-action-icon" onclick="window.contractFormHandler.generateSOWPDF(window.' + sowDataId + ')" title="Download PDF">📄</button>' +
+'<button class="sow-action-icon delete" onclick="window.contractFormHandler.deleteSOW(\'' + sow.id + '\')" title="Delete SOW">🗑️</button>' +
 '</div>' +
                 '</div>';
         });
@@ -3806,6 +3799,197 @@ ContractFormHandler.prototype.deleteSOW = function(sowId) {
         .catch(function(error) {
             console.error('Error deleting SOW:', error);
             alert('Error deleting SOW: ' + error.message);
+        });
+};
+
+// ============= PAYMENT MANAGEMENT FUNCTIONS =============
+
+ContractFormHandler.prototype.showPaymentManager = function(sowId) {
+    var self = this;
+
+    firebase.firestore().collection('sow_documents')
+        .doc(sowId)
+        .get()
+        .then(function(doc) {
+            if (!doc.exists) {
+                alert('SOW not found');
+                return;
+            }
+
+            var sowData = doc.data();
+            sowData.id = doc.id;
+            self.renderPaymentManagerModal(sowData);
+        })
+        .catch(function(error) {
+            console.error('Error loading SOW:', error);
+            alert('Error loading SOW: ' + error.message);
+        });
+};
+
+ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
+    var self = this;
+
+    // Remove existing modal if present
+    var existingModal = document.getElementById('paymentManagerModal');
+    if (existingModal) existingModal.remove();
+
+    // Calculate payment info
+    var paymentInfo = self.calculatePaymentStatus(sowData);
+
+    // Build payment rows HTML
+    var paymentRowsHtml = '';
+    paymentInfo.payments.forEach(function(payment, index) {
+        var statusClass = payment.paid ? 'paid' : 'pending';
+        var checkedAttr = payment.paid ? 'checked' : '';
+
+        paymentRowsHtml += '<div class="admin-payment-row ' + statusClass + '" data-index="' + index + '">' +
+            '<div class="payment-row-checkbox">' +
+            '<input type="checkbox" id="payment_' + index + '" ' + checkedAttr + ' class="payment-checkbox" data-index="' + index + '">' +
+            '<label for="payment_' + index + '"></label>' +
+            '</div>' +
+            '<div class="payment-row-info">' +
+            '<span class="payment-row-name">' + payment.name + '</span>' +
+            '<span class="payment-row-amount">$' + payment.amount.toFixed(2) + '</span>' +
+            '</div>' +
+            '<div class="payment-row-meta">';
+
+        if (payment.dueDate) {
+            paymentRowsHtml += '<span class="payment-row-due">Due: ' + payment.dueDate + '</span>';
+        }
+
+        paymentRowsHtml += '<span class="payment-row-status ' + statusClass + '">' +
+            (payment.paid ? '✅ Paid' + (payment.paidDate ? ' on ' + payment.paidDate : '') : '⏳ Pending') +
+            '</span>' +
+            '</div>' +
+            '</div>';
+    });
+
+    // Progress stats
+    var progressPercent = paymentInfo.totalCount > 0
+        ? Math.round((paymentInfo.paidCount / paymentInfo.totalCount) * 100)
+        : 0;
+
+    var modalHtml = '<div id="paymentManagerModal" class="payment-manager-modal">' +
+        '<div class="payment-manager-overlay" onclick="window.contractFormHandler.closePaymentManager()"></div>' +
+        '<div class="payment-manager-content">' +
+        '<div class="payment-manager-header">' +
+        '<h2>💳 Payment Manager</h2>' +
+        '<button class="payment-manager-close" onclick="window.contractFormHandler.closePaymentManager()">&times;</button>' +
+        '</div>' +
+
+        '<div class="payment-manager-client">' +
+        '<h3>' + (sowData.clientName || 'Unknown Client') + '</h3>' +
+        '<p>' + (sowData.packageType || 'N/A') + ' • Total: $' + (sowData.payment ? sowData.payment.total.toFixed(2) : '0') + '</p>' +
+        '</div>' +
+
+        '<div class="payment-manager-summary">' +
+        '<div class="summary-progress">' +
+        '<div class="summary-progress-bar">' +
+        '<div class="summary-progress-fill" style="width: ' + progressPercent + '%;"></div>' +
+        '</div>' +
+        '<span class="summary-progress-text">' + paymentInfo.paidCount + ' of ' + paymentInfo.totalCount + ' payments completed</span>' +
+        '</div>' +
+        '<div class="summary-amounts">' +
+        '<div class="summary-amount paid">' +
+        '<span class="amount-label">Paid</span>' +
+        '<span class="amount-value">$' + paymentInfo.paidAmount.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="summary-amount owed">' +
+        '<span class="amount-label">Owed</span>' +
+        '<span class="amount-value">$' + paymentInfo.owedAmount.toFixed(2) + '</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+
+        '<div class="payment-manager-list">' +
+        '<h4>Payment Schedule</h4>' +
+        '<p class="payment-manager-hint">Check the box to mark a payment as received</p>' +
+        paymentRowsHtml +
+        '</div>' +
+
+        '<div class="payment-manager-actions">' +
+        '<button class="btn btn-secondary" onclick="window.contractFormHandler.closePaymentManager()">Cancel</button>' +
+        '<button class="btn btn-primary" onclick="window.contractFormHandler.savePaymentStatus(\'' + sowData.id + '\')">Save Changes</button>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Store current SOW data for saving
+    self.currentPaymentSOW = sowData;
+};
+
+ContractFormHandler.prototype.closePaymentManager = function() {
+    var modal = document.getElementById('paymentManagerModal');
+    if (modal) modal.remove();
+    this.currentPaymentSOW = null;
+};
+
+ContractFormHandler.prototype.savePaymentStatus = function(sowId) {
+    var self = this;
+    var sowData = self.currentPaymentSOW;
+
+    if (!sowData || !sowData.payment) {
+        alert('Error: SOW data not found');
+        return;
+    }
+
+    var payment = sowData.payment;
+    var tracking = payment.tracking || {};
+    var isDeferred = payment.deferred && payment.deferred.enabled;
+
+    // Get current checkbox states
+    var checkboxes = document.querySelectorAll('#paymentManagerModal .payment-checkbox');
+    var today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    if (isDeferred && payment.deferred.customSchedule && payment.deferred.customSchedule.length > 0) {
+        // Update deferred payments tracking
+        var deferredPayments = tracking.deferredPayments || [];
+
+        checkboxes.forEach(function(checkbox, index) {
+            var isPaid = checkbox.checked;
+            var existingPayment = deferredPayments[index] || {};
+
+            deferredPayments[index] = {
+                paid: isPaid,
+                paidDate: isPaid ? (existingPayment.paidDate || today) : null
+            };
+        });
+
+        tracking.deferredPayments = deferredPayments;
+    } else {
+        // Update standard milestone tracking
+        var milestoneKeys = ['deposit', 'milestone1', 'final'];
+
+        checkboxes.forEach(function(checkbox, index) {
+            var key = milestoneKeys[index];
+            if (key) {
+                var isPaid = checkbox.checked;
+                var existingPaidDate = tracking[key + 'PaidDate'];
+
+                tracking[key + 'Paid'] = isPaid;
+                tracking[key + 'PaidDate'] = isPaid ? (existingPaidDate || today) : null;
+            }
+        });
+    }
+
+    // Save to Firestore
+    firebase.firestore().collection('sow_documents')
+        .doc(sowId)
+        .update({
+            'payment.tracking': tracking,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(function() {
+            console.log('Payment status updated successfully');
+            alert('✓ Payment status saved successfully');
+            self.closePaymentManager();
+            self.loadSOWDocuments(); // Refresh the list
+        })
+        .catch(function(error) {
+            console.error('Error saving payment status:', error);
+            alert('Error saving payment status: ' + error.message);
         });
 };
 
@@ -7185,7 +7369,16 @@ ContractFormHandler.prototype.saveSOW = function() {
                 couponCode: selectedCouponCode || null,
                 couponDiscount: pricingData.couponDiscount || 0
             },
-            deferred: deferredData
+            deferred: deferredData,
+            tracking: {
+                depositPaid: false,
+                depositPaidDate: null,
+                milestone1Paid: false,
+                milestone1PaidDate: null,
+                finalPaid: false,
+                finalPaidDate: null,
+                deferredPayments: []
+            }
         },
         createdBy: firebase.auth().currentUser.email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -11213,14 +11406,14 @@ ContractFormHandler.prototype.showExistingCompletion = function(contractData) {
 
 ContractFormHandler.prototype.renderExistingCompletionView = function(contractData, sowData, isFullySigned) {
     var self = this;
-    
+
     // Create or get completed container
     var completedContainer = document.getElementById('dualSigningCompleted');
     if (!completedContainer) {
         completedContainer = document.createElement('div');
         completedContainer.id = 'dualSigningCompleted';
         completedContainer.className = 'dual-signing-completed';
-        
+
         var modalContent = $('.modal-content');
         var closeBtn = $('#closeModalBtn');
         if (closeBtn && closeBtn.nextSibling) {
@@ -11229,27 +11422,51 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
             modalContent.appendChild(completedContainer);
         }
     }
-    
+
     var statusBadge = isFullySigned
         ? '<span class="doc-status completed">✅ Fully Signed</span>'
         : '<span class="doc-status pending">⏳ Awaiting Developer Signature</span>';
-    
+
     var headerText = isFullySigned
         ? 'Documents Fully Executed!'
         : 'Documents Successfully Submitted!';
-    
+
     var headerNote = isFullySigned
         ? 'Both you and the developer have signed these documents. Download them below.'
         : 'The developer will review and countersign shortly.';
-    
+
+    // Calculate payment status for tab badge
+    var paymentInfo = self.calculatePaymentStatus(sowData);
+    var paymentBadgeClass = paymentInfo.allPaid ? 'paid' : (paymentInfo.paidCount > 0 ? 'partial' : 'unpaid');
+    var paymentBadgeText = paymentInfo.allPaid ? 'Paid' : (paymentInfo.paidCount + '/' + paymentInfo.totalCount);
+
+    // Build tabbed interface
     var html = '<div class="completion-header">' +
         '<div class="completion-icon">✅</div>' +
         '<h2>' + headerText + '</h2>' +
         '<p class="completion-note">' + headerNote + '</p>' +
         '</div>' +
-        
+
+        // Tab Navigation
+        '<div class="completion-tabs">' +
+        '<button class="completion-tab active" data-tab="documents">' +
+        '<span class="tab-icon">📄</span>' +
+        '<span class="tab-label">Documents</span>' +
+        '</button>' +
+        '<button class="completion-tab" data-tab="payments">' +
+        '<span class="tab-icon">💳</span>' +
+        '<span class="tab-label">Payment Status</span>' +
+        '<span class="payment-badge ' + paymentBadgeClass + '">' + paymentBadgeText + '</span>' +
+        '</button>' +
+        '</div>' +
+
+        // Tab Content Container
+        '<div class="completion-tab-content">' +
+
+        // Documents Tab Pane
+        '<div class="completion-tab-pane active" data-tab="documents">' +
         '<div class="completed-documents">' +
-        
+
         // Contract Card with signature preview
         '<div class="completed-doc-card">' +
         '<div class="doc-card-header">' +
@@ -11264,25 +11481,25 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
         '</div>' +
         '<div class="doc-signature-preview">' +
         '<p class="signature-label">Your Signature:</p>' +
-'<img src="' + contractData.clientSignature + '" alt="Your signature" class="signature-image" style="width: 100%; max-width: 100%; height: auto; background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1);" />' +
+        '<img src="' + contractData.clientSignature + '" alt="Your signature" class="signature-image" style="width: 100%; max-width: 100%; height: auto; background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1);" />' +
         '</div>';
-    
+
     // Add download button ONLY if fully signed
     if (isFullySigned) {
         html += '<button class="btn btn-primary download-doc-btn" id="downloadContractBtn" style="width: 100%; margin-top: 1rem;">' +
             '<span>📄 Download Contract PDF</span>' +
             '</button>';
     }
-    
+
     html += '</div>'; // Close contract card
-    
+
     // SOW Card (if exists) with signature preview
     if (sowData) {
         var sowFullySigned = sowData.devSignature && sowData.clientSignature;
         var sowStatusBadge = sowFullySigned
             ? '<span class="doc-status completed">✅ Fully Signed</span>'
             : '<span class="doc-status pending">⏳ Awaiting Developer Signature</span>';
-        
+
         html += '<div class="completed-doc-card">' +
             '<div class="doc-card-header">' +
             '<h3>📋 Statement of Work</h3>' +
@@ -11300,7 +11517,7 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
             '<p class="signature-label">Your Signature:</p>' +
             '<img src="' + sowData.clientSignature + '" alt="Your SOW signature" class="signature-image" style="width: 100%; max-width: 100%; height: auto; background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.1);" />' +
             '</div>';
-        
+
         // Add download button ONLY if fully signed
         if (sowFullySigned) {
             // Store SOW data globally for PDF generation and change requests
@@ -11335,24 +11552,52 @@ ContractFormHandler.prototype.renderExistingCompletionView = function(contractDa
 
         html += '</div>'; // Close SOW card
     }
-    
+
     html += '</div>'; // Close completed-documents
-    
-    // Action buttons
-html += '<div class="completion-actions">';
 
-// If both documents are fully signed, add a "Download Both" button
-if (isFullySigned && sowData && sowData.devSignature && sowData.clientSignature) {
-    html += '<button class="btn btn-primary" id="downloadBothBtn">' +
-        '<span>📦 Download Both PDFs</span>' +
-        '</button>';
-}
+    // Action buttons for documents tab
+    html += '<div class="completion-actions">';
+    if (isFullySigned && sowData && sowData.devSignature && sowData.clientSignature) {
+        html += '<button class="btn btn-primary" id="downloadBothBtn">' +
+            '<span>📦 Download Both PDFs</span>' +
+            '</button>';
+    }
+    html += '</div>';
 
-html += '</div>';
-    
+    html += '</div>'; // Close documents tab pane
+
+    // Payment Status Tab Pane
+    html += '<div class="completion-tab-pane" data-tab="payments">';
+    html += self.renderPaymentStatusContent(sowData, paymentInfo);
+    html += '</div>'; // Close payments tab pane
+
+    html += '</div>'; // Close tab content container
+
     completedContainer.innerHTML = html;
     completedContainer.style.display = 'block';
-    
+
+    // Add tab switching functionality
+    var tabs = completedContainer.querySelectorAll('.completion-tab');
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var targetTab = this.getAttribute('data-tab');
+
+            // Update active tab button
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+
+            // Update active tab pane
+            var panes = completedContainer.querySelectorAll('.completion-tab-pane');
+            panes.forEach(function(pane) {
+                if (pane.getAttribute('data-tab') === targetTab) {
+                    pane.classList.add('active');
+                } else {
+                    pane.classList.remove('active');
+                }
+            });
+        });
+    });
+
     // Add event listeners for download buttons
     var downloadContractBtn = document.getElementById('downloadContractBtn');
     if (downloadContractBtn) {
@@ -11361,7 +11606,7 @@ html += '</div>';
             self.generatePDF();
         });
     }
-    
+
     var downloadBothBtn = document.getElementById('downloadBothBtn');
     if (downloadBothBtn) {
         downloadBothBtn.addEventListener('click', function(e) {
@@ -11369,6 +11614,166 @@ html += '</div>';
             self.generateCombinedPDF(sowData);
         });
     }
+};
+
+// Calculate payment status from SOW data
+ContractFormHandler.prototype.calculatePaymentStatus = function(sowData) {
+    var result = {
+        paidCount: 0,
+        totalCount: 0,
+        paidAmount: 0,
+        totalAmount: 0,
+        owedAmount: 0,
+        allPaid: false,
+        payments: []
+    };
+
+    if (!sowData || !sowData.payment) {
+        return result;
+    }
+
+    var payment = sowData.payment;
+    var tracking = payment.tracking || {};
+    var isDeferred = payment.deferred && payment.deferred.enabled;
+
+    if (isDeferred && payment.deferred.customSchedule && payment.deferred.customSchedule.length > 0) {
+        // Deferred payment schedule
+        var deferredPayments = tracking.deferredPayments || [];
+        payment.deferred.customSchedule.forEach(function(scheduled, index) {
+            var isPaid = deferredPayments[index] && deferredPayments[index].paid;
+            var paidDate = deferredPayments[index] ? deferredPayments[index].paidDate : null;
+            result.payments.push({
+                name: 'Payment ' + (index + 1),
+                amount: scheduled.amount,
+                dueDate: scheduled.dueDate,
+                paid: isPaid,
+                paidDate: paidDate
+            });
+            result.totalCount++;
+            result.totalAmount += scheduled.amount;
+            if (isPaid) {
+                result.paidCount++;
+                result.paidAmount += scheduled.amount;
+            }
+        });
+    } else {
+        // Standard milestone payments
+        var milestones = [
+            { key: 'deposit', name: 'Deposit (50%)', amount: payment.deposit },
+            { key: 'milestone1', name: 'Milestone (25%)', amount: payment.milestone1 },
+            { key: 'final', name: 'Final (25%)', amount: payment.final }
+        ];
+
+        milestones.forEach(function(milestone) {
+            var isPaid = tracking[milestone.key + 'Paid'] || false;
+            var paidDate = tracking[milestone.key + 'PaidDate'] || null;
+            result.payments.push({
+                name: milestone.name,
+                amount: milestone.amount,
+                paid: isPaid,
+                paidDate: paidDate
+            });
+            result.totalCount++;
+            result.totalAmount += milestone.amount;
+            if (isPaid) {
+                result.paidCount++;
+                result.paidAmount += milestone.amount;
+            }
+        });
+    }
+
+    result.owedAmount = result.totalAmount - result.paidAmount;
+    result.allPaid = result.paidCount === result.totalCount && result.totalCount > 0;
+
+    return result;
+};
+
+// Render payment status tab content
+ContractFormHandler.prototype.renderPaymentStatusContent = function(sowData, paymentInfo) {
+    if (!sowData || !sowData.payment) {
+        return '<div class="payment-status-empty">' +
+            '<p>No payment information available.</p>' +
+            '</div>';
+    }
+
+    var progressPercent = paymentInfo.totalCount > 0
+        ? Math.round((paymentInfo.paidCount / paymentInfo.totalCount) * 100)
+        : 0;
+
+    var html = '<div class="payment-status-container">';
+
+    // Summary Card
+    html += '<div class="payment-summary-card">' +
+        '<div class="payment-summary-header">' +
+        '<h3>Payment Overview</h3>' +
+        '<span class="payment-progress-badge ' + (paymentInfo.allPaid ? 'complete' : '') + '">' +
+        (paymentInfo.allPaid ? '✅ Fully Paid' : paymentInfo.paidCount + ' of ' + paymentInfo.totalCount + ' payments') +
+        '</span>' +
+        '</div>' +
+
+        '<div class="payment-progress-bar">' +
+        '<div class="payment-progress-fill" style="width: ' + progressPercent + '%;"></div>' +
+        '</div>' +
+
+        '<div class="payment-summary-stats">' +
+        '<div class="payment-stat">' +
+        '<span class="stat-label">Total Project</span>' +
+        '<span class="stat-value">$' + paymentInfo.totalAmount.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="payment-stat paid">' +
+        '<span class="stat-label">Amount Paid</span>' +
+        '<span class="stat-value">$' + paymentInfo.paidAmount.toFixed(2) + '</span>' +
+        '</div>' +
+        '<div class="payment-stat owed">' +
+        '<span class="stat-label">Amount Owed</span>' +
+        '<span class="stat-value">$' + paymentInfo.owedAmount.toFixed(2) + '</span>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
+
+    // Payment Schedule
+    html += '<div class="payment-schedule-card">' +
+        '<h3>Payment Schedule</h3>' +
+        '<div class="payment-schedule-list">';
+
+    paymentInfo.payments.forEach(function(payment, index) {
+        var statusClass = payment.paid ? 'paid' : 'pending';
+        var statusIcon = payment.paid ? '✅' : '⏳';
+        var statusText = payment.paid ? 'Paid' : 'Pending';
+
+        html += '<div class="payment-schedule-item ' + statusClass + '">' +
+            '<div class="payment-item-indicator">' +
+            '<span class="payment-step">' + (index + 1) + '</span>' +
+            '</div>' +
+            '<div class="payment-item-details">' +
+            '<div class="payment-item-header">' +
+            '<span class="payment-item-name">' + payment.name + '</span>' +
+            '<span class="payment-item-amount">$' + payment.amount.toFixed(2) + '</span>' +
+            '</div>' +
+            '<div class="payment-item-meta">';
+
+        if (payment.dueDate) {
+            html += '<span class="payment-due-date">Due: ' + payment.dueDate + '</span>';
+        }
+
+        if (payment.paid && payment.paidDate) {
+            html += '<span class="payment-paid-date">Paid: ' + payment.paidDate + '</span>';
+        }
+
+        html += '</div>' +
+            '</div>' +
+            '<div class="payment-item-status ' + statusClass + '">' +
+            '<span class="status-icon">' + statusIcon + '</span>' +
+            '<span class="status-text">' + statusText + '</span>' +
+            '</div>' +
+            '</div>';
+    });
+
+    html += '</div></div>'; // Close payment-schedule-list and payment-schedule-card
+
+    html += '</div>'; // Close payment-status-container
+
+    return html;
 };
 ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, sowData) {
     var self = this;

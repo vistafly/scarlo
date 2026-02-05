@@ -6298,76 +6298,55 @@ body.modal-open .custom-cursor {
     font-weight: 600;
 }
 
-/* SOW Action Buttons */
+/* SOW Action Buttons - Compact Icon Style */
 .sow-item-actions {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    justify-content: flex-end;
 }
 
-.btn-edit-sow,
-.btn-download-sow,
-.btn-delete-sow,
-.btn-sign-sow,
-.btn-view-request {
-    flex: 1;
-    padding: 0.75rem 1rem;
-    background: rgba(55, 65, 81, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+.sow-action-icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
-    color: #d1d5db;
-    font-size: 0.875rem;
-    font-weight: 600;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-family: var(--font-text);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    position: relative;
 }
 
-.btn-sign-sow:hover {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: #6366f1;
-    color: #fff;
+.sow-action-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
 }
 
-.btn-edit-sow:hover {
-    background: rgba(245, 158, 11, 0.2);
-    border-color: #f59e0b;
-    color: #fff;
+.sow-action-icon.delete:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
 }
 
-.btn-download-sow:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: #10b981;
-    color: #fff;
+.sow-action-icon.has-badge {
+    position: relative;
 }
 
-.btn-delete-sow {
-    flex: 0 0 auto;
-    padding: 0.75rem;
-}
-
-.btn-delete-sow:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ff585880;
-    color: #ef4444;
-}
-
-.btn-view-request {
-    background: rgba(251, 191, 36, 0.15);
-    border: 1px solid rgba(251, 191, 36, 0.2);
-    color: #fbbf24;
-}
-
-.btn-view-request:hover {
-    background: rgba(251, 191, 36, 0.25);
-    border-color: #fbbf24;
-    color: #fbbf24;
+.sow-action-icon .action-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #1a1a2e;
 }
 
 /* Responsive: Stack to single column on smaller screens */
@@ -6466,29 +6445,15 @@ body.modal-open .custom-cursor {
     
 
     .sow-item-actions {
-        flex-wrap: wrap;
-    }
-    
-    .btn-edit-sow,
-    .btn-download-sow {
-        flex: 1 1 45%;
-    }
-    
-    .btn-delete-sow {
-        flex: 1 1 100%;
+        justify-content: center;
     }
 }
 
 @media (max-width: 480px) {
-    .sow-item-actions {
-        flex-direction: column;
-    }
-    
-    .btn-edit-sow,
-    .btn-download-sow,
-    .btn-delete-sow {
-        flex: 1 1 100%;
-        width: 100%;
+    .sow-action-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
     }
 }
 /* Dual Signing Tabs */
@@ -7048,6 +7013,628 @@ body.modal-open .custom-cursor {
     margin: 1rem auto 0 auto !important;
     display: block !important;
 }
+
+/* Completion View Tabs */
+.completion-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+
+.completion-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-text);
+}
+
+.completion-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.completion-tab.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #fff;
+}
+
+.completion-tab .tab-icon {
+    font-size: 1.1rem;
+}
+
+.completion-tab .tab-label {
+    font-weight: 600;
+}
+
+.completion-tab .payment-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-left: 0.25rem;
+}
+
+.completion-tab .payment-badge.unpaid {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.completion-tab .payment-badge.partial {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.completion-tab .payment-badge.paid {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.completion-tab-content {
+    min-height: 300px;
+}
+
+.completion-tab-pane {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.completion-tab-pane.active {
+    display: block;
+}
+
+/* Payment Status Container */
+.payment-status-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.payment-status-empty {
+    text-align: center;
+    padding: 3rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Payment Summary Card */
+.payment-summary-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.payment-summary-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.payment-summary-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: #fff;
+}
+
+.payment-progress-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.payment-progress-badge.complete {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+}
+
+.payment-progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+}
+
+.payment-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.payment-summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.payment-stat {
+    text-align: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.payment-stat .stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 0.5rem;
+}
+
+.payment-stat .stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.payment-stat.paid .stat-value {
+    color: #10b981;
+}
+
+.payment-stat.owed .stat-value {
+    color: #f59e0b;
+}
+
+/* Payment Schedule Card */
+.payment-schedule-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.payment-schedule-card h3 {
+    margin: 0 0 1.25rem 0;
+    font-size: 1.15rem;
+    color: #fff;
+}
+
+.payment-schedule-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.payment-schedule-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.payment-schedule-item.paid {
+    border-left-color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.payment-schedule-item.pending {
+    border-left-color: #f59e0b;
+}
+
+.payment-item-indicator {
+    flex-shrink: 0;
+}
+
+.payment-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.payment-schedule-item.paid .payment-step {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+}
+
+.payment-item-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.payment-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.payment-item-name {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.payment-item-amount {
+    font-weight: 700;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.payment-item-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.payment-due-date,
+.payment-paid-date {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.payment-paid-date {
+    color: #10b981;
+}
+
+.payment-item-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    min-width: 70px;
+}
+
+.payment-item-status .status-icon {
+    font-size: 1.25rem;
+}
+
+.payment-item-status .status-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.payment-item-status.paid .status-text {
+    color: #10b981;
+}
+
+.payment-item-status.pending .status-text {
+    color: #f59e0b;
+}
+
+/* Mobile responsive for payment status */
+@media (max-width: 768px) {
+    .completion-tabs {
+        flex-direction: column;
+    }
+
+    .payment-summary-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-summary-header {
+        flex-direction: column;
+        gap: 0.75rem;
+        text-align: center;
+    }
+
+    .payment-schedule-item {
+        flex-wrap: wrap;
+    }
+
+    .payment-item-details {
+        width: calc(100% - 48px);
+    }
+
+    .payment-item-status {
+        width: 100%;
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
+/* Admin Payment Manager Modal */
+.payment-manager-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-manager-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.payment-manager-content {
+    position: relative;
+    width: 90%;
+    max-width: 550px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.payment-manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.payment-manager-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #fff;
+}
+
+.payment-manager-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.75rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.payment-manager-close:hover {
+    color: #fff;
+}
+
+.payment-manager-client {
+    padding: 1rem 1.5rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.payment-manager-client h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    color: #fff;
+}
+
+.payment-manager-client p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.payment-manager-summary {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-progress {
+    margin-bottom: 1rem;
+}
+
+.summary-progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.summary-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.summary-progress-text {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.summary-amounts {
+    display: flex;
+    gap: 1rem;
+}
+
+.summary-amount {
+    flex: 1;
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.summary-amount .amount-label {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 0.25rem;
+}
+
+.summary-amount .amount-value {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.summary-amount.paid .amount-value {
+    color: #10b981;
+}
+
+.summary-amount.owed .amount-value {
+    color: #f59e0b;
+}
+
+.payment-manager-list {
+    padding: 1.25rem 1.5rem;
+}
+
+.payment-manager-list h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    color: #fff;
+}
+
+.payment-manager-hint {
+    margin: 0 0 1rem 0;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-payment-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.admin-payment-row.paid {
+    border-left-color: #10b981;
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.admin-payment-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.payment-row-checkbox {
+    flex-shrink: 0;
+}
+
+.payment-row-checkbox input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #10b981;
+}
+
+.payment-row-info {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-width: 0;
+}
+
+.payment-row-name {
+    font-weight: 600;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.payment-row-amount {
+    font-weight: 700;
+    color: #fff;
+    font-size: 0.95rem;
+}
+
+.payment-row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.payment-row-due {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.payment-row-status {
+    font-weight: 600;
+}
+
+.payment-row-status.paid {
+    color: #10b981;
+}
+
+.payment-row-status.pending {
+    color: #f59e0b;
+}
+
+.payment-manager-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive for payment manager */
+@media (max-width: 640px) {
+    .payment-manager-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+
+    .payment-row-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .payment-row-meta {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 0.75rem;
+        width: 100%;
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .summary-amounts {
+        flex-direction: column;
+    }
+}
+
 /* Hero CTA Buttons */
 .hero-cta {
     display: flex;
