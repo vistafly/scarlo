@@ -8324,8 +8324,8 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.maintenance-name { font-weight: bold; font-size: 10pt; }' +
     '.maintenance-price { font-weight: bold; }' +
     '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-    '@media print { body { padding: 0.4in 0.6in; } @page { margin: 0.5in 0.75in 0.5in 0.75in; } .info-box, .package-box, .timeline-box, .maintenance-box, .payment-table, .legal-notice, .deferred-terms { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; } }' +
-    '@page { margin: 0.5in 0.75in; size: letter; }' +
+    '@media print { body { padding: 0; margin: 0; } .sow-container { max-width: 100%; } .info-box, .package-box, .timeline-box, .maintenance-box, .payment-table, .legal-notice, .deferred-terms { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; } }' +
+    '@page { margin: 0.5in 0.6in; size: letter; }' +
     '</style>' +
     '</head><body>' +
     '<div class="sow-container">' +
@@ -12187,8 +12187,8 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         '.important { font-weight: bold; text-transform: uppercase; }' +
         '.indented { margin-left: 25px; }' +
         '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-        '@media print { body { padding: 0.5in 0.75in; } .signature-page { page-break-before: always; } }' +
-        '@page { margin: 0.75in 1in; size: letter; }' +
+        '@media print { body { padding: 0; margin: 0; } .contract-container { max-width: 100%; } .signature-page { page-break-before: always; } }' +
+        '@page { margin: 0.5in 0.6in; size: letter; }' +
         '</style>' +
         '</head><body>' +
         '<div class="contract-container">' +
@@ -12475,8 +12475,8 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         '.total-row { font-weight: bold; font-size: 11pt; border-top: 2px solid #000; }' +
         '.highlight { font-weight: bold; }' +
         '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-        '@media print { body { padding: 0.5in 0.75in; } .signature-page, .page-break { page-break-before: always; } }' +
-        '@page { margin: 0.75in 1in; size: letter; }' +
+        '@media print { body { padding: 0; margin: 0; } .signature-page, .page-break { page-break-before: always; } }' +
+        '@page { margin: 0.5in 0.6in; size: letter; }' +
         '</style>' +
         '</head><body>' +
 
