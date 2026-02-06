@@ -2365,23 +2365,57 @@ HelpRequestHandler.prototype.showSuccessMessage = function() {
     }
     
     html += '</div></div>';
+
+    // Category breakdown chips
+    if (helpRequests.length > 0) {
+        var typeCounts = {};
+        helpRequests.forEach(function(r) {
+            var t = r.issueType || 'other';
+            typeCounts[t] = (typeCounts[t] || 0) + 1;
+        });
+        var issueTypeColors = {
+            'contract_not_showing': '#6366f1',
+            'problems_submitting': '#f59e0b',
+            'signature_issues': '#ef4444',
+            'account_access': '#10b981',
+            'other': '#8b5cf6'
+        };
+        html += '<div class="help-chips">';
+        Object.keys(typeCounts).forEach(function(type) {
+            var color = issueTypeColors[type] || '#6b7280';
+            html += '<span class="help-chip" style="border-color: ' + color + '40; color: ' + color + ';">' +
+                self.getIssueTypeLabel(type) +
+                '<span class="chip-count">' + typeCounts[type] + '</span>' +
+                '</span>';
+        });
+        html += '</div>';
+    }
+
     if (helpRequests.length === 0) {
         html += '<div class="empty-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
             '<p>No pending help requests</p>' +
             '</div>';
     } else {
+        var issueTypeColors = {
+            'contract_not_showing': '#6366f1',
+            'problems_submitting': '#f59e0b',
+            'signature_issues': '#ef4444',
+            'account_access': '#10b981',
+            'other': '#8b5cf6'
+        };
         html += '<div class="help-list">';
         helpRequests.forEach(function(request) {
-            var requestDate = request.timestamp ? 
-                (request.timestamp.toDate ? request.timestamp.toDate().toLocaleDateString() : new Date(request.timestamp).toLocaleDateString()) 
+            var requestDate = request.timestamp ?
+                (request.timestamp.toDate ? request.timestamp.toDate().toLocaleDateString() : new Date(request.timestamp).toLocaleDateString())
                 : 'N/A';
-            
-            var authBadge = request.isAuthenticated 
-                ? '<span class="auth-badge verified">✓ Verified User</span>' 
+
+            var authBadge = request.isAuthenticated
+                ? '<span class="auth-badge verified">✓ Verified User</span>'
                 : '<span class="auth-badge anonymous">◎ Anonymous</span>';
-            
-            html += '<div class="help-item" data-request-id="' + request.id + '">' +
+
+            var itemColor = issueTypeColors[request.issueType] || '#f59e0b';
+            html += '<div class="help-item" data-request-id="' + request.id + '" style="border-left-color: ' + itemColor + ';">' +
                 '<div class="help-icon">❓</div>' +
                 '<div class="help-details">' +
                 '<div class="help-header">' +
@@ -2506,7 +2540,7 @@ $$('.btn-resolve-help').forEach(function(btn) {
                 self.coupons = coupons;
 
                 // Render the dashboard (this will show loading states for tabs)
-                self.renderDeveloperDashboard(pendingContracts, completedContracts);
+                self.renderDeveloperDashboard(pendingContracts, completedContracts, sows, coupons, helpRequests);
 
                 // Immediately render help requests (already loaded)
                 self.renderHelpRequestsSection(helpRequests);
@@ -2566,23 +2600,142 @@ $$('.btn-resolve-help').forEach(function(btn) {
     ContractFormHandler.prototype.formatCurrency = function(amount) {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
     };
-    
-    ContractFormHandler.prototype.renderDeveloperDashboard = function(pendingContracts, completedContracts) {
+
+    ContractFormHandler.prototype.timeAgo = function(date) {
+        var seconds = Math.floor((new Date() - date) / 1000);
+        if (seconds < 60) return 'just now';
+        var minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + 'm ago';
+        var hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + 'h ago';
+        var days = Math.floor(hours / 24);
+        if (days < 7) return days + 'd ago';
+        var weeks = Math.floor(days / 7);
+        if (weeks < 4) return weeks + 'w ago';
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    ContractFormHandler.prototype.computeDashboardMetrics = function(pendingContracts, completedContracts, sows, coupons, helpRequests) {
+        var self = this;
+        var now = new Date();
+        var thisMonth = now.getMonth();
+        var thisYear = now.getFullYear();
+
+        // Revenue metrics
+        var totalRevenue = 0;
+        var paidRevenue = 0;
+        var sowsByPackage = {};
+        var activeProjects = 0;
+
+        sows.forEach(function(sow) {
+            if (sow.payment && sow.payment.total) {
+                totalRevenue += sow.payment.total;
+            }
+            var paymentInfo = self.calculatePaymentStatus(sow);
+            paidRevenue += paymentInfo.paidAmount;
+            var pkg = sow.packageType || 'unknown';
+            sowsByPackage[pkg] = (sowsByPackage[pkg] || 0) + 1;
+            if (sow.status !== 'approved') {
+                activeProjects++;
+            }
+        });
+
+        // Contract metrics
+        var totalContracts = pendingContracts.length + completedContracts.length;
+        var completionRate = totalContracts > 0 ? Math.round((completedContracts.length / totalContracts) * 100) : 0;
+
+        var avgResponseDays = 0;
+        if (completedContracts.length > 0) {
+            var totalDays = 0;
+            completedContracts.forEach(function(c) { totalDays += c.daysSinceSubmission || 0; });
+            avgResponseDays = Math.round(totalDays / completedContracts.length);
+        }
+
+        var urgentCount = pendingContracts.filter(function(c) { return c.daysSinceSubmission >= 7; }).length;
+
+        var thisMonthCompleted = completedContracts.filter(function(c) {
+            if (!c.finalizedTimestamp) return false;
+            var date = c.finalizedTimestamp.toDate ? c.finalizedTimestamp.toDate() : new Date(c.finalizedTimestamp);
+            return date.getMonth() === thisMonth && date.getFullYear() === thisYear;
+        }).length;
+
+        // Coupon metrics
+        var activeCoupons = coupons.filter(function(c) { return c.active !== false; }).length;
+        var totalCouponUsage = 0;
+        coupons.forEach(function(c) { totalCouponUsage += (c.usageCount || 0); });
+
+        // Help metrics
+        var helpByType = {};
+        helpRequests.forEach(function(r) {
+            var t = r.issueType || 'other';
+            helpByType[t] = (helpByType[t] || 0) + 1;
+        });
+
+        // Activity feed (last 5 events across all sources)
+        var events = [];
+        completedContracts.forEach(function(c) {
+            if (c.finalizedTimestamp) {
+                var d = c.finalizedTimestamp.toDate ? c.finalizedTimestamp.toDate() : new Date(c.finalizedTimestamp);
+                events.push({ type: 'contract_signed', label: 'Contract signed — ' + (c.clientName || 'Unknown'), date: d, color: '#10b981' });
+            }
+        });
+        pendingContracts.forEach(function(c) {
+            if (c.timestamp) {
+                var d = c.timestamp.toDate ? c.timestamp.toDate() : new Date(c.timestamp);
+                events.push({ type: 'contract_received', label: 'Contract received — ' + (c.clientName || 'Unknown'), date: d, color: '#6366f1' });
+            }
+        });
+        sows.forEach(function(s) {
+            if (s.createdAt) {
+                var d = s.createdAt.toDate ? s.createdAt.toDate() : new Date(s.createdAt);
+                events.push({ type: 'sow_created', label: 'SOW created — ' + (s.clientName || 'Unknown'), date: d, color: '#f59e0b' });
+            }
+        });
+        helpRequests.forEach(function(r) {
+            if (r.timestamp) {
+                var d = r.timestamp.toDate ? r.timestamp.toDate() : new Date(r.timestamp);
+                events.push({ type: 'help_request', label: 'Help request — ' + (r.userEmail || r.userPhone || 'Anonymous'), date: d, color: '#ef4444' });
+            }
+        });
+        events.sort(function(a, b) { return b.date - a.date; });
+        events = events.slice(0, 5);
+
+        return {
+            totalRevenue: totalRevenue,
+            paidRevenue: paidRevenue,
+            completionRate: completionRate,
+            avgResponseDays: avgResponseDays,
+            activeProjects: activeProjects,
+            totalContracts: totalContracts,
+            urgentCount: urgentCount,
+            thisMonthCompleted: thisMonthCompleted,
+            activeCoupons: activeCoupons,
+            totalCouponUsage: totalCouponUsage,
+            helpByType: helpByType,
+            sowsByPackage: sowsByPackage,
+            events: events,
+            pending: pendingContracts.length,
+            completed: completedContracts.length,
+            sowCount: sows.length,
+            helpCount: helpRequests.length,
+            couponCount: coupons.length
+        };
+    };
+
+    ContractFormHandler.prototype.renderDeveloperDashboard = function(pendingContracts, completedContracts, sows, coupons, helpRequests) {
     var self = this;
     var dashboard = $('#developerDashboard');
-    
+
     if (!dashboard) return;
+
+    sows = sows || [];
+    coupons = coupons || [];
+    helpRequests = helpRequests || [];
     
-    // Calculate business metrics
-    var totalContracts = pendingContracts.length + completedContracts.length;
-    var urgentCount = pendingContracts.filter(function(c) { return c.daysSinceSubmission >= 7; }).length;
-    var thisMonthCompleted = completedContracts.filter(function(c) {
-        if (!c.finalizedTimestamp) return false;
-        var date = c.finalizedTimestamp.toDate ? c.finalizedTimestamp.toDate() : new Date(c.finalizedTimestamp);
-        var now = new Date();
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    }).length;
-    
+    // Compute all dashboard metrics
+    var metrics = self.computeDashboardMetrics(pendingContracts, completedContracts, sows, coupons, helpRequests);
+    var urgentCount = metrics.urgentCount;
+
     var html = '';
     
     // ✅ ADD CLOSE BUTTON AT THE TOP
@@ -2593,14 +2746,18 @@ $$('.btn-resolve-help').forEach(function(btn) {
         '</svg>' +
         '</button>';
     
-    // Header with greeting
-    var hour = new Date().getHours();
-    var greeting = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
-    
+    // Header with animated logo
+    var logoFramesHtml = '';
+    for (var i = 0; i < 20; i++) {
+        var pad = i < 10 ? '0' + i : '' + i;
+        logoFramesHtml += '<img id="dashLogo' + i + '"' + (i === 0 ? ' class="visible"' : '') + ' src="/images/morph-logo' + pad + '.png" alt=""' + (i > 0 ? ' loading="lazy"' : ' alt="Scarlo Logo"') + '>';
+    }
     html += '<div class="dashboard-header">' +
         '<div class="header-content">' +
-        '<h2>' + greeting + ', Carlos 👋</h2>' +
-        '<p class="header-subtitle">Here\'s your business overview</p>' +
+        '<div class="dash-logo-animated">' +
+        '<div class="dash-logo-ambient"></div>' +
+        '<div class="dash-logo-stack">' + logoFramesHtml + '</div>' +
+        '</div>' +
         '</div>' +
         '<div class="header-date">' +
         '<span class="current-date">' + new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + '</span>' +
@@ -2626,31 +2783,93 @@ $$('.btn-resolve-help').forEach(function(btn) {
             '</div>';
     }
     
-    // Quick Stats Row
-    html += '<div class="quick-stats">' +
-        '<div class="quick-stat action-required">' +
-        '<div class="quick-stat-icon">📝</div>' +
-        '<div class="quick-stat-content">' +
-        '<span class="quick-stat-number">' + pendingContracts.length + '</span>' +
-        '<span class="quick-stat-label">Awaiting Signature</span>' +
+    // ============= ANALYTICS OVERVIEW (2x2 Grid) =============
+    html += '<div class="analytics-grid">';
+
+    // Card 1: Total Revenue
+    html += '<div class="analytics-card revenue-card">' +
+        '<div class="analytics-card-row">' +
+        '<span class="analytics-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>' +
+        '<div class="analytics-value">' + self.formatCurrency(metrics.totalRevenue) + '</div>' +
+        '<span class="analytics-trend">' + self.formatCurrency(metrics.paidRevenue) + ' collected</span>' +
         '</div>' +
+        '<div class="analytics-bottom">' +
+        '<span class="analytics-label">Total Revenue</span>' +
+        '<div class="analytics-bar-track">' +
+        '<div class="analytics-bar-fill revenue-fill" style="width: ' +
+            (metrics.totalRevenue > 0 ? Math.round(metrics.paidRevenue / metrics.totalRevenue * 100) : 0) +
+        '%;"></div></div></div></div>';
+
+    // Card 2: Completion Rate (SVG progress ring)
+    var circumference = (2 * Math.PI * 20).toFixed(1);
+    var offset = ((1 - metrics.completionRate / 100) * 2 * Math.PI * 20).toFixed(1);
+    html += '<div class="analytics-card completion-card">' +
+        '<div class="analytics-card-row">' +
+        '<svg class="progress-ring" width="40" height="40" viewBox="0 0 44 44">' +
+        '<circle cx="22" cy="22" r="20" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="3"/>' +
+        '<circle class="progress-ring-fill" cx="22" cy="22" r="20" fill="none" stroke="#10b981" stroke-width="3" ' +
+        'stroke-dasharray="' + circumference + '" stroke-dashoffset="' + offset + '" ' +
+        'stroke-linecap="round" transform="rotate(-90 22 22)"/>' +
+        '</svg>' +
+        '<div class="analytics-value">' + metrics.completionRate + '<span class="analytics-unit">%</span></div>' +
+        '<span class="analytics-trend">' + metrics.completed + ' of ' + metrics.totalContracts + '</span>' +
         '</div>' +
-        '<div class="quick-stat completed-stat">' +
-        '<div class="quick-stat-icon">✅</div>' +
-        '<div class="quick-stat-content">' +
-        '<span class="quick-stat-number">' + completedContracts.length + '</span>' +
-        '<span class="quick-stat-label">Completed</span>' +
-        '</div>' +
-        '</div>' +
-        '<div class="quick-stat monthly-stat">' +
-        '<div class="quick-stat-icon">📈</div>' +
-        '<div class="quick-stat-content">' +
-        '<span class="quick-stat-number">' + thisMonthCompleted + '</span>' +
-        '<span class="quick-stat-label">This Month</span>' +
-        '</div>' +
-        '</div>' +
+        '<div class="analytics-bottom"><span class="analytics-label">Completion Rate</span></div>' +
         '</div>';
-    
+
+    // Card 3: Avg Response Time
+    html += '<div class="analytics-card response-card">' +
+        '<div class="analytics-card-row">' +
+        '<span class="analytics-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>' +
+        '<div class="analytics-value">' + metrics.avgResponseDays + '<span class="analytics-unit">days</span></div>' +
+        '<span class="analytics-trend' + (metrics.urgentCount > 0 ? ' trend-warning' : '') + '">' +
+            (metrics.urgentCount > 0 ? metrics.urgentCount + ' urgent' : 'On track') +
+        '</span>' +
+        '</div>' +
+        '<div class="analytics-bottom">' +
+        '<span class="analytics-label">Avg Response Time</span>' +
+        '<div class="analytics-bar-track">' +
+        '<div class="analytics-bar-fill response-fill" style="width: ' +
+            Math.min(100, Math.round(metrics.avgResponseDays / 14 * 100)) +
+        '%;"></div></div></div></div>';
+
+    // Card 4: Active Projects
+    html += '<div class="analytics-card projects-card">' +
+        '<div class="analytics-card-row">' +
+        '<span class="analytics-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>' +
+        '<div class="analytics-value">' + metrics.activeProjects + '</div>' +
+        '<span class="analytics-trend">+' + metrics.thisMonthCompleted + ' this month</span>' +
+        '</div>' +
+        '<div class="analytics-bottom">' +
+        '<span class="analytics-label">Active Projects</span>' +
+        '<div class="analytics-bar-track">' +
+        '<div class="analytics-bar-fill projects-fill" style="width: ' +
+            (metrics.sowCount > 0 ? Math.round(metrics.activeProjects / metrics.sowCount * 100) : 0) +
+        '%;"></div></div></div></div>';
+
+    html += '</div>'; // close .analytics-grid
+
+    // ============= RECENT ACTIVITY FEED =============
+    if (metrics.events.length > 0) {
+        html += '<div class="activity-feed">' +
+            '<div class="activity-feed-header">' +
+            '<h3>Recent Activity</h3>' +
+            '</div>' +
+            '<div class="activity-feed-list">';
+
+        metrics.events.forEach(function(evt, idx) {
+            html += '<div class="activity-item" style="animation-delay: ' + (idx * 0.06) + 's;">' +
+                '<div class="activity-dot" style="background: ' + evt.color + '; box-shadow: 0 0 8px ' + evt.color + '40;"></div>' +
+                '<div class="activity-info">' +
+                '<span class="activity-text">' + evt.label + '</span>' +
+                '<span class="activity-time">' + self.timeAgo(evt.date) + '</span>' +
+                '</div>' +
+                '</div>';
+        });
+
+        html += '</div></div>';
+    }
+
     // ============= TABBED INTERFACE =============
 html += '<div class="dashboard-tabs">' +
     '<div class="tab-buttons">' +
@@ -2720,7 +2939,43 @@ html += '<div class="dashboard-tabs">' +
         '</div>';
     
     dashboard.innerHTML = html;
-    
+
+    // Initialize dashboard logo animation (ping-pong morph)
+    (function() {
+        var TOTAL = 20;
+        var INTERVAL = 120;
+        var frames = [];
+        for (var i = 0; i < TOTAL; i++) {
+            var el = document.getElementById('dashLogo' + i);
+            if (el) frames.push(el);
+        }
+        if (frames.length === 0) return;
+        var idx = 0;
+        var dir = 1;
+        var lastTime = performance.now();
+        var rafId = null;
+        function animate(now) {
+            if (now - lastTime >= INTERVAL) {
+                frames[idx].classList.remove('visible');
+                idx += dir;
+                if (idx >= frames.length - 1) { idx = frames.length - 1; dir = -1; }
+                else if (idx <= 0) { idx = 0; dir = 1; }
+                frames[idx].classList.add('visible');
+                lastTime = now;
+            }
+            rafId = requestAnimationFrame(animate);
+        }
+        rafId = requestAnimationFrame(animate);
+        // Stop when dashboard is removed
+        var observer = new MutationObserver(function() {
+            if (!document.getElementById('dashLogo0')) {
+                cancelAnimationFrame(rafId);
+                observer.disconnect();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    })();
+
     // Add event listeners for sign buttons
     $$('.btn-sign-contract').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
@@ -2755,14 +3010,36 @@ html += '<div class="dashboard-tabs">' +
 ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, completedContracts) {
     var self = this;
     var html = '';
-    
+
+    // Pipeline Summary Strip
+    var signedCount = completedContracts.length;
+    var pendingCount = pendingContracts.length;
+    var totalPipeline = signedCount + pendingCount;
+
+    html += '<div class="pipeline-strip">' +
+        '<div class="pipeline-stage">' +
+        '<span class="pipeline-count">' + pendingCount + '</span>' +
+        '<span class="pipeline-label">Pending</span>' +
+        '</div>' +
+        '<div class="pipeline-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>' +
+        '<div class="pipeline-stage">' +
+        '<span class="pipeline-count">' + signedCount + '</span>' +
+        '<span class="pipeline-label">Completed</span>' +
+        '</div>' +
+        '<div class="pipeline-bar-track">' +
+        '<div class="pipeline-bar-fill" style="width: ' +
+            (totalPipeline > 0 ? Math.round(signedCount / totalPipeline * 100) : 0) +
+        '%;"></div>' +
+        '</div>' +
+        '</div>';
+
     // Action Required Section (Pending Contracts)
     html += '<div class="dashboard-section action-section">' +
         '<div class="section-header">' +
-        '<h3>🖊️ Action Required</h3>' +
+        '<h3>Action Required</h3>' +
         '<span class="section-badge">' + pendingContracts.length + ' pending</span>' +
         '</div>';
-    
+
     if (pendingContracts.length === 0) {
         html += '<div class="empty-state success-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
@@ -2770,31 +3047,40 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
             '</div>';
     } else {
         html += '<div class="action-list">';
-        pendingContracts.forEach(function(contract, index) {
+        pendingContracts.forEach(function(contract) {
             var urgency = self.getUrgencyLevel(contract.daysSinceSubmission);
-            var submissionDate = contract.timestamp ? 
-                (contract.timestamp.toDate ? contract.timestamp.toDate().toLocaleDateString() : new Date(contract.timestamp).toLocaleDateString()) 
+            var submissionDate = contract.timestamp ?
+                (contract.timestamp.toDate ? contract.timestamp.toDate().toLocaleDateString() : new Date(contract.timestamp).toLocaleDateString())
                 : 'N/A';
-            
+
             html += '<div class="action-item" data-contract-id="' + contract.id + '">' +
-                '<div class="action-priority" style="background: ' + urgency.color + ';">' +
-                '<span class="priority-number">#' + (index + 1) + '</span>' +
+                '<div class="client-avatar" style="border-color: ' + urgency.color + ';">' +
+                '<span>' + (contract.clientName || 'U').charAt(0).toUpperCase() + '</span>' +
                 '</div>' +
+                '<div class="action-priority-bar" style="background: ' + urgency.color + ';"></div>' +
                 '<div class="action-details">' +
                 '<div class="action-client">' +
                 '<h4>' + (contract.clientName || 'Unknown Client') + '</h4>' +
-                '<span class="urgency-tag" style="background: ' + urgency.color + '22; color: ' + urgency.color + ';">' + urgency.icon + ' ' + urgency.label + '</span>' +
+                '<span class="urgency-tag" style="background: ' + urgency.color + '22; color: ' + urgency.color + ';">' +
+                    urgency.icon + ' ' + urgency.label + '</span>' +
                 '</div>' +
-                '<div class="action-meta">' +
-                '<span class="meta-item"><strong>Email:</strong> ' + (contract.clientEmail || 'N/A') + '</span>' +
-                '<span class="meta-item"><strong>Waiting:</strong> ' + contract.daysSinceSubmission + ' day' + (contract.daysSinceSubmission !== 1 ? 's' : '') + '</span>' +
-                '<span class="meta-item"><strong>Received:</strong> ' + submissionDate + '</span>' +
+                '<div class="action-meta-grid">' +
+                '<div class="meta-cell"><span class="meta-key">Email</span><span class="meta-val">' +
+                    (contract.clientEmail || 'N/A') + '</span></div>' +
+                '<div class="meta-cell"><span class="meta-key">Received</span><span class="meta-val">' +
+                    submissionDate + '</span></div>' +
+                '<div class="meta-cell"><span class="meta-key">Waiting</span><span class="meta-val ' +
+                    (contract.daysSinceSubmission >= 7 ? 'meta-urgent' : '') + '">' +
+                    contract.daysSinceSubmission + ' day' + (contract.daysSinceSubmission !== 1 ? 's' : '') +
+                '</span></div>' +
+                '<div class="meta-cell"><span class="meta-key">Phone</span><span class="meta-val">' +
+                    (contract.clientPhone ? formatPhoneNumber(contract.clientPhone) : 'N/A') + '</span></div>' +
                 '</div>' +
                 '</div>' +
                 '<div class="action-cta">' +
                 '<button class="btn-sign-contract" data-contract-id="' + contract.id + '">' +
                 '<span class="btn-icon">✍️</span>' +
-                '<span class="btn-text">Sign Now</span>' +
+                '<span class="btn-text">Sign</span>' +
                 '</button>' +
                 '</div>' +
                 '</div>';
@@ -2802,45 +3088,40 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
         html += '</div>';
     }
     html += '</div>';
-    
+
     // Completed Contracts Section
     html += '<div class="dashboard-section history-section">' +
         '<div class="section-header">' +
-        '<h3>📁 Completed Contracts</h3>' +
+        '<h3>Completed</h3>' +
         '<span class="section-badge success">' + completedContracts.length + ' total</span>' +
         '</div>';
-    
+
     if (completedContracts.length === 0) {
         html += '<div class="empty-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
             '<p>No completed contracts yet</p>' +
             '</div>';
     } else {
-        html += '<div class="history-list">';
+        html += '<div class="history-table">';
         completedContracts.forEach(function(contract) {
-            var finalizedDate = contract.finalizedTimestamp ? 
-                (contract.finalizedTimestamp.toDate ? contract.finalizedTimestamp.toDate().toLocaleDateString() : new Date(contract.finalizedTimestamp).toLocaleDateString()) 
+            var finalizedDate = contract.finalizedTimestamp ?
+                (contract.finalizedTimestamp.toDate ? contract.finalizedTimestamp.toDate().toLocaleDateString() : new Date(contract.finalizedTimestamp).toLocaleDateString())
                 : 'N/A';
-            
-            html += '<div class="history-item" data-contract-id="' + contract.id + '">' +
-                '<div class="history-status">' +
-                '<span class="status-icon">✓</span>' +
-                '</div>' +
-                '<div class="history-details">' +
-                '<h4>' + (contract.clientName || 'Unknown Client') + '</h4>' +
-                '<span class="history-meta">Completed ' + finalizedDate + '</span>' +
-                '</div>' +
-                '<div class="history-actions">' +
+
+            html += '<div class="history-row" data-contract-id="' + contract.id + '">' +
+                '<div class="history-status"><span class="status-check">&#10003;</span></div>' +
+                '<div class="history-name">' + (contract.clientName || 'Unknown Client') + '</div>' +
+                '<div class="history-date">' + finalizedDate + '</div>' +
+                '<div class="history-action">' +
                 '<button class="btn-download" data-contract-id="' + contract.id + '" title="Download PDF">' +
-                '📄 Download' +
-                '</button>' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF</button>' +
                 '</div>' +
                 '</div>';
         });
         html += '</div>';
     }
     html += '</div>';
-    
+
     return html;
 };
 
@@ -3603,12 +3884,63 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
             '</button>' +
             '</div>';
     } else {
+        // Revenue Summary Bar
+        var sowTotalRevenue = 0;
+        var sowPaidRevenue = 0;
+        var packageCounts = {};
+        sows.forEach(function(s) {
+            if (s.payment && s.payment.total) sowTotalRevenue += s.payment.total;
+            var pi = self.calculatePaymentStatus(s);
+            sowPaidRevenue += pi.paidAmount;
+            var pkg = s.packageType || 'unknown';
+            packageCounts[pkg] = (packageCounts[pkg] || 0) + 1;
+        });
+        var avgProjectValue = sows.length > 0 ? sowTotalRevenue / sows.length : 0;
+
+        html += '<div class="sow-revenue-bar">' +
+            '<div class="sow-revenue-stat">' +
+            '<span class="revenue-val">' + self.formatCurrency(sowTotalRevenue) + '</span>' +
+            '<span class="revenue-label">Total Revenue</span>' +
+            '</div>' +
+            '<div class="sow-revenue-stat">' +
+            '<span class="revenue-val">' + self.formatCurrency(avgProjectValue) + '</span>' +
+            '<span class="revenue-label">Avg Project</span>' +
+            '</div>' +
+            '<div class="sow-revenue-stat">' +
+            '<span class="revenue-val">' + self.formatCurrency(sowPaidRevenue) + '</span>' +
+            '<span class="revenue-label">Collected</span>' +
+            '</div>' +
+            '</div>';
+
+        // Package Distribution Bar
+        var packageColors = {
+            'essential': '#6366f1', 'starter': '#8b5cf6', 'growth': '#10b981',
+            'professional': '#f59e0b', 'enterprise': '#ef4444', 'custom': '#ec4899'
+        };
+        html += '<div class="package-distribution">' +
+            '<div class="package-bar">';
+        var packageKeys = Object.keys(packageCounts);
+        packageKeys.forEach(function(pkg) {
+            var pct = (packageCounts[pkg] / sows.length * 100).toFixed(1);
+            html += '<div class="package-segment" style="width: ' + pct + '%; background: ' +
+                (packageColors[pkg] || '#6b7280') + ';" title="' + pkg + ': ' + packageCounts[pkg] + '"></div>';
+        });
+        html += '</div>' +
+            '<div class="package-legend">';
+        packageKeys.forEach(function(pkg) {
+            html += '<span class="legend-item">' +
+                '<span class="legend-dot" style="background: ' + (packageColors[pkg] || '#6b7280') + ';"></span>' +
+                pkg.charAt(0).toUpperCase() + pkg.slice(1) + ' (' + packageCounts[pkg] + ')' +
+                '</span>';
+        });
+        html += '</div></div>';
+
         html += '<div class="sow-list">';
         sows.forEach(function(sow) {
-            var createdDate = sow.createdAt ? 
-                (sow.createdAt.toDate ? sow.createdAt.toDate().toLocaleDateString() : new Date(sow.createdAt).toLocaleDateString()) 
+            var createdDate = sow.createdAt ?
+                (sow.createdAt.toDate ? sow.createdAt.toDate().toLocaleDateString() : new Date(sow.createdAt).toLocaleDateString())
                 : 'N/A';
-            
+
             var packageNames = {
                 'essential': 'Essential — Landing Page',
                 'starter': 'Tier 1 — Starter',
@@ -3684,17 +4016,24 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                     '</div>'
                 : '') +
                 changeRequestBadge +
+                '<div class="sow-signatures">' +
+                '<span class="sig-icon ' + (sow.devSignature ? 'signed' : 'pending') + '">' +
+                    (sow.devSignature ? '&#10003;' : '&#9202;') + ' Dev</span>' +
+                '<span class="sig-icon ' + (sow.clientSignature ? 'signed' : 'pending') + '">' +
+                    (sow.clientSignature ? '&#10003;' : '&#9202;') + ' Client</span>' +
+                '</div>' +
                 '</div>' +
                 '</div>' +
 
                 '<div class="sow-item-details">' +
+                '<div class="sow-detail-grid">' +
                 '<div class="sow-detail-row">' +
                 '<span class="detail-label">' + (sow.clientEmail ? '📧 Email:' : '📱 Phone:') + '</span>' +
                 '<span class="detail-value">' + (sow.clientEmail || (sow.clientPhone ? formatPhoneNumber(sow.clientPhone) : 'N/A')) + '</span>' +
                 '</div>' +
                 '<div class="sow-detail-row">' +
                 '<span class="detail-label">💰 Total:</span>' +
-                '<span class="detail-value">$' + ((sow.payment && sow.payment.total) ? sow.payment.total.toFixed(0) : '0') + '</span>' +
+                '<span class="detail-value">' + self.formatCurrency((sow.payment && sow.payment.total) ? sow.payment.total : 0) + '</span>' +
                 '</div>' +
                 '<div class="sow-detail-row">' +
                 '<span class="detail-label">⏱️ Timeline:</span>' +
@@ -3703,6 +4042,7 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                 '<div class="sow-detail-row">' +
                 '<span class="detail-label">📅 Created:</span>' +
                 '<span class="detail-value">' + createdDate + '</span>' +
+                '</div>' +
                 '</div>' +
                 '</div>' +
 
