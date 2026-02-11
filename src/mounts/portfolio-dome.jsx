@@ -55,6 +55,30 @@ const portfolioProjects = [
     alt: 'Agstounding - Professional Services',
     type: 'iframe'
   },
+  {
+    preview: `${BASE_URL}images/logo9.png`,
+    url: 'https://eltacochingonllc.vercel.app/',
+    alt: 'El Taco Chingon - Authentic Mexican Street Food in Fresno, CA',
+    type: 'iframe'
+  },
+  {
+    preview: `${BASE_URL}images/logo10.png`,
+    url: 'https://handyman-sam.vercel.app/',
+    alt: 'Handyman Sam - Professional Handyman Services in Fresno, CA',
+    type: 'iframe'
+  },
+  {
+    preview: `${BASE_URL}images/logo11.png`,
+    url: 'https://vistafly.github.io/vistafly-studyguide/',
+    alt: 'VistaFly Academy - Drone Pilot Training Portal',
+    type: 'iframe'
+  },
+  {
+    preview: `${BASE_URL}images/logo12.png`,
+    url: 'https://vistafly.github.io/Part-107studyguide/',
+    alt: 'Part 107 Study Guide - FAA Drone Certification Prep',
+    type: 'iframe'
+  },
 ];
 
 // Responsive wrapper with full parameter control per device type
