@@ -359,6 +359,17 @@ export const StaggeredMenu = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [closeMenu]);
 
+  // Re-apply number opacity after items re-render while menu is open
+  useEffect(() => {
+    if (!openRef.current) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const numberEls = Array.from(panel.querySelectorAll('.sm-panel-list[data-numbering] .sm-panel-item'));
+    if (numberEls.length) {
+      gsap.set(numberEls, { '--sm-num-opacity': 1 });
+    }
+  }, [items]);
+
   // Handle item click
   const handleItemClick = useCallback((item, e) => {
     // Close menu after a short delay to show the click effect
