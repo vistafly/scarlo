@@ -481,11 +481,11 @@
             }
         });
 
-        // Update auth button text
+        // Update auth button text — only when logged out (logged-in text is the user's name)
+        var authBtn = document.getElementById('authActionBtn');
         var authText = document.getElementById('authStatusText');
-        if (authText) {
-            var isLoggedIn = authText.textContent === 'Sign Out' || authText.textContent === 'Cerrar Sesión';
-            authText.textContent = isLoggedIn ? t('nav.signOut') : t('nav.signIn');
+        if (authText && authBtn && !authBtn.classList.contains('logged-in')) {
+            authText.textContent = t('nav.signIn');
         }
     };
 

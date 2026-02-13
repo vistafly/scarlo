@@ -122,11 +122,11 @@ const applyPageTranslations = () => {
     const translated = translate(key, null);
     if (translated) el.placeholder = translated;
   });
-  // Auth button
+  // Auth button — only update when logged out (logged-in text is the user's name)
+  const authBtn = document.getElementById('authActionBtn');
   const authText = document.getElementById('authStatusText');
-  if (authText) {
-    const isLoggedIn = authText.textContent === 'Sign Out' || authText.textContent === 'Cerrar Sesión';
-    authText.textContent = isLoggedIn ? translate('nav.signOut', 'Sign In') : translate('nav.signIn', 'Sign In');
+  if (authText && authBtn && !authBtn.classList.contains('logged-in')) {
+    authText.textContent = translate('nav.signIn', 'Sign In');
   }
   // Rotating text
   if (window.rotatingText && window.rotatingText.switchLanguage) {
