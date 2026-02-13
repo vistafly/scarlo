@@ -295,11 +295,11 @@
   transform: scale(1.1);
 }
 
-/* Language Toggle - pinned to top bar of panel, between logo and close */
+/* Language Toggle - pinned to top-left of panel, away from close button */
 .sm-lang-section {
   position: absolute;
   top: 0;
-  right: 3.5rem;
+  left: 3.5rem;
   height: 4rem;
   display: flex;
   align-items: center;
@@ -389,6 +389,10 @@
   .sm-panel-item {
     font-size: clamp(2.5rem, 10vw, 4rem);
   }
+
+  .sm-lang-section {
+    left: 2.5rem;
+  }
 }
 
 /* Mobile */
@@ -430,6 +434,10 @@
 
   .sm-socials-list {
     gap: 1rem;
+  }
+
+  .sm-lang-section {
+    left: 2rem;
   }
 }
 
