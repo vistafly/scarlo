@@ -3103,13 +3103,12 @@ html += '<div class="dashboard-tabs">' +
             }
             rafId = requestAnimationFrame(animate);
         }
-        // Wait for all images to load before starting animation
+        // Wait for all images to load and decode before starting animation
         Promise.all(frames.map(function(img) {
-            if (img.complete) return Promise.resolve();
-            return new Promise(function(resolve) {
-                img.onload = resolve;
-                img.onerror = resolve;
-            });
+            var loaded = img.complete
+                ? Promise.resolve()
+                : new Promise(function(resolve) { img.onload = resolve; img.onerror = resolve; });
+            return loaded.then(function() { return img.decode ? img.decode().catch(function() {}) : Promise.resolve(); });
         })).then(function() {
             lastTime = performance.now();
             rafId = requestAnimationFrame(animate);
