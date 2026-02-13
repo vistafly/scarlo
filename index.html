@@ -94,8 +94,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js" defer></script>
-  <script type="module" crossorigin src="./assets/main.bxJp4hJh.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main.DMKcw6r-.css">
+  <script type="module" crossorigin src="./assets/main.DP_-I2JV.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main.ChusODOA.css">
 </head>
 <body>
     <!-- Loading Screen with Logo Animation -->
@@ -206,12 +206,17 @@
             </a>
 
             <ul class="nav-menu">
-                <li><a href="#home" class="nav-link">Home</a></li>
-                <li><a href="#philosophy" class="nav-link">Services</a></li>
-                <li><a href="#portfolio" class="nav-link">Portfolio</a></li>
-                <li><a href="#contract" class="nav-link">Agreement</a></li>
-                <li><a href="#contact" class="nav-link">Connect</a></li>
+                <li><a href="#home" class="nav-link" data-i18n="nav.home">Home</a></li>
+                <li><a href="#philosophy" class="nav-link" data-i18n="nav.services">Services</a></li>
+                <li><a href="#portfolio" class="nav-link" data-i18n="nav.portfolio">Portfolio</a></li>
+                <li><a href="#contract" class="nav-link" data-i18n="nav.agreement">Agreement</a></li>
+                <li><a href="#contact" class="nav-link" data-i18n="nav.connect">Connect</a></li>
             </ul>
+            <div class="lang-toggle" id="langToggle">
+                <button class="lang-btn active" data-lang="en">EN</button>
+                <span class="lang-divider">|</span>
+                <button class="lang-btn" data-lang="es">ES</button>
+            </div>
             <div class="auth-status" id="authStatus">
                 <button class="auth-btn" id="authActionBtn">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
@@ -239,11 +244,11 @@
         
         <!-- Content -->
         <div class="hero-content">
-            <div class="hero-badge">Crafted with precision</div>
+            <div class="hero-badge" data-i18n="hero.badge">Crafted with precision</div>
             <!-- SEO-friendly H1 with only primary text -->
             <h1 class="hero-title">
-                <span class="title-line">Design that</span>
-                <span class="title-line gradient-text">sparks your vision</span>
+                <span class="title-line" data-i18n="hero.titleLine1">Design that</span>
+                <span class="title-line gradient-text" data-i18n="hero.titleDefault">sparks your vision</span>
             </h1>
             <!-- Decorative rotating text - hidden from SEO, visible to users -->
             <div class="hero-title-visual" aria-hidden="true">
@@ -292,19 +297,19 @@
                     </span>
                 </span>
             </div>
-            <p class="hero-description">
+            <p class="hero-description" data-i18n-html="hero.description">
                 We architect digital experiences with obsessive attention to detail,<br>
                 powered by <a href="https://react.dev/" target="_blank" rel="noopener noreferrer">React</a> and <a href="https://firebase.google.com/" target="_blank" rel="noopener noreferrer">Firebase</a> — where every interaction feels effortless.
             </p>
             <div class="hero-cta">
                 <a href="#portfolio" class="btn-primary">
-                    <span>Explore our work</span>
+                    <span data-i18n="hero.ctaExplore">Explore our work</span>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M8 3L8 13M8 13L13 8M8 13L3 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </a>
                 <button class="btn-primary btn-contract-hero view-contract-trigger">
-                    <span>View & Sign Agreement</span>
+                    <span data-i18n="hero.ctaAgreement">View & Sign Agreement</span>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M3 13L13 3M13 3H5M13 3V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
@@ -316,8 +321,8 @@
     <!-- Philosophy Section -->
     <section id="philosophy" class="philosophy">
         <div class="container">
-            <div class="section-eyebrow">Our Approach</div>
-            <h2 class="section-title">Precision meets creativity</h2>
+            <div class="section-eyebrow" data-i18n="philosophy.eyebrow">Our Approach</div>
+            <h2 class="section-title" data-i18n="philosophy.title">Precision meets creativity</h2>
             
             <!-- React Carousel Mount Point -->
             <div id="philosophy-carousel-root"></div>
@@ -328,9 +333,9 @@
     <section id="portfolio" class="portfolio">
         <div class="container-wide">
             <div class="portfolio-header">
-                <div class="section-eyebrow">Selected Work</div>
-                <h2 class="section-title">Personal Project Ecosystem</h2>
-                <p class="portfolio-subtitle">Drag to explore • Press & Hold</p>
+                <div class="section-eyebrow" data-i18n="portfolio.eyebrow">Selected Work</div>
+                <h2 class="section-title" data-i18n="portfolio.title">Personal Project Ecosystem</h2>
+                <p class="portfolio-subtitle" data-i18n="portfolio.subtitle">Drag to explore • Press & Hold</p>
             </div>
 
             <!-- React Dome Gallery Mount Point -->
@@ -341,19 +346,19 @@
     <!-- Contract Section -->
     <section id="contract" class="contract-section">
         <div class="container">
-            <div class="section-eyebrow">Legal Agreement</div>
-            <h2 class="section-title">Development Agreement</h2>
-            <p class="contract-intro">Review and sign our standard website development agreement. This contract outlines the terms, deliverables, and expectations for all Scarlo projects.</p>
+            <div class="section-eyebrow" data-i18n="contractSection.eyebrow">Legal Agreement</div>
+            <h2 class="section-title" data-i18n="contractSection.title">Development Agreement</h2>
+            <p class="contract-intro" data-i18n="contractSection.intro">Review and sign our standard website development agreement. This contract outlines the terms, deliverables, and expectations for all Scarlo projects.</p>
             
             <div class="contract-actions">
                 <button id="viewContractBtn" class="btn-contract view-contract-trigger">
-                    <span>View & Sign Agreement</span>
+                    <span data-i18n="contractSection.viewBtn">View & Sign Agreement</span>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M3 13L13 3M13 3H5M13 3V11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                     </svg>
                 </button>
                 <button id="requestHelpBtn" class="btn-contract-secondary">
-                    <span>Request Help</span>
+                    <span data-i18n="contractSection.helpBtn">Request Help</span>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M8 15C11.866 15 15 11.866 15 8C15 4.13401 11.866 1 8 1C4.13401 1 1 4.13401 1 8C1 11.866 4.13401 15 8 15Z" stroke="currentColor" stroke-width="1.5"/>
                         <path d="M8 11V11.01M8 8.5V8.5C8 7.5 9 7 9 6C9 5.44772 8.55228 5 8 5C7.44772 5 7 5.44772 7 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -368,8 +373,8 @@
                         <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
                     </svg>
                     <div>
-                        <p class="feature-title">Digital Signatures</p>
-                        <p>Sign electronically with legal validity</p>
+                        <p class="feature-title" data-i18n="contractSection.feat1Title">Digital Signatures</p>
+                        <p data-i18n="contractSection.feat1Desc">Sign electronically with legal validity</p>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -378,8 +383,8 @@
                         <path d="M7 11V7a5 5 0 0110 0v4"></path>
                     </svg>
                     <div>
-                        <p class="feature-title">Secure & Confidential</p>
-                        <p>Your information is protected</p>
+                        <p class="feature-title" data-i18n="contractSection.feat2Title">Secure & Confidential</p>
+                        <p data-i18n="contractSection.feat2Desc">Your information is protected</p>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -388,8 +393,8 @@
                         <polyline points="14 2 14 8 20 8"></polyline>
                     </svg>
                     <div>
-                        <p class="feature-title">Download PDF</p>
-                        <p>Keep a copy for your records</p>
+                        <p class="feature-title" data-i18n="contractSection.feat3Title">Download PDF</p>
+                        <p data-i18n="contractSection.feat3Desc">Keep a copy for your records</p>
                     </div>
                 </div>
             </div>
@@ -408,8 +413,8 @@
             </button>
 
             <div class="auth-header">
-                <h2>Sign In</h2>
-                <p>Contact the developer to obtain log-in credentials to view & sign agreements.</p>
+                <h2 data-i18n="auth.title">Sign In</h2>
+                <p data-i18n="auth.subtitle">Contact the developer to obtain log-in credentials to view & sign agreements.</p>
             </div>
 
             <!-- Auth Method Tabs -->
@@ -419,14 +424,14 @@
                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                         <polyline points="22,6 12,13 2,6"></polyline>
                     </svg>
-                    <span>Email</span>
+                    <span data-i18n="auth.emailTab">Email</span>
                 </button>
                 <button class="auth-tab" data-tab="phone" type="button">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
                         <line x1="12" y1="18" x2="12.01" y2="18"></line>
                     </svg>
-                    <span>Phone</span>
+                    <span data-i18n="auth.phoneTab">Phone</span>
                 </button>
             </div>
 
@@ -436,18 +441,18 @@
                 <div class="auth-panel active" id="emailPanel">
                     <form id="loginForm" class="auth-form">
                         <div class="form-group">
-                            <label for="loginEmail">Email</label>
-                            <input type="email" id="loginEmail" required placeholder="your@email.com" autocomplete="email">
+                            <label for="loginEmail" data-i18n="auth.emailLabel">Email</label>
+                            <input type="email" id="loginEmail" required placeholder="your@email.com" data-i18n-placeholder="auth.emailPlaceholder" autocomplete="email">
                         </div>
                         <div class="form-group">
-                            <label for="loginPassword">Password</label>
+                            <label for="loginPassword" data-i18n="auth.passwordLabel">Password</label>
                             <input type="password" id="loginPassword" required placeholder="••••••••" autocomplete="current-password">
                         </div>
-                        <button type="submit" class="btn-auth">Sign In</button>
+                        <button type="submit" class="btn-auth" data-i18n="auth.signInBtn">Sign In</button>
                         <div class="auth-error" id="loginError"></div>
                         <div class="auth-help-link" id="loginHelpLink" style="display: none;">
-                            <span>Still having trouble?</span>
-                            <button type="button" class="btn-contact-dev" id="loginContactDevBtn">Contact developer</button>
+                            <span data-i18n="auth.trouble">Still having trouble?</span>
+                            <button type="button" class="btn-contact-dev" id="loginContactDevBtn" data-i18n="auth.contactDev">Contact developer</button>
                         </div>
                     </form>
                 </div>
@@ -457,7 +462,7 @@
                     <!-- Step 1: Phone Number Input -->
                     <form id="phoneForm" class="auth-form phone-step" data-step="phone">
                         <div class="form-group">
-                            <label for="phoneNumber">Phone Number</label>
+                            <label for="phoneNumber" data-i18n="auth.phoneLabel">Phone Number</label>
                             <div class="phone-input-wrapper">
                                 <select id="countryCode" class="country-code-select">
                                     <option value="+1" selected>US +1</option>
@@ -472,55 +477,55 @@
                                     <option value="+52">MX +52</option>
                                     <option value="+55">BR +55</option>
                                 </select>
-                                <input type="tel" id="phoneNumber" required placeholder="(555) 123-4567" autocomplete="tel-national">
+                                <input type="tel" id="phoneNumber" required placeholder="(555) 123-4567" data-i18n-placeholder="auth.phonePlaceholder" autocomplete="tel-national">
                             </div>
                         </div>
                         <button type="submit" class="btn-auth" id="sendCodeBtn">
-                            <span class="btn-text">Send Verification Code</span>
+                            <span class="btn-text" data-i18n="auth.sendCode">Send Verification Code</span>
                             <span class="btn-loading">
                                 <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
                                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
                                 </svg>
-                                Sending...
+                                <span data-i18n="auth.sending">Sending...</span>
                             </span>
                         </button>
                         <div class="auth-error" id="phoneError"></div>
                         <div class="auth-help-link" id="phoneHelpLink" style="display: none;">
-                            <span>Still having trouble?</span>
-                            <button type="button" class="btn-contact-dev" id="phoneContactDevBtn">Contact developer</button>
+                            <span data-i18n="auth.trouble">Still having trouble?</span>
+                            <button type="button" class="btn-contact-dev" id="phoneContactDevBtn" data-i18n="auth.contactDev">Contact developer</button>
                         </div>
                     </form>
 
                     <!-- Step 2: Verification Code Input -->
                     <form id="verifyCodeForm" class="auth-form phone-step" data-step="verify" style="display: none;">
                         <div class="verify-header">
-                            <p class="verify-message">Enter the 6-digit code provided by the developer</p>
+                            <p class="verify-message" data-i18n="auth.verifyMsg">Enter the 6-digit code provided by the developer</p>
                         </div>
                         <div class="form-group">
-                            <label for="verificationCode">Verification Code</label>
+                            <label for="verificationCode" data-i18n="auth.codeLabel">Verification Code</label>
                             <div class="code-input-wrapper">
                                 <input type="text" id="verificationCode" required maxlength="6" placeholder="000000" autocomplete="one-time-code" inputmode="numeric">
                             </div>
                         </div>
                         <button type="submit" class="btn-auth" id="verifyCodeBtn">
-                            <span class="btn-text">Verify & Sign In</span>
+                            <span class="btn-text" data-i18n="auth.verifyBtn">Verify & Sign In</span>
                             <span class="btn-loading">
                                 <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
                                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" transform="rotate(-90 12 12)"/>
                                 </svg>
-                                Verifying...
+                                <span data-i18n="auth.verifying">Verifying...</span>
                             </span>
                         </button>
                         <button type="button" id="backToPhoneBtn" class="btn-secondary">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
-                            Change Number
+                            <span data-i18n="auth.changeNumber">Change Number</span>
                         </button>
                         <div class="auth-error" id="verifyError"></div>
                         <div class="auth-help-link" id="verifyHelpLink" style="display: none;">
-                            <span>Still having trouble?</span>
-                            <button type="button" class="btn-contact-dev" id="verifyContactDevBtn">Contact developer</button>
+                            <span data-i18n="auth.trouble">Still having trouble?</span>
+                            <button type="button" class="btn-contact-dev" id="verifyContactDevBtn" data-i18n="auth.contactDev">Contact developer</button>
                         </div>
                     </form>
                 </div>
@@ -546,50 +551,50 @@
             <form id="contractForm" class="contract-form">
                 <!-- Parties Section -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">Parties to the Agreement</p>
-                    <p class="intro-text">
-                        This Website Development Agreement ("Agreement") is made effective as of the date of the final signature 
+                    <p class="contract-heading" data-i18n="cmodal.partiesHeading">Parties to the Agreement</p>
+                    <p class="intro-text" data-i18n="cmodal.partiesIntro">
+                        This Website Development Agreement ("Agreement") is made effective as of the date of the final signature
                         (the "Effective Date") and is entered into by and between:
                     </p>
                     
                     <div class="party-info">
-                        <p><strong>Scarlo</strong>, a sole proprietorship owned and operated by Carlos Martin (the "Developer"),</p>
-                        <p>and</p>
+                        <p data-i18n-html="cmodal.scarloDesc"><strong>Scarlo</strong>, a sole proprietorship owned and operated by Carlos Martin (the "Developer"),</p>
+                        <p data-i18n="cmodal.and">and</p>
 
                         <!-- Client Info (auto-populated from SOW - read only) -->
                         <div class="client-info-display" id="clientInfoDisplay">
                             <p class="sow-required-notice" id="sowRequiredNotice">
-                                <em>Please attach a Statement of Work (SOW) to populate client information.</em>
+                                <em data-i18n="cmodal.sowNotice">Please attach a Statement of Work (SOW) to populate client information.</em>
                             </p>
                             <div class="client-info-populated" id="clientInfoPopulated" style="display: none;">
                                 <div class="form-group">
-                                    <label>Client</label>
+                                    <label data-i18n="cmodal.clientLabel">Client</label>
                                     <p class="readonly-value" id="contractClientName">—</p>
                                 </div>
                                 <div class="business-entity-info" id="businessEntityInfo" style="display: none;">
                                     <div class="form-row">
                                         <div class="form-group">
-                                            <label>Entity Type</label>
+                                            <label data-i18n="cmodal.entityType">Entity Type</label>
                                             <p class="readonly-value" id="contractEntityType">—</p>
                                         </div>
                                         <div class="form-group">
-                                            <label>State of Formation</label>
+                                            <label data-i18n="cmodal.stateOfFormation">State of Formation</label>
                                             <p class="readonly-value" id="contractStateOfFormation">—</p>
                                         </div>
                                     </div>
                                     <div class="form-row">
                                         <div class="form-group">
-                                            <label>Authorized Representative</label>
+                                            <label data-i18n="cmodal.authRep">Authorized Representative</label>
                                             <p class="readonly-value" id="contractRepName">—</p>
                                         </div>
                                         <div class="form-group">
-                                            <label>Title</label>
+                                            <label data-i18n="cmodal.titleLabel">Title</label>
                                             <p class="readonly-value" id="contractRepTitle">—</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label>Contact</label>
+                                    <label data-i18n="cmodal.contactLabel">Contact</label>
                                     <p class="readonly-value" id="contractClientContact">—</p>
                                 </div>
                             </div>
@@ -603,211 +608,211 @@
                         <input type="hidden" id="repName" name="repName" />
                         <input type="hidden" id="repTitle" name="repTitle" />
 
-                        <p class="small-text">The Developer and Client may be referred to individually as a "Party" and collectively as the "Parties."</p>
+                        <p class="small-text" data-i18n="cmodal.partyRef">The Developer and Client may be referred to individually as a "Party" and collectively as the "Parties."</p>
                     </div>
                 </section>
 
                 <!-- Project Scope -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">1. PROJECT SCOPE</p>
+                    <p class="contract-heading" data-i18n="cmodal.s1.heading">1. PROJECT SCOPE</p>
 
-                    <p class="contract-subheading">1.1 Overview</p>
-                    <p>Developer agrees to design, build, and deliver a custom website or web application using modern technologies,
+                    <p class="contract-subheading" data-i18n="cmodal.s1.sub1">1.1 Overview</p>
+                    <p data-i18n="cmodal.s1.p1">Developer agrees to design, build, and deliver a custom website or web application using modern technologies,
                     which may include but are not limited to: Visual Studio Code, React, Next.js, Firebase, Vite, REST/Graph APIs,
                     and associated development tools.</p>
 
-                    <p class="contract-subheading">1.2 Statement of Work (SOW)</p>
-                    <p>All features, functionalities, pages, integrations, and deliverables will be detailed in a separate Proposal
+                    <p class="contract-subheading" data-i18n="cmodal.s1.sub2">1.2 Statement of Work (SOW)</p>
+                    <p data-i18n="cmodal.s1.p2">All features, functionalities, pages, integrations, and deliverables will be detailed in a separate Proposal
                     or Statement of Work ("SOW") prepared by Developer and approved by Client.</p>
 
-                    <p class="contract-subheading">1.3 Scope Limitations</p>
-                    <p>Only items expressly included in the SOW form part of the Project Scope. Any request beyond that scope—whether 
+                    <p class="contract-subheading" data-i18n="cmodal.s1.sub3">1.3 Scope Limitations</p>
+                    <p data-i18n="cmodal.s1.p3">Only items expressly included in the SOW form part of the Project Scope. Any request beyond that scope—whether
                     new features, design changes, additional pages, or system enhancements—requires an approved Change Order (Section 10).</p>
                 </section>
 
                 <!-- Packages & Pricing -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">2. PACKAGES & PRICING</p>
-                    <p>Developer offers multiple service tiers, including Starter, Professional, Premium, and Elite website/application 
-                    packages. The applicable pricing, deliverables, and package level for this Agreement will be specified in the 
+                    <p class="contract-heading" data-i18n="cmodal.s2.heading">2. PACKAGES & PRICING</p>
+                    <p data-i18n="cmodal.s2.p1">Developer offers multiple service tiers, including Starter, Professional, Premium, and Elite website/application
+                    packages. The applicable pricing, deliverables, and package level for this Agreement will be specified in the
                     attached SOW, which forms an integral part of this Agreement.</p>
                 </section>
 
                 <!-- Payment Terms -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">3. PAYMENT TERMS</p>
-                    <p>Unless otherwise specified in the SOW:</p>
+                    <p class="contract-heading" data-i18n="cmodal.s3.heading">3. PAYMENT TERMS</p>
+                    <p data-i18n="cmodal.s3.intro">Unless otherwise specified in the SOW:</p>
 
-                    <p class="contract-subheading">3.1 Deposit</p>
-                    <p>A non-refundable deposit of 50% is required before any work begins, unless the Developer chooses to accept
+                    <p class="contract-subheading" data-i18n="cmodal.s3.sub1">3.1 Deposit</p>
+                    <p data-i18n="cmodal.s3.p1">A non-refundable deposit of 50% is required before any work begins, unless the Developer chooses to accept
                     a different amount at their discretion.</p>
 
-                    <p class="contract-subheading">3.2 Milestone Payments</p>
-                    <p>If no custom timetable is specified in the SOW, the standard schedule is:</p>
+                    <p class="contract-subheading" data-i18n="cmodal.s3.sub2">3.2 Milestone Payments</p>
+                    <p data-i18n="cmodal.s3.p2">If no custom timetable is specified in the SOW, the standard schedule is:</p>
                     <ul>
-                        <li>25% due upon UI/UX design approval</li>
-                        <li>25% due at final delivery or prior to deployment, whichever the Developer determines is appropriate</li>
+                        <li data-i18n="cmodal.s3.li1">25% due upon UI/UX design approval</li>
+                        <li data-i18n="cmodal.s3.li2">25% due at final delivery or prior to deployment, whichever the Developer determines is appropriate</li>
                     </ul>
-                    <p>The Developer may, at their discretion, adjust the milestone dates, provide grace periods, or allow alternative
+                    <p data-i18n="cmodal.s3.p3">The Developer may, at their discretion, adjust the milestone dates, provide grace periods, or allow alternative
                     arrangements for the Client.</p>
 
-                    <p class="contract-subheading">3.3 Late Payments</p>
-                    <p>Payments not received within 7 days of the due date may, at the Developer's discretion, incur a monthly late 
+                    <p class="contract-subheading" data-i18n="cmodal.s3.sub3">3.3 Late Payments</p>
+                    <p data-i18n="cmodal.s3.p4">Payments not received within 7 days of the due date may, at the Developer's discretion, incur a monthly late
                     fee of up to 5%. The Developer may also pause or delay work until any outstanding balance is paid.</p>
                 </section>
 
                 <!-- Client Responsibilities -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">4. CLIENT RESPONSIBILITIES</p>
-                    <p>Client agrees to provide all necessary materials—including copy, images, brand assets, credentials, and 
+                    <p class="contract-heading" data-i18n="cmodal.s4.heading">4. CLIENT RESPONSIBILITIES</p>
+                    <p data-i18n="cmodal.s4.p1">Client agrees to provide all necessary materials—including copy, images, brand assets, credentials, and
                     requested information—within 5 business days of Developer's request.</p>
-                    <p>Any delays in providing required materials will directly extend the project timeline. Developer is not 
+                    <p data-i18n="cmodal.s4.p2">Any delays in providing required materials will directly extend the project timeline. Developer is not
                     responsible for delays caused by the Client.</p>
                 </section>
 
                 <!-- Revisions -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">5. REVISIONS</p>
-                    <p>Unless otherwise stated in the SOW:</p>
+                    <p class="contract-heading" data-i18n="cmodal.s5.heading">5. REVISIONS</p>
+                    <p data-i18n="cmodal.s5.intro">Unless otherwise stated in the SOW:</p>
                     <ul>
-                        <li>Client receives up to two (2) rounds of revisions per milestone</li>
-                        <li>Additional revisions or redesigns require a Change Order and may incur additional charges</li>
+                        <li data-i18n="cmodal.s5.li1">Client receives up to two (2) rounds of revisions per milestone</li>
+                        <li data-i18n="cmodal.s5.li2">Additional revisions or redesigns require a Change Order and may incur additional charges</li>
                     </ul>
                 </section>
 
                 <!-- Intellectual Property -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">6. INTELLECTUAL PROPERTY RIGHTS</p>
+                    <p class="contract-heading" data-i18n="cmodal.s6.heading">6. INTELLECTUAL PROPERTY RIGHTS</p>
 
-                    <p class="contract-subheading">6.1 Developer Ownership</p>
-                    <p>Developer retains full ownership of all proprietary materials, including:</p>
+                    <p class="contract-subheading" data-i18n="cmodal.s6.sub1">6.1 Developer Ownership</p>
+                    <p data-i18n="cmodal.s6.p1">Developer retains full ownership of all proprietary materials, including:</p>
                     <ul>
-                        <li>Source code</li>
-                        <li>Backend logic and architecture</li>
-                        <li>Custom components, scripts, and utilities</li>
-                        <li>Developer's internal systems, tools, libraries, and workflows</li>
+                        <li data-i18n="cmodal.s6.li1">Source code</li>
+                        <li data-i18n="cmodal.s6.li2">Backend logic and architecture</li>
+                        <li data-i18n="cmodal.s6.li3">Custom components, scripts, and utilities</li>
+                        <li data-i18n="cmodal.s6.li4">Developer's internal systems, tools, libraries, and workflows</li>
                     </ul>
-                    <p>These materials are licensed to Client solely for use within the delivered project and may not be reused,
+                    <p data-i18n="cmodal.s6.p2">These materials are licensed to Client solely for use within the delivered project and may not be reused,
                     distributed, or modified for other purposes without written authorization.</p>
 
-                    <p class="contract-subheading">6.2 Client Ownership</p>
-                    <p>Upon full payment:</p>
-                    <p>Client gains ownership of:</p>
+                    <p class="contract-subheading" data-i18n="cmodal.s6.sub2">6.2 Client Ownership</p>
+                    <p data-i18n="cmodal.s6.p3">Upon full payment:</p>
+                    <p data-i18n="cmodal.s6.p4">Client gains ownership of:</p>
                     <ul>
-                        <li>The final website design</li>
-                        <li>All content supplied by Client (text, images, media)</li>
-                        <li>The compiled, minified production build of the project</li>
+                        <li data-i18n="cmodal.s6.li5">The final website design</li>
+                        <li data-i18n="cmodal.s6.li6">All content supplied by Client (text, images, media)</li>
+                        <li data-i18n="cmodal.s6.li7">The compiled, minified production build of the project</li>
                     </ul>
-                    <p>Client does not receive ownership of Developer's raw source code unless purchased through a Source Code 
+                    <p data-i18n="cmodal.s6.p5">Client does not receive ownership of Developer's raw source code unless purchased through a Source Code
                     License Agreement, which carries additional fees.</p>
                 </section>
 
                 <!-- Maintenance & Support -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">7. MAINTENANCE & SUPPORT</p>
-                    <p>Maintenance plans (Basic, Professional, Premium) may be purchased separately and will be defined in the SOW.</p>
-                    <p>Maintenance plans do not include:</p>
+                    <p class="contract-heading" data-i18n="cmodal.s7.heading">7. MAINTENANCE & SUPPORT</p>
+                    <p data-i18n="cmodal.s7.p1">Maintenance plans (Basic, Professional, Premium) may be purchased separately and will be defined in the SOW.</p>
+                    <p data-i18n="cmodal.s7.p2">Maintenance plans do not include:</p>
                     <ul>
-                        <li>New pages or sections</li>
-                        <li>New features or functionalities</li>
-                        <li>Major redesigns</li>
-                        <li>Third-party outages or service provider failures</li>
-                        <li>Policy changes from platforms (e.g., Google, Firebase)</li>
-                        <li>Fixes related to Client misuse or unauthorized alterations</li>
+                        <li data-i18n="cmodal.s7.li1">New pages or sections</li>
+                        <li data-i18n="cmodal.s7.li2">New features or functionalities</li>
+                        <li data-i18n="cmodal.s7.li3">Major redesigns</li>
+                        <li data-i18n="cmodal.s7.li4">Third-party outages or service provider failures</li>
+                        <li data-i18n="cmodal.s7.li5">Policy changes from platforms (e.g., Google, Firebase)</li>
+                        <li data-i18n="cmodal.s7.li6">Fixes related to Client misuse or unauthorized alterations</li>
                     </ul>
-                    <p>Such items require additional billing.</p>
+                    <p data-i18n="cmodal.s7.p3">Such items require additional billing.</p>
                 </section>
 
                 <!-- Timeline & Delivery -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">8. TIMELINE & DELIVERY</p>
-                    <p>Developer will provide an estimated project timeline. Client acknowledges these timelines are estimates, 
+                    <p class="contract-heading" data-i18n="cmodal.s8.heading">8. TIMELINE & DELIVERY</p>
+                    <p data-i18n="cmodal.s8.p1">Developer will provide an estimated project timeline. Client acknowledges these timelines are estimates,
                     not guarantees.</p>
-                    <p>Any Client-caused delay automatically extends the project schedule.</p>
+                    <p data-i18n="cmodal.s8.p2">Any Client-caused delay automatically extends the project schedule.</p>
                 </section>
 
                 <!-- Change Orders -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">9. CHANGE ORDERS</p>
-                    <p>Any request modifying the Project Scope—including added features, redesigns, advanced animations, dashboards, 
+                    <p class="contract-heading" data-i18n="cmodal.s9.heading">9. CHANGE ORDERS</p>
+                    <p data-i18n="cmodal.s9.p1">Any request modifying the Project Scope—including added features, redesigns, advanced animations, dashboards,
                     APIs, or system logic—requires a signed Change Order that includes revised pricing and timelines.</p>
-                    <p>Developer is not obligated to begin any additional work until the Change Order is fully approved and paid 
+                    <p data-i18n="cmodal.s9.p2">Developer is not obligated to begin any additional work until the Change Order is fully approved and paid
                     when applicable.</p>
                 </section>
 
                 <!-- Warranty & Limitations -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">10. WARRANTY & LIMITATIONS</p>
+                    <p class="contract-heading" data-i18n="cmodal.s10.heading">10. WARRANTY & LIMITATIONS</p>
 
-                    <p class="contract-subheading">10.1 Developer Warranty</p>
-                    <p>Developer warrants that the delivered website will function substantially as described in the SOW for 30 days
+                    <p class="contract-subheading" data-i18n="cmodal.s10.sub1">10.1 Developer Warranty</p>
+                    <p data-i18n="cmodal.s10.p1">Developer warrants that the delivered website will function substantially as described in the SOW for 30 days
                     after deployment.</p>
 
-                    <p class="contract-subheading">10.2 Exclusions</p>
-                    <p>This warranty does not apply to issues caused by:</p>
+                    <p class="contract-subheading" data-i18n="cmodal.s10.sub2">10.2 Exclusions</p>
+                    <p data-i18n="cmodal.s10.p2">This warranty does not apply to issues caused by:</p>
                     <ul>
-                        <li>Client-modified code or settings</li>
-                        <li>Third-party service changes or outages</li>
-                        <li>Library, package, or plugin updates</li>
-                        <li>Hosting issues</li>
-                        <li>Improper access, misuse, or security breaches caused by Client</li>
-                        <li>Weak passwords or unprotected credentials</li>
+                        <li data-i18n="cmodal.s10.li1">Client-modified code or settings</li>
+                        <li data-i18n="cmodal.s10.li2">Third-party service changes or outages</li>
+                        <li data-i18n="cmodal.s10.li3">Library, package, or plugin updates</li>
+                        <li data-i18n="cmodal.s10.li4">Hosting issues</li>
+                        <li data-i18n="cmodal.s10.li5">Improper access, misuse, or security breaches caused by Client</li>
+                        <li data-i18n="cmodal.s10.li6">Weak passwords or unprotected credentials</li>
                     </ul>
 
-                    <p class="contract-subheading">10.3 Liability Limitations</p>
-                    <p>Developer's total liability under this Agreement is limited to the total amount paid by Client. Developer 
+                    <p class="contract-subheading" data-i18n="cmodal.s10.sub3">10.3 Liability Limitations</p>
+                    <p data-i18n="cmodal.s10.p3">Developer's total liability under this Agreement is limited to the total amount paid by Client. Developer
                     is not liable for:</p>
                     <ul>
-                        <li>Lost revenue or business interruption</li>
-                        <li>Data loss</li>
-                        <li>Security incidents caused by third parties or Client</li>
-                        <li>Indirect, special, or consequential damages</li>
+                        <li data-i18n="cmodal.s10.li7">Lost revenue or business interruption</li>
+                        <li data-i18n="cmodal.s10.li8">Data loss</li>
+                        <li data-i18n="cmodal.s10.li9">Security incidents caused by third parties or Client</li>
+                        <li data-i18n="cmodal.s10.li10">Indirect, special, or consequential damages</li>
                     </ul>
                 </section>
 
                 <!-- Confidentiality -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">11. CONFIDENTIALITY</p>
-                    <p>Both Parties agree to maintain the confidentiality of all proprietary or sensitive information exchanged 
-                    during the course of this project. Confidential information shall not be disclosed to third parties without 
+                    <p class="contract-heading" data-i18n="cmodal.s11.heading">11. CONFIDENTIALITY</p>
+                    <p data-i18n="cmodal.s11.p1">Both Parties agree to maintain the confidentiality of all proprietary or sensitive information exchanged
+                    during the course of this project. Confidential information shall not be disclosed to third parties without
                     prior written consent unless required by law.</p>
                 </section>
 
                 <!-- Indemnification -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">12. INDEMNIFICATION</p>
-                    <p>Client agrees to indemnify and hold Developer harmless from any claims arising out of:</p>
+                    <p class="contract-heading" data-i18n="cmodal.s12.heading">12. INDEMNIFICATION</p>
+                    <p data-i18n="cmodal.s12.p1">Client agrees to indemnify and hold Developer harmless from any claims arising out of:</p>
                     <ul>
-                        <li>Content supplied by Client (including copyrighted or illegal material)</li>
-                        <li>Misuse or misconfiguration of the website</li>
-                        <li>Unauthorized access resulting from Client actions</li>
-                        <li>Any business decisions made using data produced by the website</li>
+                        <li data-i18n="cmodal.s12.li1">Content supplied by Client (including copyrighted or illegal material)</li>
+                        <li data-i18n="cmodal.s12.li2">Misuse or misconfiguration of the website</li>
+                        <li data-i18n="cmodal.s12.li3">Unauthorized access resulting from Client actions</li>
+                        <li data-i18n="cmodal.s12.li4">Any business decisions made using data produced by the website</li>
                     </ul>
                 </section>
 
                 <!-- Termination -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">13. TERMINATION</p>
-                    <p>Either Party may terminate this Agreement with 7 days written notice.</p>
-                    <p>If Client terminates early:</p>
+                    <p class="contract-heading" data-i18n="cmodal.s13.heading">13. TERMINATION</p>
+                    <p data-i18n="cmodal.s13.p1">Either Party may terminate this Agreement with 7 days written notice.</p>
+                    <p data-i18n="cmodal.s13.p2">If Client terminates early:</p>
                     <ul>
-                        <li>All deposits are forfeited</li>
-                        <li>All completed work must be paid for immediately</li>
-                        <li>Developer retains all rights to unfinished work</li>
+                        <li data-i18n="cmodal.s13.li1">All deposits are forfeited</li>
+                        <li data-i18n="cmodal.s13.li2">All completed work must be paid for immediately</li>
+                        <li data-i18n="cmodal.s13.li3">Developer retains all rights to unfinished work</li>
                     </ul>
                 </section>
 
                 <!-- Governing Law -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">14. GOVERNING LAW</p>
-                    <p>This Agreement shall be governed by and construed in accordance with the laws of the State of California 
+                    <p class="contract-heading" data-i18n="cmodal.s14.heading">14. GOVERNING LAW</p>
+                    <p data-i18n="cmodal.s14.p1">This Agreement shall be governed by and construed in accordance with the laws of the State of California
                     without regard to conflict-of-law principles.</p>
                 </section>
 
                 <!-- Entire Agreement -->
                 <section class="contract-section-inner">
-                    <p class="contract-heading">15. ENTIRE AGREEMENT</p>
-                    <p>This Agreement, together with all attached SOWs, proposals, and addenda, constitutes the entire and complete 
+                    <p class="contract-heading" data-i18n="cmodal.s15.heading">15. ENTIRE AGREEMENT</p>
+                    <p data-i18n="cmodal.s15.p1">This Agreement, together with all attached SOWs, proposals, and addenda, constitutes the entire and complete
                     agreement between the Parties and supersedes all prior discussions, negotiations, or understandings.</p>
                 </section>
 
@@ -816,34 +821,34 @@
                     <div class="form-group checkbox-group">
                         <label class="checkbox-label">
                             <input type="checkbox" id="acknowledgment" name="acknowledgment" required>
-                            <span>I acknowledge that I have read, understood, and agree to all terms and conditions outlined in this Agreement *</span>
+                            <span data-i18n="cmodal.acknowledgment">I acknowledge that I have read, understood, and agree to all terms and conditions outlined in this Agreement *</span>
                         </label>
                     </div>
                 </section>
 
                 <!-- Signatures -->
                 <section class="contract-section-inner signatures">
-                    <p class="contract-heading">SIGNATURES</p>
+                    <p class="contract-heading" data-i18n="cmodal.signaturesHeading">SIGNATURES</p>
 
                     <div class="signature-grid">
                         <!-- Developer Signature (only shown to developer) -->
                         <div class="signature-block" id="devSignatureBlock" style="display: none;">
-                            <p class="contract-subheading">Developer – Scarlo</p>
+                            <p class="contract-subheading" data-i18n="cmodal.devSignatureLabel">Developer – Scarlo</p>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="devName">Name</label>
+                                    <label for="devName" data-i18n="cmodal.nameLabel">Name</label>
                                     <input type="text" id="devName" name="devName" value="Carlos Martin" readonly>
                                 </div>
                                 <div class="form-group">
-                                    <label for="devDate">Date *</label>
+                                    <label for="devDate" data-i18n="cmodal.dateLabelReq">Date *</label>
                                     <input type="date" id="devDate" name="devDate">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Signature</label>
+                                <label data-i18n="cmodal.signatureLabel">Signature</label>
                                 <div class="signature-pad-container">
                                     <canvas id="devSignaturePad" class="signature-pad"></canvas>
-                                    <button type="button" class="clear-btn" data-canvas="devSignaturePad">Clear</button>
+                                    <button type="button" class="clear-btn" data-canvas="devSignaturePad" data-i18n="cmodal.clearBtn">Clear</button>
                                 </div>
                             </div>
                         </div>
@@ -853,55 +858,55 @@
                             <p class="contract-subheading">Client – <span id="clientNameDisplay">Client Name</span></p>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label for="clientSignerName">Name *</label>
-                                    <input type="text" id="clientSignerName" name="clientSignerName" placeholder="Full name of person signing">
+                                    <label for="clientSignerName" data-i18n="cmodal.clientNameLabel">Name *</label>
+                                    <input type="text" id="clientSignerName" name="clientSignerName" placeholder="Full name of person signing" data-i18n-placeholder="cmodal.clientNamePlaceholder">
                                 </div>
                                 <div class="form-group">
-                                    <label for="clientDate">Date *</label>
+                                    <label for="clientDate" data-i18n="cmodal.clientDateLabel">Date *</label>
                                     <input type="date" id="clientDate" name="clientDate">
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label>Signature *</label>
+                                <label data-i18n="cmodal.clientSignatureLabel">Signature *</label>
                                 <div class="signature-pad-container">
                                     <canvas id="clientSignaturePad" class="signature-pad"></canvas>
-                                    <button type="button" class="clear-btn" data-canvas="clientSignaturePad">Clear</button>
+                                    <button type="button" class="clear-btn" data-canvas="clientSignaturePad" data-i18n="cmodal.clearBtn">Clear</button>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Developer Info (shown to client after they sign) -->
                         <div class="signature-block developer-pending" id="devPendingBlock" style="display: none;">
-                            <p class="contract-subheading">Developer Signature (Pending)</p>
+                            <p class="contract-subheading" data-i18n="cmodal.devPending">Developer Signature (Pending)</p>
                             <div class="pending-notice">
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <polyline points="12 6 12 12 16 14"></polyline>
                                 </svg>
-                                <p><strong>Pending Developer Signature</strong></p>
-                                <p>Once signed, you can view, download, and share the fully executed contract here.</p>
+                                <p><strong data-i18n="cmodal.pendingDevTitle">Pending Developer Signature</strong></p>
+                                <p data-i18n="cmodal.pendingDevMsg">Once signed, you can view, download, and share the fully executed contract here.</p>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Status message for clients -->
                     <div id="clientSubmitMessage" style="display: none;" class="contract-note">
-                        <p><strong>✓ Your signature has been submitted successfully!</strong></p>
-                        <p>Pending developer signature. Once signed, you can view, download, and share the fully executed contract here.</p>
+                        <p><strong data-i18n="cmodal.successTitle">✓ Your signature has been submitted successfully!</strong></p>
+                        <p data-i18n="cmodal.successMsg">Pending developer signature. Once signed, you can view, download, and share the fully executed contract here.</p>
                     </div>
                 </section>
                 <!-- Submit Buttons -->
                 <div class="action-buttons">
-                    <button type="button" id="downloadBtn" class="btn btn-secondary" style="display: none;">Download PDF</button>
+                    <button type="button" id="downloadBtn" class="btn btn-secondary" style="display: none;" data-i18n="cmodal.downloadBtn">Download PDF</button>
                     <button type="button" class="btn btn-primary" id="submitBtn">
-                       <span id="submitBtnText">Submit Agreement</span>
+                       <span id="submitBtnText" data-i18n="cmodal.submitBtn">Submit Agreement</span>
                     </button>
                 </div>
             </form>
                            </form>
 
             <div class="modal-footer">
-                <p>&copy; 2025 Scarlo. All rights reserved.</p>
+                <p data-i18n="cmodal.footer">&copy; 2025 Scarlo. All rights reserved.</p>
             </div>
         </div>
     </div>
@@ -911,9 +916,9 @@
         <div class="container">
             <div class="contact-wrapper">
                 <div class="contact-content">
-                    <div class="section-eyebrow">Get in Touch</div>
-                    <h2 class="section-title">Let's convert<br> your vision<br> into reality...</h2>
-                    <p class="contact-tagline">Ready to elevate your digital presence? Let's talk.</p>
+                    <div class="section-eyebrow" data-i18n="contact.eyebrow">Get in Touch</div>
+                    <h2 class="section-title" data-i18n-html="contact.title">Let's convert<br> your vision<br> into reality...</h2>
+                    <p class="contact-tagline" data-i18n="contact.tagline">Ready to elevate your digital presence? Let's talk.</p>
                 </div>
                 
                 <div class="form-wrapper">
@@ -921,30 +926,30 @@
                         <div class="form-row">
                             <div class="form-field">
                                 <input type="text" id="name" required>
-                                <label for="name">Name</label>
+                                <label for="name" data-i18n="contact.nameLabel">Name</label>
                                 <div class="field-line"></div>
                             </div>
                             <div class="form-field">
                                 <input type="email" id="email" required>
-                                <label for="email">Email</label>
+                                <label for="email" data-i18n="contact.emailLabel">Email</label>
                                 <div class="field-line"></div>
                             </div>
                         </div>
                         
                         <div class="form-field">
                             <input type="text" id="subject" required>
-                            <label for="subject">Subject</label>
+                            <label for="subject" data-i18n="contact.subjectLabel">Subject</label>
                             <div class="field-line"></div>
                         </div>
                         
                         <div class="form-field">
                             <textarea id="message" rows="2" required></textarea>
-                            <label for="message">Message</label>
+                            <label for="message" data-i18n="contact.messageLabel">Message</label>
                             <div class="field-line"></div>
                         </div>
                         
                         <button type="submit" class="btn-submit">
-                            <span class="btn-text">Send message</span>
+                            <span class="btn-text" data-i18n="contact.sendBtn">Send message</span>
                             <span class="btn-icon">
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                                     <path d="M1 8H15M15 8L8 1M15 8L8 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -987,7 +992,7 @@
                             <img id="footerLogo19" src="./images/morph-logo19.png" alt="" loading="lazy">
                         </div>
                     </div>
-                    <p class="footer-tagline">Crafting tomorrow's web, today. We build digital experiences that elevate brands.</p>
+                    <p class="footer-tagline" data-i18n="footer.tagline">Crafting tomorrow's web, today. We build digital experiences that elevate brands.</p>
                     <!-- Social icons - uncomment when multiple platforms are active
                     <div class="footer-social">
                         <a href="https://twitter.com/scaborlo" target="_blank" rel="noopener noreferrer" aria-label="Follow Scarlo on Twitter">
@@ -1004,21 +1009,21 @@
                 </div>
                 <div class="footer-links">
                     <div class="footer-column">
-                        <h4>Navigation</h4>
-                        <a href="#home">Back to Top</a>
-                        <a href="#philosophy">Our Services</a>
-                        <a href="#portfolio">View Portfolio</a>
-                        <a href="#contact">Get in Touch</a>
+                        <h4 data-i18n="footer.navTitle">Navigation</h4>
+                        <a href="#home" data-i18n="footer.backToTop">Back to Top</a>
+                        <a href="#philosophy" data-i18n="footer.ourServices">Our Services</a>
+                        <a href="#portfolio" data-i18n="footer.viewPortfolio">View Portfolio</a>
+                        <a href="#contact" data-i18n="footer.getInTouch">Get in Touch</a>
                         <a href="https://www.linkedin.com/company/scarlo-dev/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Legal</h4>
-                        <a href="/agreement/" target="_blank">User Agreement</a>
-                        <a href="/privacy/" target="_blank">Privacy Policy</a>
-                        <a href="/terms/" target="_blank">Terms of Service</a>
+                        <h4 data-i18n="footer.legalTitle">Legal</h4>
+                        <a href="/agreement/" target="_blank" data-i18n="footer.userAgreement">User Agreement</a>
+                        <a href="/privacy/" target="_blank" data-i18n="footer.privacyPolicy">Privacy Policy</a>
+                        <a href="/terms/" target="_blank" data-i18n="footer.termsOfService">Terms of Service</a>
                     </div>
                     <div class="footer-column">
-                        <h4>Resources</h4>
+                        <h4 data-i18n="footer.resourcesTitle">Resources</h4>
                         <a href="https://web.dev/" target="_blank" rel="noopener noreferrer">Web.dev by Google</a>
                         <a href="https://developer.mozilla.org/" target="_blank" rel="noopener noreferrer">MDN Web Docs</a>
                         <a href="https://www.w3.org/standards/" target="_blank" rel="noopener noreferrer">W3C Standards</a>
@@ -1026,7 +1031,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2025 Scarlo. Crafted with precision.</p>
+                <p data-i18n="footer.copyright">&copy; 2025 Scarlo. Crafted with precision.</p>
                 <button class="footer-back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" aria-label="Back to top">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
                 </button>
@@ -1046,44 +1051,44 @@
             </button>
 
             <div class="modal-header">
-                <h2>Request Help</h2>
-                <p class="modal-subtitle">Having trouble with the contract? Let us know!</p>
+                <h2 data-i18n="help.title">Request Help</h2>
+                <p class="modal-subtitle" data-i18n="help.subtitle">Having trouble with the contract? Let us know!</p>
             </div>
 
             <form id="helpRequestForm" class="help-form">
                 <div class="form-group" id="helpContactGroup">
                     <div class="contact-tabs" id="contactTabs" style="display: none;">
-                        <button type="button" class="contact-tab active" data-type="email">Email</button>
-                        <button type="button" class="contact-tab" data-type="phone">Phone</button>
+                        <button type="button" class="contact-tab active" data-type="email" data-i18n="help.emailTab">Email</button>
+                        <button type="button" class="contact-tab" data-type="phone" data-i18n="help.phoneTab">Phone</button>
                     </div>
-                    <label for="helpContact" id="helpContactLabel">Your Email *</label>
-                    <input type="email" id="helpContact" name="helpContact" required placeholder="your@email.com">
-                    <small class="field-hint" id="helpContactHint">We'll use this to contact you about your request</small>
+                    <label for="helpContact" id="helpContactLabel" data-i18n="help.emailLabel">Your Email *</label>
+                    <input type="email" id="helpContact" name="helpContact" required placeholder="your@email.com" data-i18n-placeholder="help.emailPlaceholder">
+                    <small class="field-hint" id="helpContactHint" data-i18n="help.emailHint">We'll use this to contact you about your request</small>
                 </div>
 
                 <div class="form-group">
-                    <label for="helpIssue">What do you need help with? *</label>
+                    <label for="helpIssue" data-i18n="help.issueLabel">What do you need help with? *</label>
                     <select id="helpIssue" name="helpIssue" required>
-                        <option value="">Select an issue...</option>
-                        <option value="verification_code">Verification Code Issues</option>
-                        <option value="contract_not_showing">Contract not showing</option>
-                        <option value="sow_not_showing">SOW not showing</option>
-                        <option value="problems_submitting">Problems submitting contract</option>
-                        <option value="signature_issues">Signature issues</option>
-                        <option value="account_access">Account access problems</option>
-                        <option value="other">Other issues</option>
+                        <option value="" data-i18n="help.issueDefault">Select an issue...</option>
+                        <option value="verification_code" data-i18n="help.issueVerification">Verification Code Issues</option>
+                        <option value="contract_not_showing" data-i18n="help.issueContract">Contract not showing</option>
+                        <option value="sow_not_showing" data-i18n="help.issueSow">SOW not showing</option>
+                        <option value="problems_submitting" data-i18n="help.issueSubmitting">Problems submitting contract</option>
+                        <option value="signature_issues" data-i18n="help.issueSignature">Signature issues</option>
+                        <option value="account_access" data-i18n="help.issueAccess">Account access problems</option>
+                        <option value="other" data-i18n="help.issueOther">Other issues</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="helpDetails">Please provide details *</label>
-                    <textarea id="helpDetails" name="helpDetails" required placeholder="Describe the issue you're experiencing..." rows="4"></textarea>
+                    <label for="helpDetails" data-i18n="help.detailsLabel">Please provide details *</label>
+                    <textarea id="helpDetails" name="helpDetails" required placeholder="Describe the issue you're experiencing..." data-i18n-placeholder="help.detailsPlaceholder" rows="4"></textarea>
                 </div>
 
                 <div class="help-form-footer">
-                    <button type="button" class="btn btn-secondary" id="cancelHelpBtn">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="cancelHelpBtn" data-i18n="help.cancelBtn">Cancel</button>
                     <button type="submit" class="btn btn-primary">
-                        <span id="helpSubmitText">Send Help Request</span>
+                        <span id="helpSubmitText" data-i18n="help.submitBtn">Send Help Request</span>
                     </button>
                 </div>
 
@@ -1092,8 +1097,8 @@
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                     </svg>
-                    <p><strong>Help request sent!</strong></p>
-                    <p>We've received your request and will get back to you shortly at your email address.</p>
+                    <p><strong data-i18n="help.successTitle">Help request sent!</strong></p>
+                    <p data-i18n="help.successMsg">We've received your request and will get back to you shortly at your email address.</p>
                 </div>
             </form>
         </div>
@@ -1112,15 +1117,15 @@
                         <circle cx="16" cy="13" r="1" fill="currentColor"></circle>
                     </svg>
                 </span>
-                <span class="cookie-title">Cookie Preferences</span>
+                <span class="cookie-title" data-i18n="cookie.title">Cookie Preferences</span>
             </div>
-            <p class="cookie-text">We use cookies to enhance your experience. Customize your preferences below.</p>
+            <p class="cookie-text" data-i18n="cookie.text">We use cookies to enhance your experience. Customize your preferences below.</p>
 
             <div class="cookie-toggles">
                 <div class="cookie-toggle-row">
                     <div class="cookie-toggle-info">
-                        <span class="cookie-toggle-label">Essential</span>
-                        <span class="cookie-toggle-desc">Required for site functionality</span>
+                        <span class="cookie-toggle-label" data-i18n="cookie.essential">Essential</span>
+                        <span class="cookie-toggle-desc" data-i18n="cookie.essentialDesc">Required for site functionality</span>
                     </div>
                     <label class="cookie-switch cookie-switch-disabled">
                         <input type="checkbox" checked disabled>
@@ -1129,8 +1134,8 @@
                 </div>
                 <div class="cookie-toggle-row">
                     <div class="cookie-toggle-info">
-                        <span class="cookie-toggle-label">Analytics</span>
-                        <span class="cookie-toggle-desc">Help us improve our site</span>
+                        <span class="cookie-toggle-label" data-i18n="cookie.analytics">Analytics</span>
+                        <span class="cookie-toggle-desc" data-i18n="cookie.analyticsDesc">Help us improve our site</span>
                     </div>
                     <label class="cookie-switch">
                         <input type="checkbox" id="cookieAnalytics">
@@ -1139,8 +1144,8 @@
                 </div>
                 <div class="cookie-toggle-row">
                     <div class="cookie-toggle-info">
-                        <span class="cookie-toggle-label">Marketing</span>
-                        <span class="cookie-toggle-desc">Personalized content & ads</span>
+                        <span class="cookie-toggle-label" data-i18n="cookie.marketing">Marketing</span>
+                        <span class="cookie-toggle-desc" data-i18n="cookie.marketingDesc">Personalized content & ads</span>
                     </div>
                     <label class="cookie-switch">
                         <input type="checkbox" id="cookieMarketing">
@@ -1150,10 +1155,10 @@
             </div>
 
             <div class="cookie-actions">
-                <button id="cookieDecline" class="cookie-btn cookie-btn-secondary">Decline All</button>
-                <button id="cookieAccept" class="cookie-btn cookie-btn-primary">Save Preferences</button>
+                <button id="cookieDecline" class="cookie-btn cookie-btn-secondary" data-i18n="cookie.decline">Decline All</button>
+                <button id="cookieAccept" class="cookie-btn cookie-btn-primary" data-i18n="cookie.save">Save Preferences</button>
             </div>
-            <a href="/privacy/" class="cookie-privacy-link" target="_blank">Privacy Policy</a>
+            <a href="/privacy/" class="cookie-privacy-link" target="_blank" data-i18n="cookie.privacyLink">Privacy Policy</a>
         </div>
     </div>
 
@@ -1167,6 +1172,7 @@
     </button>
 
     <!-- Scripts - deferred for performance -->
+    <script src="./src/translations.js"></script>
     <script src="./LogoAnimation.js" defer></script>
     <script src="./navbarlogoanimation.js" defer></script>
 </body>
