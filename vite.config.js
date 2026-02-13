@@ -46,9 +46,6 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        agreement: resolve(__dirname, 'agreement/index.html'),
-        privacy: resolve(__dirname, 'privacy/index.html'),
-        terms: resolve(__dirname, 'terms/index.html'),
       },
       output: {
         manualChunks: undefined,

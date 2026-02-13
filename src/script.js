@@ -3,6 +3,14 @@
 (function() {
     'use strict';
 
+    // Alias global translation functions (set by translations.js loaded before this module)
+    var t = window.t || function(k) { return k; };
+    var getCurrentLang = window.getCurrentLang || function() { return localStorage.getItem('scarlo-lang') || 'en'; };
+    var setLang = window.setLang || function() {};
+    var tFeature = window.tFeature || function(k) { return k; };
+    var translateStoredFeature = window.translateStoredFeature || function(l) { return l; };
+    var translateAddonByKey = window.translateAddonByKey || function(k, f) { return f || k; };
+
     // === UTILITY FUNCTIONS ===
     var $ = function(selector, parent) {
         return (parent || document).querySelector(selector);
