@@ -15,7 +15,8 @@ export const StaggeredMenu = ({
   changeMenuColorOnOpen = true,
   onMenuOpen,
   onMenuClose,
-  onItemClick
+  onItemClick,
+  languageToggle
 }) => {
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
@@ -417,6 +418,11 @@ export const StaggeredMenu = ({
 
       {/* Menu Panel */}
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>
+        {languageToggle && (
+          <div className="sm-lang-section">
+            {languageToggle}
+          </div>
+        )}
         <div className="sm-panel-inner">
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (

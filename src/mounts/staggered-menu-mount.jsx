@@ -1,15 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import StaggeredMenu from '../components/StaggeredMenu.jsx';
 
-// Menu items matching your existing navigation
-const menuItems = [
-  { label: 'Home', ariaLabel: 'Go to home section', link: '#home' },
-  { label: 'Services', ariaLabel: 'View our services', link: '#philosophy' },
-  { label: 'Portfolio', ariaLabel: 'See our work', link: '#portfolio' },
-  { label: 'Agreement', ariaLabel: 'View development agreement', link: '#contract' },
-  { label: 'Connect', ariaLabel: 'Get in touch', link: '#contact' }
+// Translation keys for menu items
+const menuItemDefs = [
+  { i18nKey: 'nav.home', fallback: 'Home', ariaLabel: 'Go to home section', link: '#home' },
+  { i18nKey: 'nav.services', fallback: 'Services', ariaLabel: 'View our services', link: '#philosophy' },
+  { i18nKey: 'nav.portfolio', fallback: 'Portfolio', ariaLabel: 'See our work', link: '#portfolio' },
+  { i18nKey: 'nav.agreement', fallback: 'Agreement', ariaLabel: 'View development agreement', link: '#contract' },
+  { i18nKey: 'nav.connect', fallback: 'Connect', ariaLabel: 'Get in touch', link: '#contact' }
 ];
+
+// Helper to get translated label using the global t() function
+const translate = (key, fallback) => {
+  if (typeof window.t === 'function') {
+    const result = window.t(key);
+    return (result && result !== key) ? result : fallback;
+  }
+  return fallback;
+};
+
+const getLang = () => {
+  if (typeof window.getCurrentLang === 'function') return window.getCurrentLang();
+  return localStorage.getItem('scarlo-lang') || 'en';
+};
+
+// Build translated menu items
+const getMenuItems = () => menuItemDefs.map(def => ({
+  label: translate(def.i18nKey, def.fallback),
+  ariaLabel: def.ariaLabel,
+  link: def.link
+}));
 
 // LinkedIn SVG Icon Component
 const LinkedInIcon = () => (
@@ -42,19 +63,19 @@ const socialItems = [
 // Handle smooth scroll navigation
 const handleItemClick = (item, e) => {
   e.preventDefault();
-  
+
   const targetId = item.link;
   if (!targetId || targetId === '#') return;
-  
+
   const target = document.querySelector(targetId);
   if (target) {
     const navbar = document.querySelector('.navbar');
     const navHeight = navbar ? navbar.offsetHeight : 0;
     const targetPosition = target.offsetTop - navHeight;
-    
-    window.scrollTo({ 
-      top: targetPosition, 
-      behavior: 'smooth' 
+
+    window.scrollTo({
+      top: targetPosition,
+      behavior: 'smooth'
     });
   }
 };
@@ -62,13 +83,127 @@ const handleItemClick = (item, e) => {
 // Handle menu open/close callbacks
 const handleMenuOpen = () => {
   console.log('Staggered menu opened');
-  // Add class to body for any global styling needs
   document.body.classList.add('staggered-menu-open');
 };
 
 const handleMenuClose = () => {
   console.log('Staggered menu closed');
   document.body.classList.remove('staggered-menu-open');
+};
+
+// Language Toggle Component for inside the menu
+const MenuLanguageToggle = ({ lang, onSwitch }) => {
+  return (
+    <div className="sm-lang-toggle" role="radiogroup" aria-label="Language">
+      <button
+        className={`sm-lang-btn${lang === 'en' ? ' active' : ''}`}
+        onClick={() => onSwitch('en')}
+        aria-checked={lang === 'en'}
+        role="radio"
+        type="button"
+      >
+        EN
+      </button>
+      <span className="sm-lang-divider">|</span>
+      <button
+        className={`sm-lang-btn${lang === 'es' ? ' active' : ''}`}
+        onClick={() => onSwitch('es')}
+        aria-checked={lang === 'es'}
+        role="radio"
+        type="button"
+      >
+        ES
+      </button>
+    </div>
+  );
+};
+
+// Wrapper component that handles language state and re-renders
+const StaggeredMenuApp = () => {
+  const [lang, setLangState] = useState(getLang);
+
+  const handleLangSwitch = useCallback((newLang) => {
+    // Update global state
+    if (typeof window.setLang === 'function') window.setLang(newLang);
+    setLangState(newLang);
+
+    // Sync the navbar toggle buttons
+    const navbarToggle = document.getElementById('langToggle');
+    if (navbarToggle) {
+      navbarToggle.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === newLang);
+      });
+    }
+
+    // Apply translations to the rest of the page using the Navigation prototype
+    if (typeof window.t === 'function') {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        const translated = window.t(key);
+        if (translated && translated !== key) {
+          if (el.classList.contains('rotating-text')) return;
+          el.textContent = translated;
+        }
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach(el => {
+        const key = el.getAttribute('data-i18n-html');
+        const translated = window.t(key);
+        if (translated && translated !== key) el.innerHTML = translated;
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        const translated = window.t(key);
+        if (translated && translated !== key) el.placeholder = translated;
+      });
+      // Auth button
+      const authText = document.getElementById('authStatusText');
+      if (authText) {
+        const isLoggedIn = authText.textContent === 'Sign Out' || authText.textContent === 'Cerrar Sesión';
+        authText.textContent = isLoggedIn ? window.t('nav.signOut') : window.t('nav.signIn');
+      }
+      // Rotating text
+      if (window.rotatingText && window.rotatingText.switchLanguage) {
+        window.rotatingText.switchLanguage();
+      }
+    }
+  }, []);
+
+  // Listen for language changes from the navbar toggle
+  useEffect(() => {
+    const navbarToggle = document.getElementById('langToggle');
+    if (!navbarToggle) return;
+
+    const handler = (e) => {
+      const btn = e.target.closest('.lang-btn');
+      if (!btn) return;
+      const newLang = btn.getAttribute('data-lang');
+      if (newLang) setLangState(newLang);
+    };
+
+    navbarToggle.addEventListener('click', handler);
+    return () => navbarToggle.removeEventListener('click', handler);
+  }, []);
+
+  const menuItems = getMenuItems();
+
+  return (
+    <StaggeredMenu
+      position="right"
+      items={menuItems}
+      socialItems={socialItems}
+      displaySocials={true}
+      displayItemNumbering={true}
+      menuButtonColor="#fff"
+      openMenuButtonColor="#fff"
+      changeMenuColorOnOpen={true}
+      colors={['#0a0a12', '#12121a', '#1a1a24']}
+      accentColor="rgba(255, 255, 255, 0.9)"
+      onMenuOpen={handleMenuOpen}
+      onMenuClose={handleMenuClose}
+      onItemClick={handleItemClick}
+      languageToggle={<MenuLanguageToggle lang={lang} onSwitch={handleLangSwitch} />}
+    />
+  );
 };
 
 // Mount the component
@@ -78,21 +213,7 @@ if (mountPoint) {
   const root = ReactDOM.createRoot(mountPoint);
   root.render(
     <React.StrictMode>
-      <StaggeredMenu
-        position="right"
-        items={menuItems}
-        socialItems={socialItems}
-        displaySocials={true}
-        displayItemNumbering={true}
-        menuButtonColor="#fff"
-        openMenuButtonColor="#fff"
-        changeMenuColorOnOpen={true}
-        colors={['#0a0a12', '#12121a', '#1a1a24']}
-        accentColor="rgba(255, 255, 255, 0.9)"
-        onMenuOpen={handleMenuOpen}
-        onMenuClose={handleMenuClose}
-        onItemClick={handleItemClick}
-      />
+      <StaggeredMenuApp />
     </React.StrictMode>
   );
 } else {

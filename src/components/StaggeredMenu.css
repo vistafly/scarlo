@@ -295,6 +295,58 @@
   transform: scale(1.1);
 }
 
+/* Language Toggle Section - top-left of panel */
+.sm-lang-section {
+  padding: 1.5rem 0 0 0;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
+.sm-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sm-lang-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.sm-lang-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-text, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0.55rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.sm-lang-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.sm-lang-btn.active {
+  color: #fff;
+  background: rgba(99, 102, 241, 0.5);
+}
+
+.sm-lang-divider {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 0.8rem;
+  user-select: none;
+}
+
 /* Click-away overlay */
 .sm-overlay {
   position: fixed;

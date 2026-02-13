@@ -247,7 +247,8 @@
     Navigation.prototype.init = function() {
         this.setupSmoothScroll();
         this.setupMobileMenu();
-        
+        this.setupLanguageToggle();
+
         var self = this;
         setTimeout(function() {
             self.setupScrollEffects();
@@ -396,28 +397,120 @@
         };
 
         window.addEventListener('scroll', onScrollForLinks, { passive: true });
-        
+
         setTimeout(updateActiveLink, 200);
+    };
+
+    // === LANGUAGE TOGGLE ===
+    Navigation.prototype.setupLanguageToggle = function() {
+        var langToggle = document.getElementById('langToggle');
+        if (!langToggle) return;
+
+        var buttons = langToggle.querySelectorAll('.lang-btn');
+        var currentLang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'en';
+
+        // Set initial active state from localStorage
+        buttons.forEach(function(btn) {
+            btn.classList.toggle('active', btn.getAttribute('data-lang') === currentLang);
+        });
+
+        // Apply stored language on load
+        this.applyLanguage(currentLang);
+
+        var self = this;
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var lang = this.getAttribute('data-lang');
+                if (typeof setLang === 'function') setLang(lang);
+
+                // Update active state
+                buttons.forEach(function(b) { b.classList.remove('active'); });
+                this.classList.add('active');
+
+                // Apply translations
+                self.applyLanguage(lang);
+
+                // Update hero rotating text
+                if (window.rotatingText && window.rotatingText.switchLanguage) {
+                    window.rotatingText.switchLanguage();
+                }
+            });
+        });
+    };
+
+    Navigation.prototype.applyLanguage = function(lang) {
+        if (typeof t !== 'function') return;
+
+        // Update all elements with data-i18n attribute (textContent)
+        var elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(function(el) {
+            var key = el.getAttribute('data-i18n');
+            var translated = t(key);
+            if (translated && translated !== key) {
+                // Never destroy char-wrapped rotating text elements
+                if (el.classList.contains('rotating-text')) return;
+                el.textContent = translated;
+            }
+        });
+
+        // Update all elements with data-i18n-html attribute (innerHTML)
+        var htmlElements = document.querySelectorAll('[data-i18n-html]');
+        htmlElements.forEach(function(el) {
+            var key = el.getAttribute('data-i18n-html');
+            var translated = t(key);
+            if (translated && translated !== key) {
+                el.innerHTML = translated;
+            }
+        });
+
+        // Update all elements with data-i18n-placeholder attribute
+        var placeholderElements = document.querySelectorAll('[data-i18n-placeholder]');
+        placeholderElements.forEach(function(el) {
+            var key = el.getAttribute('data-i18n-placeholder');
+            var translated = t(key);
+            if (translated && translated !== key) {
+                el.placeholder = translated;
+            }
+        });
+
+        // Update auth button text
+        var authText = document.getElementById('authStatusText');
+        if (authText) {
+            var isLoggedIn = authText.textContent === 'Sign Out' || authText.textContent === 'Cerrar Sesión';
+            authText.textContent = isLoggedIn ? t('nav.signOut') : t('nav.signIn');
+        }
     };
 
 // === ROTATING TEXT ANIMATION - ENHANCED ===
 var RotatingText = function() {
     this.wrapper = $('.rotating-text-wrapper');
     if (!this.wrapper) return;
-    
+
     this.texts = $$('.rotating-text');
     this.currentIndex = 0;
+
+    // Pre-translate hero text if current language is not English
+    var lang = typeof getCurrentLang === 'function' ? getCurrentLang() : 'en';
+    if (lang !== 'en' && typeof t === 'function') {
+        var titleLine = document.querySelector('.hero-title-visual .title-line:first-child');
+        if (titleLine) titleLine.textContent = t('hero.titleLine1');
+        this.texts.forEach(function(textEl, i) {
+            var translated = t('hero.r' + i);
+            if (translated) textEl.textContent = translated;
+        });
+    }
+
     this.init();
 };
 
 RotatingText.prototype.init = function() {
     var self = this;
-    
+
     // Wrap each text in character spans
     this.texts.forEach(function(textEl) {
         var originalText = textEl.textContent;
         var html = '';
-        
+
         Array.from(originalText).forEach(function(char) {
             if (char === ' ') {
                 html += '<span class="char-space"> </span>';
@@ -425,10 +518,10 @@ RotatingText.prototype.init = function() {
                 html += '<span class="char">' + char + '</span>';
             }
         });
-        
+
         textEl.innerHTML = html;
     });
-    
+
     // Start rotation after 3 seconds
     setTimeout(function() {
         self.rotate();
@@ -437,17 +530,41 @@ RotatingText.prototype.init = function() {
 
 RotatingText.prototype.rotate = function() {
     var self = this;
-    
+
     setInterval(function() {
         // Remove active class from current
         self.texts[self.currentIndex].classList.remove('active');
-        
+
         // Move to next index
         self.currentIndex = (self.currentIndex + 1) % self.texts.length;
-        
+
         // Add active class to next
         self.texts[self.currentIndex].classList.add('active');
     }, 7000);
+};
+
+RotatingText.prototype.switchLanguage = function() {
+    if (typeof t !== 'function') return;
+
+    // Update hero title line
+    var titleLine = document.querySelector('.hero-title-visual .title-line:first-child');
+    if (titleLine) titleLine.textContent = t('hero.titleLine1');
+
+    // Rebuild char spans with translated text
+    this.texts.forEach(function(textEl, i) {
+        var translated = t('hero.r' + i);
+        if (translated) {
+            var html = '';
+            Array.from(translated).forEach(function(char) {
+                if (char === ' ') {
+                    html += '<span class="char-space"> </span>';
+                } else {
+                    html += '<span class="char">' + char + '</span>';
+                }
+            });
+            textEl.innerHTML = html;
+        }
+    });
 };
 
     // === SCROLL ANIMATIONS ===
@@ -570,10 +687,10 @@ RotatingText.prototype.rotate = function() {
             var originalText = btnText.textContent;
 
             submitBtn.disabled = true;
-            btnText.textContent = 'Sending...';
+            btnText.textContent = t('contact.btn.sending');
 
             setTimeout(function() {
-                btnText.textContent = 'Message sent!';
+                btnText.textContent = t('contact.btn.sent');
                 submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 self.form.reset();
 
@@ -622,7 +739,7 @@ RotatingText.prototype.rotate = function() {
             authActionBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 if (self.currentUser) {
-                    if (confirm('Are you sure you want to sign out?')) {
+                    if (confirm(t('auth.confirm.signOut'))) {
                         self.handleLogout();
                     }
                 } else {
@@ -757,7 +874,7 @@ RotatingText.prototype.rotate = function() {
         } else {
             console.log('User signed out');
             if (authBtn) authBtn.classList.remove('logged-in');
-            if (authText) authText.textContent = 'Sign In';
+            if (authText) authText.textContent = t('auth.btn.signIn');
             this.closeContractModal();
         }
     };
@@ -858,6 +975,19 @@ RotatingText.prototype.rotate = function() {
             dualSigningCompleted.remove();
         }
 
+        // Reset close button positioning (client view makes it sticky)
+        var closeBtn = document.getElementById('closeModalBtn');
+        if (closeBtn) {
+            closeBtn.style.display = '';
+            closeBtn.style.position = '';
+            closeBtn.style.top = '';
+            closeBtn.style.alignSelf = '';
+            closeBtn.style.marginRight = '';
+            closeBtn.style.marginTop = '';
+            closeBtn.style.marginBottom = '';
+            closeBtn.style.flexShrink = '';
+        }
+
         // Reset modal header visibility (developer view hides it)
         var modalHeader = document.querySelector('.modal-header');
         if (modalHeader) {
@@ -901,12 +1031,12 @@ RotatingText.prototype.rotate = function() {
         if (helpLinkEl) helpLinkEl.style.display = 'none';
 
         if (!email || !password) {
-            this.showError(errorEl, 'Please fill in all fields');
+            this.showError(errorEl, t('auth.err.fillFields'));
             return;
         }
 
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Signing in...';
+        submitBtn.textContent = t('auth.btn.signingIn');
 
         var self = this;
         firebase.auth().signInWithEmailAndPassword(email, password)
@@ -927,7 +1057,7 @@ RotatingText.prototype.rotate = function() {
             })
             .finally(function() {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Sign In';
+                submitBtn.textContent = t('auth.btn.signIn');
             });
     };
 
@@ -941,7 +1071,7 @@ RotatingText.prototype.rotate = function() {
             })
             .catch(function(error) {
                 console.error('Logout error:', error);
-                alert('Error signing out. Please try again.');
+                alert(t('auth.err.signOut'));
             });
     };
 
@@ -959,30 +1089,30 @@ RotatingText.prototype.rotate = function() {
     FirebaseAuthHandler.prototype.getErrorMessage = function(errorCode) {
         var messages = {
             // Email auth errors
-            'auth/configuration-not-found': 'Firebase is not configured.',
-            'auth/invalid-email': 'Invalid email address',
-            'auth/user-not-found': 'No account found.',
-            'auth/wrong-password': 'Incorrect password',
-            'auth/too-many-requests': 'Too many failed attempts. Please wait a moment.',
-            'auth/network-request-failed': 'Network error. Check your connection.',
-            'auth/user-disabled': 'Account disabled.',
-            'auth/invalid-credential': 'Invalid email or password',
+            'auth/configuration-not-found': t('auth.err.configNotFound'),
+            'auth/invalid-email': t('auth.err.invalidEmail'),
+            'auth/user-not-found': t('auth.err.userNotFound'),
+            'auth/wrong-password': t('auth.err.wrongPassword'),
+            'auth/too-many-requests': t('auth.err.tooManyRequests'),
+            'auth/network-request-failed': t('auth.err.networkFailed'),
+            'auth/user-disabled': t('auth.err.userDisabled'),
+            'auth/invalid-credential': t('auth.err.invalidCredential'),
             // Phone auth errors
-            'auth/invalid-phone-number': 'Invalid phone number format.',
-            'auth/missing-phone-number': 'Please enter a phone number.',
-            'auth/quota-exceeded': 'SMS quota exceeded. Please try again later.',
-            'auth/captcha-check-failed': 'reCAPTCHA verification failed. Please try again.',
-            'auth/invalid-verification-code': 'Invalid verification code.',
-            'auth/code-expired': 'Verification code has expired. Please request a new one.',
-            'auth/missing-verification-code': 'Please enter the verification code.',
-            'auth/invalid-verification-id': 'Session expired. Please request a new code.',
-            'auth/session-expired': 'Session expired. Please request a new verification code.',
-            'auth/credential-already-in-use': 'This phone number is already linked to another account.',
-            'auth/operation-not-allowed': 'Phone authentication is not enabled.',
-            'auth/billing-not-enabled': 'This phone number is not authorized.'
+            'auth/invalid-phone-number': t('auth.err.invalidPhone'),
+            'auth/missing-phone-number': t('auth.err.missingPhone'),
+            'auth/quota-exceeded': t('auth.err.quotaExceeded'),
+            'auth/captcha-check-failed': t('auth.err.captchaFailed'),
+            'auth/invalid-verification-code': t('auth.err.invalidCode'),
+            'auth/code-expired': t('auth.err.codeExpired'),
+            'auth/missing-verification-code': t('auth.err.missingCode'),
+            'auth/invalid-verification-id': t('auth.err.invalidVerificationId'),
+            'auth/session-expired': t('auth.err.sessionExpired'),
+            'auth/credential-already-in-use': t('auth.err.credentialInUse'),
+            'auth/operation-not-allowed': t('auth.err.operationNotAllowed'),
+            'auth/billing-not-enabled': t('auth.err.billingNotEnabled')
         };
 
-        return messages[errorCode] || 'Authentication error. Please try again.';
+        return messages[errorCode] || t('auth.err.default');
     };
 
     // === CONTACT DEVELOPER HELP LINK METHODS ===
@@ -1051,14 +1181,14 @@ RotatingText.prototype.rotate = function() {
                 helpContact.value = this.lastLoginError.email;
                 helpContact.type = 'email';
                 helpContact.placeholder = 'your@email.com';
-                if (helpContactLabel) helpContactLabel.textContent = 'Your Email *';
+                if (helpContactLabel) helpContactLabel.textContent = t('help.label.email');
                 // Hide tabs since we're pre-filling
                 if (contactTabs) contactTabs.style.display = 'none';
             } else if (this.lastLoginError.phone) {
                 helpContact.value = this.lastLoginError.phone;
                 helpContact.type = 'tel';
                 helpContact.placeholder = '(555) 123-4567';
-                if (helpContactLabel) helpContactLabel.textContent = 'Your Phone Number *';
+                if (helpContactLabel) helpContactLabel.textContent = t('help.label.phone');
                 if (contactTabs) contactTabs.style.display = 'none';
             }
 
@@ -1187,7 +1317,7 @@ RotatingText.prototype.rotate = function() {
 
         // Validate phone number
         if (!phoneNumber || phoneNumber.length < 10) {
-            this.showError(errorEl, 'Please enter a valid phone number');
+            this.showError(errorEl, t('auth.err.validPhone'));
             return;
         }
 
@@ -1219,7 +1349,7 @@ RotatingText.prototype.rotate = function() {
                 } else {
                     // Not a test phone - show error (no real SMS support)
                     var phoneHelpLink = $('#phoneHelpLink');
-                    self.showErrorWithHelpLink(errorEl, phoneHelpLink, 'Phone number not registered. Please contact support.', {
+                    self.showErrorWithHelpLink(errorEl, phoneHelpLink, t('auth.err.phoneNotRegistered'), {
                         phone: fullPhoneNumber,
                         errorType: 'account_access'
                     });
@@ -1229,7 +1359,7 @@ RotatingText.prototype.rotate = function() {
             .catch(function(error) {
                 console.error('Error checking test phone:', error);
                 var phoneHelpLink = $('#phoneHelpLink');
-                self.showErrorWithHelpLink(errorEl, phoneHelpLink, 'Unable to verify phone number. Please try again.', {
+                self.showErrorWithHelpLink(errorEl, phoneHelpLink, t('auth.err.phoneVerifyFailed'), {
                     phone: fullPhoneNumber,
                     errorType: 'account_access'
                 });
@@ -1284,8 +1414,8 @@ RotatingText.prototype.rotate = function() {
         var maxLength = 6;
         if (!code || code.length < minLength || code.length > maxLength) {
             var msg = this.isTestPhone ?
-                'Please enter your verification code (4-6 digits)' :
-                'Please enter the 6-digit verification code';
+                t('auth.err.codeDigits46') :
+                t('auth.err.codeDigits6');
             this.showError(errorEl, msg);
             return;
         }
@@ -1300,7 +1430,7 @@ RotatingText.prototype.rotate = function() {
         } else {
             // Normal Firebase verification
             if (!this.confirmationResult) {
-                this.showErrorWithHelpLink(errorEl, helpLinkEl, 'Session expired. Please request a new code.', {
+                this.showErrorWithHelpLink(errorEl, helpLinkEl, t('auth.err.invalidVerificationId'), {
                     phone: this.currentPhoneNumber,
                     errorType: 'verification_code'
                 });
@@ -1362,11 +1492,11 @@ RotatingText.prototype.rotate = function() {
         })
         .catch(function(error) {
             console.error('Test phone verification error:', error);
-            var message = error.message || 'Invalid verification code';
+            var message = error.message || t('auth.err.invalidCodeGeneric');
             if (error.code === 'functions/invalid-argument') {
-                message = 'Invalid phone number or verification code.';
+                message = t('auth.err.invalidPhoneOrCode');
             } else if (error.code === 'functions/internal') {
-                message = 'Server error. Please try again.';
+                message = t('auth.err.serverError');
             }
             var verifyHelpLink = $('#verifyHelpLink');
             self.showErrorWithHelpLink(errorEl, verifyHelpLink, message, {
@@ -1648,7 +1778,7 @@ ContractFormHandler.prototype.getIssueTypeLabel = function(issueType) {
 ContractFormHandler.prototype.resolveHelpRequest = function(requestId) {
     var self = this;
     
-    if (!confirm('Mark this help request as resolved?')) {
+    if (!confirm(t('dash.help.confirmResolve'))) {
         return;
     }
     
@@ -1665,7 +1795,7 @@ ContractFormHandler.prototype.resolveHelpRequest = function(requestId) {
         })
         .catch(function(error) {
             console.error('Error resolving help request:', error);
-            alert('Error marking request as resolved: ' + error.message);
+            alert(t('dash.help.err.resolve') + error.message);
         });
 };
 ContractFormHandler.prototype.resolveAllHelpRequests = function(helpRequests) {
@@ -1675,7 +1805,7 @@ ContractFormHandler.prototype.resolveAllHelpRequests = function(helpRequests) {
         return;
     }
     
-    if (!confirm('Mark all ' + helpRequests.length + ' help request(s) as resolved?')) {
+    if (!confirm(t('dash.help.confirmResolvePrefix') + helpRequests.length + t('dash.help.confirmResolveSuffix'))) {
         return;
     }
     
@@ -1698,7 +1828,7 @@ ContractFormHandler.prototype.resolveAllHelpRequests = function(helpRequests) {
         })
         .catch(function(error) {
             console.error('Error resolving all help requests:', error);
-            alert('Error marking requests as resolved: ' + error.message);
+            alert(t('dash.help.err.resolveAll') + error.message);
         });
 };
         this.devSignaturePad = null;
@@ -1813,14 +1943,14 @@ HelpRequestHandler.prototype.showHelpModal = function() {
                 contactField.value = this.currentUser.email;
                 contactField.type = 'email';
                 contactField.placeholder = 'your@email.com';
-                if (contactLabel) contactLabel.textContent = 'Your Email *';
-                if (contactHint) contactHint.textContent = "We'll use this to contact you about your request";
+                if (contactLabel) contactLabel.textContent = t('help.label.email');
+                if (contactHint) contactHint.textContent = t('help.label.contactHint');
             } else if (hasPhone) {
                 contactField.value = formatPhoneNumber(this.currentUser.phoneNumber);
                 contactField.type = 'tel';
                 contactField.placeholder = '(555) 123-4567';
-                if (contactLabel) contactLabel.textContent = 'Your Phone Number *';
-                if (contactHint) contactHint.textContent = "We'll use this to contact you about your request";
+                if (contactLabel) contactLabel.textContent = t('help.label.phone');
+                if (contactHint) contactHint.textContent = t('help.label.contactHint');
             }
 
             contactField.setAttribute('readonly', 'readonly');
@@ -1837,7 +1967,7 @@ HelpRequestHandler.prototype.showHelpModal = function() {
             contactField.type = 'email';
             contactField.value = '';
             contactField.placeholder = 'your@email.com';
-            if (contactLabel) contactLabel.textContent = 'Your Email *';
+            if (contactLabel) contactLabel.textContent = t('help.label.email');
 
             // Reset tabs to email
             var tabs = $$('.contact-tab', contactTabs);
@@ -1875,15 +2005,15 @@ HelpRequestHandler.prototype.setupContactTabs = function(contactField, contactLa
             if (type === 'email') {
                 contactField.type = 'email';
                 contactField.placeholder = 'your@email.com';
-                if (contactLabel) contactLabel.textContent = 'Your Email *';
-                if (contactHint) contactHint.textContent = "We'll use this to contact you about your request";
+                if (contactLabel) contactLabel.textContent = t('help.label.email');
+                if (contactHint) contactHint.textContent = t('help.label.contactHint');
                 // Remove phone formatting listener
                 self.removePhoneFormatting(contactField);
             } else {
                 contactField.type = 'tel';
                 contactField.placeholder = '(555) 123-4567';
-                if (contactLabel) contactLabel.textContent = 'Your Phone Number *';
-                if (contactHint) contactHint.textContent = "We'll use this to contact you about your request";
+                if (contactLabel) contactLabel.textContent = t('help.label.phone');
+                if (contactHint) contactHint.textContent = t('help.label.contactHint');
                 // Add phone formatting
                 setupPhoneInputFormatting(contactField);
             }
@@ -1912,17 +2042,17 @@ HelpRequestHandler.prototype.submitHelpRequest = function() {
     
     var submitBtn = this.helpForm.querySelector('button[type="submit"]');
     var submitText = $('#helpSubmitText');
-    var originalText = submitText ? submitText.textContent : 'Send Help Request';
-    
+    var originalText = submitText ? submitText.textContent : t('help.submitBtn');
+
     if (submitBtn) submitBtn.disabled = true;
-    if (submitText) submitText.textContent = 'Sending...';
+    if (submitText) submitText.textContent = t('help.btn.sending');
     
     var helpContact = $('#helpContact').value.trim();
     var helpIssue = $('#helpIssue').value;
     var helpDetails = $('#helpDetails').value.trim();
 
     if (!helpContact || !helpIssue || !helpDetails) {
-        alert('Please fill in all required fields');
+        alert(t('help.val.fillRequired'));
         if (submitBtn) submitBtn.disabled = false;
         if (submitText) submitText.textContent = originalText;
         return;
@@ -1934,14 +2064,14 @@ HelpRequestHandler.prototype.submitHelpRequest = function() {
     var phoneRegex = /^\+?[1-9]\d{6,14}$/;
 
     if (!isPhone && !emailRegex.test(helpContact)) {
-        alert('Please enter a valid email address');
+        alert(t('help.val.validEmail'));
         if (submitBtn) submitBtn.disabled = false;
         if (submitText) submitText.textContent = originalText;
         return;
     }
 
     if (isPhone && !phoneRegex.test(helpContact.replace(/[\s\-\(\)]/g, ''))) {
-        alert('Please enter a valid phone number');
+        alert(t('help.val.validPhone'));
         if (submitBtn) submitBtn.disabled = false;
         if (submitText) submitText.textContent = originalText;
         return;
@@ -1977,7 +2107,7 @@ HelpRequestHandler.prototype.submitHelpRequest = function() {
         })
         .catch(function(error) {
             console.error('Error submitting help request:', error);
-            alert('Error submitting help request: ' + error.message + '\n\nPlease try again or contact support directly.');
+            alert(t('help.err.submitPrefix') + error.message + t('help.err.submitSuffix'));
             
             if (submitBtn) submitBtn.disabled = false;
             if (submitText) submitText.textContent = originalText;
@@ -2357,11 +2487,11 @@ HelpRequestHandler.prototype.showSuccessMessage = function() {
     if (helpBadge) helpBadge.textContent = helpRequests.length;
     
     var html = '<div class="help-tab-header">' +
-    '<h3>🆘 Help Requests</h3>' +
+    '<h3>🆘 ' + t('helpDash.title') + '</h3>' +
     '<div style="display: flex; align-items: center; gap: 10px;">';
     
     if (helpRequests.length > 0) {
-        html += '<button class="btn-resolve-all" style="padding: 6px 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">✓ Resolve All</button>';
+        html += '<button class="btn-resolve-all" style="padding: 6px 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600;">✓ ' + t('helpDash.btn.resolveAll') + '</button>';
     }
     
     html += '</div></div>';
@@ -2394,7 +2524,7 @@ HelpRequestHandler.prototype.showSuccessMessage = function() {
     if (helpRequests.length === 0) {
         html += '<div class="empty-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
-            '<p>No pending help requests</p>' +
+            '<p>' + t('helpDash.empty') + '</p>' +
             '</div>';
     } else {
         var issueTypeColors = {
@@ -2411,26 +2541,26 @@ HelpRequestHandler.prototype.showSuccessMessage = function() {
                 : 'N/A';
 
             var authBadge = request.isAuthenticated
-                ? '<span class="auth-badge verified">✓ Verified User</span>'
-                : '<span class="auth-badge anonymous">◎ Anonymous</span>';
+                ? '<span class="auth-badge verified">✓ ' + t('helpDash.badge.verified') + '</span>'
+                : '<span class="auth-badge anonymous">◎ ' + t('helpDash.badge.anonymous') + '</span>';
 
             var itemColor = issueTypeColors[request.issueType] || '#f59e0b';
             html += '<div class="help-item" data-request-id="' + request.id + '" style="border-left-color: ' + itemColor + ';">' +
                 '<div class="help-icon">❓</div>' +
                 '<div class="help-details">' +
                 '<div class="help-header">' +
-                '<h4>' + (request.userEmail || request.userPhone || 'Unknown User') + '</h4>' +
+                '<h4>' + (request.userEmail || request.userPhone || t('helpDash.fallback.user')) + '</h4>' +
                 authBadge +
                 '<span class="help-badge">' + self.getIssueTypeLabel(request.issueType) + '</span>' +
                 '</div>' +
-                '<p class="help-message">' + (request.issueDetails || 'No details provided') + '</p>' +
+                '<p class="help-message">' + (request.issueDetails || t('helpDash.fallback.message')) + '</p>' +
                 '<div class="help-meta">' +
                 '<span class="meta-item">📅 ' + requestDate + '</span>' +
                 '</div>' +
                 '</div>' +
                 '<div class="help-actions">' +
                 '<button class="btn-resolve-help" data-request-id="' + request.id + '" title="Mark as resolved">' +
-                '✓ Resolve' +
+                '✓ ' + t('helpDash.btn.resolve') +
                 '</button>' +
                 '</div>' +
                 '</div>';
@@ -2769,16 +2899,16 @@ $$('.btn-resolve-help').forEach(function(btn) {
         html += '<div class="alert-banner urgent">' +
             '<div class="alert-icon">⚠️</div>' +
             '<div class="alert-content">' +
-            '<strong>' + urgentCount + ' contract' + (urgentCount !== 1 ? 's' : '') + ' need' + (urgentCount === 1 ? 's' : '') + ' immediate attention!</strong>' +
-            '<p>Client' + (urgentCount !== 1 ? 's have' : ' has') + ' been waiting 7+ days for your signature.</p>' +
+            '<strong>' + urgentCount + (urgentCount !== 1 ? t('dash.alert.contractPlural') : t('dash.alert.contractSingular')) + (urgentCount === 1 ? t('dash.alert.needSingular') : t('dash.alert.needPlural')) + ' immediate attention!</strong>' +
+            '<p>' + (urgentCount !== 1 ? t('dash.alert.clientPlural') : t('dash.alert.clientSingular')) + (urgentCount !== 1 ? t('dash.alert.havePlural') : t('dash.alert.hasSingular')) + t('dash.alert.waiting7days') + '</p>' +
             '</div>' +
             '</div>';
     } else if (pendingContracts.length === 0 && completedContracts.length > 0) {
         html += '<div class="alert-banner success">' +
             '<div class="alert-icon">🎉</div>' +
             '<div class="alert-content">' +
-            '<strong>All caught up!</strong>' +
-            '<p>No pending contracts. Great job staying on top of things!</p>' +
+            '<strong>' + t('dash.alert.allCaughtUp') + '</strong>' +
+            '<p>' + t('dash.alert.noPending') + '</p>' +
             '</div>' +
             '</div>';
     }
@@ -2791,10 +2921,10 @@ $$('.btn-resolve-help').forEach(function(btn) {
         '<div class="analytics-card-row">' +
         '<span class="analytics-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>' +
         '<div class="analytics-value">' + self.formatCurrency(metrics.totalRevenue) + '</div>' +
-        '<span class="analytics-trend">' + self.formatCurrency(metrics.paidRevenue) + ' collected</span>' +
+        '<span class="analytics-trend">' + self.formatCurrency(metrics.paidRevenue) + ' ' + t('sowTab.stats.collected').toLowerCase() + '</span>' +
         '</div>' +
         '<div class="analytics-bottom">' +
-        '<span class="analytics-label">Total Revenue</span>' +
+        '<span class="analytics-label">' + t('dash.analytics.totalRevenue') + '</span>' +
         '<div class="analytics-bar-track">' +
         '<div class="analytics-bar-fill revenue-fill" style="width: ' +
             (metrics.totalRevenue > 0 ? Math.round(metrics.paidRevenue / metrics.totalRevenue * 100) : 0) +
@@ -2812,22 +2942,22 @@ $$('.btn-resolve-help').forEach(function(btn) {
         'stroke-linecap="round" transform="rotate(-90 22 22)"/>' +
         '</svg>' +
         '<div class="analytics-value">' + metrics.completionRate + '<span class="analytics-unit">%</span></div>' +
-        '<span class="analytics-trend">' + metrics.completed + ' of ' + metrics.totalContracts + '</span>' +
+        '<span class="analytics-trend">' + metrics.completed + ' ' + t('dash.analytics.of') + metrics.totalContracts + '</span>' +
         '</div>' +
-        '<div class="analytics-bottom"><span class="analytics-label">Completion Rate</span></div>' +
+        '<div class="analytics-bottom"><span class="analytics-label">' + t('dash.analytics.completionRate') + '</span></div>' +
         '</div>';
 
     // Card 3: Avg Response Time
     html += '<div class="analytics-card response-card">' +
         '<div class="analytics-card-row">' +
         '<span class="analytics-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>' +
-        '<div class="analytics-value">' + metrics.avgResponseDays + '<span class="analytics-unit">days</span></div>' +
+        '<div class="analytics-value">' + metrics.avgResponseDays + '<span class="analytics-unit">' + t('dash.analytics.days') + '</span></div>' +
         '<span class="analytics-trend' + (metrics.urgentCount > 0 ? ' trend-warning' : '') + '">' +
-            (metrics.urgentCount > 0 ? metrics.urgentCount + ' urgent' : 'On track') +
+            (metrics.urgentCount > 0 ? metrics.urgentCount + ' ' + t('dash.analytics.urgent') : t('dash.analytics.onTrack')) +
         '</span>' +
         '</div>' +
         '<div class="analytics-bottom">' +
-        '<span class="analytics-label">Avg Response Time</span>' +
+        '<span class="analytics-label">' + t('dash.analytics.avgResponse') + '</span>' +
         '<div class="analytics-bar-track">' +
         '<div class="analytics-bar-fill response-fill" style="width: ' +
             Math.min(100, Math.round(metrics.avgResponseDays / 14 * 100)) +
@@ -2838,10 +2968,10 @@ $$('.btn-resolve-help').forEach(function(btn) {
         '<div class="analytics-card-row">' +
         '<span class="analytics-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>' +
         '<div class="analytics-value">' + metrics.activeProjects + '</div>' +
-        '<span class="analytics-trend">+' + metrics.thisMonthCompleted + ' this month</span>' +
+        '<span class="analytics-trend">+' + metrics.thisMonthCompleted + ' ' + t('dash.analytics.thisMonth') + '</span>' +
         '</div>' +
         '<div class="analytics-bottom">' +
-        '<span class="analytics-label">Active Projects</span>' +
+        '<span class="analytics-label">' + t('dash.analytics.activeProjects') + '</span>' +
         '<div class="analytics-bar-track">' +
         '<div class="analytics-bar-fill projects-fill" style="width: ' +
             (metrics.sowCount > 0 ? Math.round(metrics.activeProjects / metrics.sowCount * 100) : 0) +
@@ -2853,7 +2983,7 @@ $$('.btn-resolve-help').forEach(function(btn) {
     if (metrics.events.length > 0) {
         html += '<div class="activity-feed">' +
             '<div class="activity-feed-header">' +
-            '<h3>Recent Activity</h3>' +
+            '<h3>' + t('dash.analytics.recentActivity') + '</h3>' +
             '</div>' +
             '<div class="activity-feed-list">';
 
@@ -2875,22 +3005,22 @@ html += '<div class="dashboard-tabs">' +
     '<div class="tab-buttons">' +
     '<button class="tab-btn active" data-tab="contracts">' +
     '<span class="tab-icon">📄</span>' +
-    '<span class="tab-label">Contracts</span>' +
+    '<span class="tab-label">' + t('dash.tab.contracts') + '</span>' +
     '<span class="tab-badge">' + (pendingContracts.length + completedContracts.length) + '</span>' +
     '</button>' +
     '<button class="tab-btn" data-tab="sow">' +
     '<span class="tab-icon">📋</span>' +
-    '<span class="tab-label">SOW Documents</span>' +
+    '<span class="tab-label">' + t('dash.tab.sowDocuments') + '</span>' +
     '<span class="tab-badge" id="sowCountBadge">0</span>' +
     '</button>' +
     '<button class="tab-btn" data-tab="coupons">' +
     '<span class="tab-icon">🎟️</span>' +
-    '<span class="tab-label">Coupons</span>' +
+    '<span class="tab-label">' + t('dash.tab.coupons') + '</span>' +
     '<span class="tab-badge" id="couponCountBadge">0</span>' +
     '</button>' +
     '<button class="tab-btn" data-tab="help">' +
     '<span class="tab-icon">🆘</span>' +
-    '<span class="tab-label">Help Requests</span>' +
+    '<span class="tab-label">' + t('dash.tab.helpRequests') + '</span>' +
     '<span class="tab-badge" id="helpCountBadge">0</span>' +
     '</button>' +
     '</div>' +
@@ -2906,7 +3036,7 @@ html += '<div class="dashboard-tabs">' +
     '<div id="sowTabContent">' +
     '<div class="loading-state">' +
     '<div class="spinner"></div>' +
-    '<p>Loading SOW documents...</p>' +
+    '<p>' + t('dash.loading.sow') + '</p>' +
     '</div>' +
     '</div>' +
     '</div>' +
@@ -2916,7 +3046,7 @@ html += '<div class="dashboard-tabs">' +
     '<div id="couponsTabContent">' +
     '<div class="loading-state">' +
     '<div class="spinner"></div>' +
-    '<p>Loading coupons...</p>' +
+    '<p>' + t('dash.loading.coupons') + '</p>' +
     '</div>' +
     '</div>' +
     '</div>' +
@@ -2926,7 +3056,7 @@ html += '<div class="dashboard-tabs">' +
     '<div id="helpTabContent">' +
     '<div class="loading-state">' +
     '<div class="spinner"></div>' +
-    '<p>Loading help requests...</p>' +
+    '<p>' + t('dash.loading.help') + '</p>' +
     '</div>' +
     '</div>' +
     '</div>' +
@@ -2935,7 +3065,7 @@ html += '<div class="dashboard-tabs">' +
     '</div>';
     // Close Modal Button
     html += '<div class="dashboard-footer">' +
-        '<button class="btn-close-dashboard" onclick="document.querySelector(\'.contract-modal\').classList.remove(\'show\'); document.body.classList.remove(\'modal-open\');">Close Dashboard</button>' +
+        '<button class="btn-close-dashboard" onclick="document.querySelector(\'.contract-modal\').classList.remove(\'show\'); document.body.classList.remove(\'modal-open\');">' + t('dash.btn.closeDashboard') + '</button>' +
         '</div>';
     
     dashboard.innerHTML = html;
@@ -3019,12 +3149,12 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
     html += '<div class="pipeline-strip">' +
         '<div class="pipeline-stage">' +
         '<span class="pipeline-count">' + pendingCount + '</span>' +
-        '<span class="pipeline-label">Pending</span>' +
+        '<span class="pipeline-label">' + t('contracts.stage.pending') + '</span>' +
         '</div>' +
         '<div class="pipeline-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>' +
         '<div class="pipeline-stage">' +
         '<span class="pipeline-count">' + signedCount + '</span>' +
-        '<span class="pipeline-label">Completed</span>' +
+        '<span class="pipeline-label">' + t('contracts.stage.completed') + '</span>' +
         '</div>' +
         '<div class="pipeline-bar-track">' +
         '<div class="pipeline-bar-fill" style="width: ' +
@@ -3036,14 +3166,14 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
     // Action Required Section (Pending Contracts)
     html += '<div class="dashboard-section action-section">' +
         '<div class="section-header">' +
-        '<h3>Action Required</h3>' +
-        '<span class="section-badge">' + pendingContracts.length + ' pending</span>' +
+        '<h3>' + t('contracts.section.actionRequired') + '</h3>' +
+        '<span class="section-badge">' + pendingContracts.length + t('contracts.badge.pending') + '</span>' +
         '</div>';
 
     if (pendingContracts.length === 0) {
         html += '<div class="empty-state success-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
-            '<p>No contracts waiting for your signature</p>' +
+            '<p>' + t('contracts.empty.noPending') + '</p>' +
             '</div>';
     } else {
         html += '<div class="action-list">';
@@ -3065,22 +3195,22 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
                     urgency.icon + ' ' + urgency.label + '</span>' +
                 '</div>' +
                 '<div class="action-meta-grid">' +
-                '<div class="meta-cell"><span class="meta-key">Email</span><span class="meta-val">' +
+                '<div class="meta-cell"><span class="meta-key">' + t('contracts.meta.email') + '</span><span class="meta-val">' +
                     (contract.clientEmail || 'N/A') + '</span></div>' +
-                '<div class="meta-cell"><span class="meta-key">Received</span><span class="meta-val">' +
+                '<div class="meta-cell"><span class="meta-key">' + t('contracts.meta.received') + '</span><span class="meta-val">' +
                     submissionDate + '</span></div>' +
-                '<div class="meta-cell"><span class="meta-key">Waiting</span><span class="meta-val ' +
+                '<div class="meta-cell"><span class="meta-key">' + t('contracts.meta.waiting') + '</span><span class="meta-val ' +
                     (contract.daysSinceSubmission >= 7 ? 'meta-urgent' : '') + '">' +
-                    contract.daysSinceSubmission + ' day' + (contract.daysSinceSubmission !== 1 ? 's' : '') +
+                    contract.daysSinceSubmission + ' ' + (contract.daysSinceSubmission !== 1 ? t('contracts.meta.dayPlural') : t('contracts.meta.daySingular')) +
                 '</span></div>' +
-                '<div class="meta-cell"><span class="meta-key">Phone</span><span class="meta-val">' +
+                '<div class="meta-cell"><span class="meta-key">' + t('contracts.meta.phone') + '</span><span class="meta-val">' +
                     (contract.clientPhone ? formatPhoneNumber(contract.clientPhone) : 'N/A') + '</span></div>' +
                 '</div>' +
                 '</div>' +
                 '<div class="action-cta">' +
                 '<button class="btn-sign-contract" data-contract-id="' + contract.id + '">' +
                 '<span class="btn-icon">✍️</span>' +
-                '<span class="btn-text">Sign</span>' +
+                '<span class="btn-text">' + t('contracts.btn.sign') + '</span>' +
                 '</button>' +
                 '</div>' +
                 '</div>';
@@ -3092,14 +3222,14 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
     // Completed Contracts Section
     html += '<div class="dashboard-section history-section">' +
         '<div class="section-header">' +
-        '<h3>Completed</h3>' +
-        '<span class="section-badge success">' + completedContracts.length + ' total</span>' +
+        '<h3>' + t('contracts.section.completed') + '</h3>' +
+        '<span class="section-badge success">' + completedContracts.length + t('contracts.badge.total') + '</span>' +
         '</div>';
 
     if (completedContracts.length === 0) {
         html += '<div class="empty-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
-            '<p>No completed contracts yet</p>' +
+            '<p>' + t('contracts.empty.noCompleted') + '</p>' +
             '</div>';
     } else {
         html += '<div class="history-table">';
@@ -3114,7 +3244,7 @@ ContractFormHandler.prototype.renderContractsTab = function(pendingContracts, co
                 '<div class="history-date">' + finalizedDate + '</div>' +
                 '<div class="history-action">' +
                 '<button class="btn-download" data-contract-id="' + contract.id + '" title="Download PDF">' +
-                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> PDF</button>' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ' + t('contracts.btn.pdf') + '</button>' +
                 '</div>' +
                 '</div>';
         });
@@ -3222,87 +3352,87 @@ ContractFormHandler.prototype.renderCouponsTab = function(coupons) {
         '</div>' +
         '<button class="btn-create-coupon" id="btnCreateCoupon">' +
         '<span class="btn-icon">+</span>' +
-        '<span class="btn-text">Create Coupon</span>' +
+        '<span class="btn-text">' + t('couponTab.btn.create') + '</span>' +
         '</button>' +
         '</div>';
 
     // Coupon Creator Form (hidden by default)
     html += '<div id="couponCreatorForm" class="coupon-creator-form" style="display: none;">' +
         '<div class="coupon-form-header">' +
-        '<h4 id="couponFormTitle">Create New Coupon</h4>' +
+        '<h4 id="couponFormTitle">' + t('couponTab.form.title') + '</h4>' +
         '<button class="btn-close-form" id="btnCloseCouponForm">×</button>' +
         '</div>' +
         '<div class="coupon-form-body">' +
         '<div class="form-row">' +
         '<div class="form-group">' +
-        '<label>Coupon Code *</label>' +
-        '<input type="text" id="couponCode" placeholder="e.g., WELCOME10" class="coupon-input" style="text-transform: uppercase;">' +
-        '<small>Alphanumeric, no spaces. Auto-converts to uppercase.</small>' +
+        '<label>' + t('couponTab.form.codeLabel') + '</label>' +
+        '<input type="text" id="couponCode" placeholder="' + t('couponTab.form.codePlaceholder') + '" class="coupon-input" style="text-transform: uppercase;">' +
+        '<small>' + t('couponTab.form.codeHelper') + '</small>' +
         '</div>' +
         '<div class="form-group">' +
-        '<label>Discount Type *</label>' +
+        '<label>' + t('couponTab.form.typeLabel') + '</label>' +
         '<select id="couponType" class="coupon-select">' +
-        '<option value="percentage">Percentage Off (%)</option>' +
-        '<option value="fixed">Fixed Amount Off ($)</option>' +
+        '<option value="percentage">' + t('couponTab.form.typePercent') + '</option>' +
+        '<option value="fixed">' + t('couponTab.form.typeFixed') + '</option>' +
         '</select>' +
         '</div>' +
         '</div>' +
         '<div class="form-row">' +
         '<div class="form-group">' +
-        '<label>Discount Value *</label>' +
-        '<input type="number" id="couponValue" placeholder="e.g., 10" class="coupon-input" min="0" step="0.01">' +
-        '<small id="couponValueHint">Enter percentage (0-100)</small>' +
+        '<label>' + t('couponTab.form.valueLabel') + '</label>' +
+        '<input type="number" id="couponValue" placeholder="' + t('couponTab.form.valuePlaceholder') + '" class="coupon-input" min="0" step="0.01">' +
+        '<small id="couponValueHint">' + t('couponTab.form.valueHelper') + '</small>' +
         '</div>' +
         '<div class="form-group">' +
-        '<label>Usage Limit</label>' +
-        '<input type="number" id="couponUsageLimit" placeholder="Leave empty for unlimited" class="coupon-input" min="0">' +
-        '<small>Max times this coupon can be used</small>' +
+        '<label>' + t('couponTab.form.usageLabel') + '</label>' +
+        '<input type="number" id="couponUsageLimit" placeholder="' + t('couponTab.form.usagePlaceholder') + '" class="coupon-input" min="0">' +
+        '<small>' + t('couponTab.form.usageHelper') + '</small>' +
         '</div>' +
         '</div>' +
         '<div class="form-row">' +
         '<div class="form-group">' +
-        '<label>Minimum Purchase ($)</label>' +
+        '<label>' + t('couponTab.form.minPurchaseLabel') + '</label>' +
         '<input type="number" id="couponMinPurchase" placeholder="0" class="coupon-input" min="0" step="0.01">' +
-        '<small>Minimum order amount required</small>' +
+        '<small>' + t('couponTab.form.minPurchaseHelper') + '</small>' +
         '</div>' +
         '<div class="form-group">' +
-        '<label>Expiration Date</label>' +
+        '<label>' + t('couponTab.form.expirationLabel') + '</label>' +
         '<input type="date" id="couponExpiration" class="coupon-input">' +
-        '<small>Leave empty for no expiration</small>' +
+        '<small>' + t('couponTab.form.expirationHelper') + '</small>' +
         '</div>' +
         '</div>' +
         '<div class="form-row">' +
         '<div class="form-group full-width">' +
-        '<label>Tier Restrictions</label>' +
+        '<label>' + t('couponTab.form.tierLabel') + '</label>' +
         '<div class="tier-checkboxes">' +
-        '<label class="tier-checkbox"><input type="checkbox" value="essential" checked> Essential</label>' +
-        '<label class="tier-checkbox"><input type="checkbox" value="starter" checked> Starter</label>' +
-        '<label class="tier-checkbox"><input type="checkbox" value="growth" checked> Growth</label>' +
-        '<label class="tier-checkbox"><input type="checkbox" value="professional" checked> Professional</label>' +
-        '<label class="tier-checkbox"><input type="checkbox" value="enterprise" checked> Enterprise</label>' +
-        '<label class="tier-checkbox"><input type="checkbox" value="custom" checked> Custom</label>' +
+        '<label class="tier-checkbox"><input type="checkbox" value="essential" checked> ' + t('couponTab.form.tierEssential') + '</label>' +
+        '<label class="tier-checkbox"><input type="checkbox" value="starter" checked> ' + t('couponTab.form.tierStarter') + '</label>' +
+        '<label class="tier-checkbox"><input type="checkbox" value="growth" checked> ' + t('couponTab.form.tierGrowth') + '</label>' +
+        '<label class="tier-checkbox"><input type="checkbox" value="professional" checked> ' + t('couponTab.form.tierProfessional') + '</label>' +
+        '<label class="tier-checkbox"><input type="checkbox" value="enterprise" checked> ' + t('couponTab.form.tierEnterprise') + '</label>' +
+        '<label class="tier-checkbox"><input type="checkbox" value="custom" checked> ' + t('couponTab.form.tierCustom') + '</label>' +
         '</div>' +
-        '<small>Select which tiers this coupon can be applied to</small>' +
+        '<small>' + t('couponTab.form.tierHelper') + '</small>' +
         '</div>' +
         '</div>' +
         '<div class="form-row">' +
         '<div class="form-group full-width">' +
-        '<label>Description (Optional)</label>' +
-        '<input type="text" id="couponDescription" placeholder="e.g., Welcome discount for new clients" class="coupon-input">' +
+        '<label>' + t('couponTab.form.descLabel') + '</label>' +
+        '<input type="text" id="couponDescription" placeholder="' + t('couponTab.form.descPlaceholder') + '" class="coupon-input">' +
         '</div>' +
         '</div>' +
         '<div class="form-row">' +
         '<div class="form-group">' +
         '<label class="checkbox-label">' +
         '<input type="checkbox" id="couponActive" checked>' +
-        '<span>Coupon is Active</span>' +
+        '<span>' + t('couponTab.form.activeLabel') + '</span>' +
         '</label>' +
         '</div>' +
         '</div>' +
         '<input type="hidden" id="couponEditId" value="">' +
         '<div class="form-actions">' +
-        '<button class="btn-cancel" id="btnCancelCoupon">Cancel</button>' +
-        '<button class="btn-save-coupon" id="btnSaveCoupon">Save Coupon</button>' +
+        '<button class="btn-cancel" id="btnCancelCoupon">' + t('couponTab.form.cancelBtn') + '</button>' +
+        '<button class="btn-save-coupon" id="btnSaveCoupon">' + t('couponTab.form.saveBtn') + '</button>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -3311,8 +3441,8 @@ ContractFormHandler.prototype.renderCouponsTab = function(coupons) {
     if (coupons.length === 0) {
         html += '<div class="empty-state">' +
             '<div class="empty-icon">🎟️</div>' +
-            '<h4>No Coupons Yet</h4>' +
-            '<p>Create your first coupon to offer discounts to clients.</p>' +
+            '<h4>' + t('couponTab.empty.title') + '</h4>' +
+            '<p>' + t('couponTab.empty.text') + '</p>' +
             '</div>';
     } else {
         html += '<div class="coupons-list">';
@@ -3323,7 +3453,7 @@ ContractFormHandler.prototype.renderCouponsTab = function(coupons) {
 
         if (activeCoupons.length > 0) {
             html += '<div class="coupons-section">' +
-                '<h4 class="section-label">Active Coupons (' + activeCoupons.length + ')</h4>';
+                '<h4 class="section-label">' + t('couponTab.section.active') + ' (' + activeCoupons.length + ')</h4>';
             activeCoupons.forEach(function(coupon) {
                 html += self.renderCouponCard(coupon);
             });
@@ -3332,7 +3462,7 @@ ContractFormHandler.prototype.renderCouponsTab = function(coupons) {
 
         if (inactiveCoupons.length > 0) {
             html += '<div class="coupons-section inactive-section">' +
-                '<h4 class="section-label">Inactive Coupons (' + inactiveCoupons.length + ')</h4>';
+                '<h4 class="section-label">' + t('couponTab.section.inactive') + ' (' + inactiveCoupons.length + ')</h4>';
             inactiveCoupons.forEach(function(coupon) {
                 html += self.renderCouponCard(coupon);
             });
@@ -3451,9 +3581,9 @@ ContractFormHandler.prototype.attachCouponEventListeners = function() {
         typeSelect.addEventListener('change', function() {
             var hint = document.getElementById('couponValueHint');
             if (this.value === 'percentage') {
-                hint.textContent = 'Enter percentage (0-100)';
+                hint.textContent = t('coupon.hint.percentage');
             } else {
-                hint.textContent = 'Enter dollar amount';
+                hint.textContent = t('coupon.hint.dollar');
             }
         });
     }
@@ -3516,7 +3646,7 @@ ContractFormHandler.prototype.showCouponForm = function(editData) {
     });
 
     if (editData) {
-        title.textContent = 'Edit Coupon';
+        title.textContent = t('coupon.title.edit');
         document.getElementById('couponCode').value = editData.code || '';
         document.getElementById('couponType').value = editData.discountType || 'percentage';
         document.getElementById('couponValue').value = editData.discountValue || '';
@@ -3534,7 +3664,7 @@ ContractFormHandler.prototype.showCouponForm = function(editData) {
             });
         }
     } else {
-        title.textContent = 'Create New Coupon';
+        title.textContent = t('coupon.title.create');
     }
 
     form.style.display = 'block';
@@ -3568,19 +3698,19 @@ ContractFormHandler.prototype.saveCoupon = function() {
 
     // Validation
     if (!code) {
-        alert('Please enter a coupon code');
+        alert(t('coupon.val.enterCode'));
         return;
     }
     if (isNaN(value) || value <= 0) {
-        alert('Please enter a valid discount value');
+        alert(t('coupon.val.validDiscount'));
         return;
     }
     if (type === 'percentage' && value > 100) {
-        alert('Percentage discount cannot exceed 100%');
+        alert(t('coupon.val.percentMax'));
         return;
     }
     if (allowedTiers.length === 0) {
-        alert('Please select at least one tier');
+        alert(t('coupon.val.selectTier'));
         return;
     }
 
@@ -3620,13 +3750,13 @@ ContractFormHandler.prototype.saveCoupon = function() {
 
     savePromise
         .then(function() {
-            alert('✓ Coupon saved successfully!');
+            alert(t('coupon.msg.saveSuccess'));
             self.hideCouponForm();
             self.loadCoupons();
         })
         .catch(function(error) {
             console.error('Error saving coupon:', error);
-            alert('Error saving coupon: ' + error.message);
+            alert(t('coupon.err.save') + error.message);
         });
 };
 
@@ -3645,18 +3775,18 @@ ContractFormHandler.prototype.deleteCoupon = function(couponId) {
     var coupon = this.coupons.find(function(c) { return c.id === couponId; });
     if (!coupon) return;
 
-    if (!confirm('Are you sure you want to delete the coupon "' + coupon.code + '"?\n\nThis action cannot be undone.')) {
+    if (!confirm(t('coupon.confirm.deletePrefix') + coupon.code + t('coupon.confirm.deleteSuffix'))) {
         return;
     }
 
     firebase.firestore().collection('coupons').doc(couponId).delete()
         .then(function() {
-            alert('✓ Coupon deleted successfully');
+            alert(t('coupon.msg.deleteSuccess'));
             self.loadCoupons();
         })
         .catch(function(error) {
             console.error('Error deleting coupon:', error);
-            alert('Error deleting coupon: ' + error.message);
+            alert(t('coupon.err.delete') + error.message);
         });
 };
 
@@ -3667,28 +3797,28 @@ ContractFormHandler.prototype.validateCoupon = function(code, packageType, order
     }) : null;
 
     if (!coupon) {
-        return { valid: false, error: 'Invalid coupon code' };
+        return { valid: false, error: t('coupon.val.invalidCode') };
     }
 
     // Check expiration
     if (coupon.expirationDate && new Date(coupon.expirationDate) < new Date()) {
-        return { valid: false, error: 'This coupon has expired' };
+        return { valid: false, error: t('coupon.val.expired') };
     }
 
     // Check usage limit
     if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
-        return { valid: false, error: 'This coupon has reached its usage limit' };
+        return { valid: false, error: t('coupon.val.usageLimit') };
     }
 
     // Check minimum purchase
     if (coupon.minPurchase && orderTotal < coupon.minPurchase) {
-        return { valid: false, error: 'Minimum purchase of $' + coupon.minPurchase.toFixed(0) + ' required' };
+        return { valid: false, error: t('coupon.val.minPurchasePrefix') + coupon.minPurchase.toFixed(0) + t('coupon.val.minPurchaseSuffix') };
     }
 
     // Check tier restriction
     if (coupon.allowedTiers && coupon.allowedTiers.length > 0 && packageType) {
         if (coupon.allowedTiers.indexOf(packageType) === -1) {
-            return { valid: false, error: 'This coupon is not valid for the ' + packageType + ' tier' };
+            return { valid: false, error: t('coupon.val.tierInvalidPrefix') + packageType + t('coupon.val.tierInvalidSuffix') };
         }
     }
 
@@ -3870,17 +4000,17 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
     
     var html = '<div class="sow-tab-header">' +
         '<button class="btn-create-sow" onclick="window.contractFormHandler.showSOWCreator()">' +
-        '<span class="btn-icon">+</span> Create SOW' +
+        '<span class="btn-icon">+</span> ' + t('sowTab.btn.createSow') +
         '</button>' +
         '</div>';
-    
+
     if (sows.length === 0) {
         html += '<div class="empty-state">' +
             '<img src="/images/scarlo-logo.png" alt="Scarlo" class="empty-icon">' +
-            '<h4>No SOW Documents Yet</h4>' +
-            '<p>Create your first Statement of Work to get started</p>' +
+            '<h4>' + t('sowTab.empty.title') + '</h4>' +
+            '<p>' + t('sowTab.empty.text') + '</p>' +
             '<button class="btn-create-sow" onclick="window.contractFormHandler.showSOWCreator()" style="margin-top: 20px;">' +
-            '<span class="btn-icon">+</span> Create SOW' +
+            '<span class="btn-icon">+</span> ' + t('sowTab.btn.createSow') +
             '</button>' +
             '</div>';
     } else {
@@ -3900,15 +4030,15 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
         html += '<div class="sow-revenue-bar">' +
             '<div class="sow-revenue-stat">' +
             '<span class="revenue-val">' + self.formatCurrency(sowTotalRevenue) + '</span>' +
-            '<span class="revenue-label">Total Revenue</span>' +
+            '<span class="revenue-label">' + t('sowTab.stats.totalRevenue') + '</span>' +
             '</div>' +
             '<div class="sow-revenue-stat">' +
             '<span class="revenue-val">' + self.formatCurrency(avgProjectValue) + '</span>' +
-            '<span class="revenue-label">Avg Project</span>' +
+            '<span class="revenue-label">' + t('sowTab.stats.avgProject') + '</span>' +
             '</div>' +
             '<div class="sow-revenue-stat">' +
             '<span class="revenue-val">' + self.formatCurrency(sowPaidRevenue) + '</span>' +
-            '<span class="revenue-label">Collected</span>' +
+            '<span class="revenue-label">' + t('sowTab.stats.collected') + '</span>' +
             '</div>' +
             '</div>';
 
@@ -3942,12 +4072,12 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                 : 'N/A';
 
             var packageNames = {
-                'essential': 'Essential — Landing Page',
-                'starter': 'Tier 1 — Starter',
-                'growth': 'Tier 2 — Growth',
-                'professional': 'Tier 3 — Professional',
-                'enterprise': 'Tier 4 — Enterprise',
-                'custom': 'Custom Quote'
+                'essential': t('sowTab.pkg.essential'),
+                'starter': t('sowTab.pkg.tier1'),
+                'growth': t('sowTab.pkg.tier2'),
+                'professional': t('sowTab.pkg.tier3'),
+                'enterprise': t('sowTab.pkg.tier4'),
+                'custom': t('sowTab.pkg.custom')
             };
             
             var statusColors = {
@@ -3963,12 +4093,12 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
             var statusText = status.toUpperCase();
             if (status === 'pending_developer' || status === 'sent') {
                 if (sow.clientSignature && !sow.devSignature) {
-                    statusText = '⏳ AWAITING DEV';
+                    statusText = '⏳ ' + t('sowTab.status.awaitingDev');
                 } else if (!sow.clientSignature) {
-                    statusText = '📤 AWAITING CLIENT';
+                    statusText = '📤 ' + t('sowTab.status.awaitingClient');
                 }
             } else if (status === 'approved' && sow.clientSignature && sow.devSignature) {
-                statusText = '✅ FULLY SIGNED';
+                statusText = '✅ ' + t('sowTab.status.fullySigned');
             }
             
            // Store SOW data in window for inline handlers to access
@@ -3981,17 +4111,17 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
             var changeRequestBadge = '';
             if (sow.hasChangeRequest && sow.changeRequestStatus) {
                 var crStyles = {
-                    'pending': { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', text: '📝 Change Requested' },
-                    'approved': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981', text: '✅ Change Approved' },
-                    'rejected': { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', text: '❌ Change Rejected' },
-                    'change_order': { bg: 'rgba(99, 102, 241, 0.2)', color: '#6366f1', text: '📋 Change Order' }
+                    'pending': { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', text: '📝 ' + t('sowTab.cr.requested') },
+                    'approved': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981', text: '✅ ' + t('sowTab.cr.approved') },
+                    'rejected': { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', text: '❌ ' + t('sowTab.cr.rejected') },
+                    'change_order': { bg: 'rgba(99, 102, 241, 0.2)', color: '#6366f1', text: '📋 ' + t('sowTab.cr.order') }
                 };
                 var crStyle = crStyles[sow.changeRequestStatus] || crStyles.pending;
 
                 // Check for unread messages
                 var unreadBadge = '';
                 if (sow.changeRequestData && sow.changeRequestData.hasUnreadMessages) {
-                    unreadBadge = '<span class="unread-badge">New</span>';
+                    unreadBadge = '<span class="unread-badge">' + t('sowTab.badge.new') + '</span>';
                 }
 
                 changeRequestBadge = '<div style="font-size: 0.75rem; color: ' + crStyle.color + '; background: ' + crStyle.bg + '; padding: 4px 8px; border-radius: 4px; white-space: nowrap; cursor: pointer; display: flex; align-items: center;" onclick="window.contractFormHandler.viewChangeRequest(\'' + sow.changeRequestId + '\')">' +
@@ -4012,15 +4142,15 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                 '</span>' +
                 (sow.linkedContract ?
                     '<div style="font-size: 0.75rem; color: #10b981; background: rgba(16, 185, 129, 0.15); padding: 4px 8px; border-radius: 4px; white-space: nowrap;">' +
-                    '🔗 Linked to Contract' +
+                    '🔗 ' + t('sowTab.badge.linkedContract') +
                     '</div>'
                 : '') +
                 changeRequestBadge +
                 '<div class="sow-signatures">' +
                 '<span class="sig-icon ' + (sow.devSignature ? 'signed' : 'pending') + '">' +
-                    (sow.devSignature ? '&#10003;' : '&#9202;') + ' Dev</span>' +
+                    (sow.devSignature ? '&#10003;' : '&#9202;') + ' ' + t('sowTab.sig.dev') + '</span>' +
                 '<span class="sig-icon ' + (sow.clientSignature ? 'signed' : 'pending') + '">' +
-                    (sow.clientSignature ? '&#10003;' : '&#9202;') + ' Client</span>' +
+                    (sow.clientSignature ? '&#10003;' : '&#9202;') + ' ' + t('sowTab.sig.client') + '</span>' +
                 '</div>' +
                 '</div>' +
                 '</div>' +
@@ -4028,19 +4158,19 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                 '<div class="sow-item-details">' +
                 '<div class="sow-detail-grid">' +
                 '<div class="sow-detail-row">' +
-                '<span class="detail-label">' + (sow.clientEmail ? '📧 Email:' : '📱 Phone:') + '</span>' +
+                '<span class="detail-label">' + (sow.clientEmail ? '📧 ' + t('sowTab.detail.email') : '📱 ' + t('sowTab.detail.phone')) + '</span>' +
                 '<span class="detail-value">' + (sow.clientEmail || (sow.clientPhone ? formatPhoneNumber(sow.clientPhone) : 'N/A')) + '</span>' +
                 '</div>' +
                 '<div class="sow-detail-row">' +
-                '<span class="detail-label">💰 Total:</span>' +
+                '<span class="detail-label">💰 ' + t('sowTab.detail.total') + '</span>' +
                 '<span class="detail-value">' + self.formatCurrency((sow.payment && sow.payment.total) ? sow.payment.total : 0) + '</span>' +
                 '</div>' +
                 '<div class="sow-detail-row">' +
-                '<span class="detail-label">⏱️ Timeline:</span>' +
-                '<span class="detail-value">' + (sow.estimatedWeeks || 'TBD') + ' ' + (sow.devDurationUnit || 'weeks') + '</span>' +
+                '<span class="detail-label">⏱️ ' + t('sowTab.detail.timeline') + '</span>' +
+                '<span class="detail-value">' + (sow.estimatedWeeks || 'TBD') + ' ' + (sow.devDurationUnit || t('sowTab.detail.weeks')) + '</span>' +
                 '</div>' +
                 '<div class="sow-detail-row">' +
-                '<span class="detail-label">📅 Created:</span>' +
+                '<span class="detail-label">📅 ' + t('sowTab.detail.created') + '</span>' +
                 '<span class="detail-value">' + createdDate + '</span>' +
                 '</div>' +
                 '</div>' +
@@ -4050,10 +4180,10 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
 (sow.hasChangeRequest && sow.changeRequestStatus === 'pending' ?
     '<div class="change-request-card" style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem;">' +
     '<div>' +
-    '<p style="margin: 0; font-weight: 600; color: #fbbf24; font-size: 0.9rem; display: flex; align-items: center;">📝 Client Requested Changes' +
-    (sow.changeRequestData && sow.changeRequestData.hasUnreadMessages ? '<span class="unread-badge">New</span>' : '') +
+    '<p style="margin: 0; font-weight: 600; color: #fbbf24; font-size: 0.9rem; display: flex; align-items: center;">📝 ' + t('sowTab.cr.clientRequested') +
+    (sow.changeRequestData && sow.changeRequestData.hasUnreadMessages ? '<span class="unread-badge">' + t('sowTab.badge.new') + '</span>' : '') +
     '</p>' +
-    '<p style="margin: 0.25rem 0 0; font-size: 0.8rem; opacity: 0.8;">Review and respond to this change request</p>' +
+    '<p style="margin: 0.25rem 0 0; font-size: 0.8rem; opacity: 0.8;">' + t('sowTab.cr.reviewText') + '</p>' +
     '</div>' +
     '</div>'
 : '') +
@@ -4061,18 +4191,18 @@ ContractFormHandler.prototype.renderSOWTab = function(sows) {
                 '<div class="sow-item-actions">' +
 // Sign button (if not fully signed)
 ((!sow.clientSignature || !sow.devSignature) ?
-    '<button class="sow-action-icon" onclick="window.contractFormHandler.showSOWSigningModal(\'' + sow.id + '\')" title="Sign SOW">✍️</button>' : '') +
+    '<button class="sow-action-icon" onclick="window.contractFormHandler.showSOWSigningModal(\'' + sow.id + '\')" title="' + t('sowTab.btn.signSow') + '">✍️</button>' : '') +
 
 // View Change Request button (if there's a change request)
 (sow.hasChangeRequest && sow.changeRequestId ?
-    '<button class="sow-action-icon has-badge" onclick="window.contractFormHandler.viewChangeRequest(\'' + sow.changeRequestId + '\')" title="View Change Request">' +
+    '<button class="sow-action-icon has-badge" onclick="window.contractFormHandler.viewChangeRequest(\'' + sow.changeRequestId + '\')" title="' + t('sowTab.btn.viewChangeRequest') + '">' +
     '💬' + (sow.changeRequestData && sow.changeRequestData.hasUnreadMessages ? '<span class="action-badge"></span>' : '') +
     '</button>' : '') +
 
-'<button class="sow-action-icon" onclick="window.contractFormHandler.showPaymentManager(\'' + sow.id + '\')" title="Manage Payments">💳</button>' +
-'<button class="sow-action-icon" onclick="window.contractFormHandler.editSOW(window.' + sowDataId + ')" title="Edit SOW">✏️</button>' +
-'<button class="sow-action-icon" onclick="window.contractFormHandler.generateSOWPDF(window.' + sowDataId + ')" title="Download PDF">📄</button>' +
-'<button class="sow-action-icon delete" onclick="window.contractFormHandler.deleteSOW(\'' + sow.id + '\')" title="Delete SOW">🗑️</button>' +
+'<button class="sow-action-icon" onclick="window.contractFormHandler.showPaymentManager(\'' + sow.id + '\')" title="' + t('sowTab.btn.managePayments') + '">💳</button>' +
+'<button class="sow-action-icon" onclick="window.contractFormHandler.editSOW(window.' + sowDataId + ')" title="' + t('sowTab.btn.editSow') + '">✏️</button>' +
+'<button class="sow-action-icon" onclick="window.contractFormHandler.generateSOWPDF(window.' + sowDataId + ')" title="' + t('sowTab.btn.downloadPdf') + '">📄</button>' +
+'<button class="sow-action-icon delete" onclick="window.contractFormHandler.deleteSOW(\'' + sow.id + '\')" title="' + t('sowTab.btn.deleteSow') + '">🗑️</button>' +
 '</div>' +
                 '</div>';
         });
@@ -4122,7 +4252,7 @@ ContractFormHandler.prototype.generateSOWPDFFromData = function(sow) {
 
 // Helper function to delete SOW
 ContractFormHandler.prototype.deleteSOW = function(sowId) {
-    if (!confirm('Are you sure you want to delete this SOW? This action cannot be undone.')) {
+    if (!confirm(t('sow.confirm.delete'))) {
         return;
     }
 
@@ -4133,12 +4263,12 @@ ContractFormHandler.prototype.deleteSOW = function(sowId) {
         .delete()
         .then(function() {
             console.log('SOW deleted successfully');
-            alert('✓ SOW deleted successfully');
+            alert(t('sow.msg.deleteSuccess'));
             self.loadSOWDocuments();
         })
         .catch(function(error) {
             console.error('Error deleting SOW:', error);
-            alert('Error deleting SOW: ' + error.message);
+            alert(t('sow.err.delete') + error.message);
         });
 };
 
@@ -4152,7 +4282,7 @@ ContractFormHandler.prototype.showPaymentManager = function(sowId) {
         .get()
         .then(function(doc) {
             if (!doc.exists) {
-                alert('SOW not found');
+                alert(t('sow.err.notFound'));
                 return;
             }
 
@@ -4162,7 +4292,7 @@ ContractFormHandler.prototype.showPaymentManager = function(sowId) {
         })
         .catch(function(error) {
             console.error('Error loading SOW:', error);
-            alert('Error loading SOW: ' + error.message);
+            alert(t('sow.err.load') + error.message);
         });
 };
 
@@ -4194,11 +4324,11 @@ ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
             '<div class="payment-row-meta">';
 
         if (payment.dueDate) {
-            paymentRowsHtml += '<span class="payment-row-due">Due: ' + payment.dueDate + '</span>';
+            paymentRowsHtml += '<span class="payment-row-due">' + t('payMgr.label.due') + payment.dueDate + '</span>';
         }
 
         paymentRowsHtml += '<span class="payment-row-status ' + statusClass + '">' +
-            (payment.paid ? '✅ Paid' + (payment.paidDate ? ' on ' + payment.paidDate : '') : '⏳ Pending') +
+            (payment.paid ? '✅ ' + t('payMgr.status.paid') + (payment.paidDate ? t('payMgr.status.paidOn') + payment.paidDate : '') : '⏳ ' + t('payMgr.status.pending')) +
             '</span>' +
             '</div>' +
             '</div>';
@@ -4213,13 +4343,13 @@ ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
         '<div class="payment-manager-overlay" onclick="window.contractFormHandler.closePaymentManager()"></div>' +
         '<div class="payment-manager-content">' +
         '<div class="payment-manager-header">' +
-        '<h2>💳 Payment Manager</h2>' +
+        '<h2>💳 ' + t('payMgr.title') + '</h2>' +
         '<button class="payment-manager-close" onclick="window.contractFormHandler.closePaymentManager()">&times;</button>' +
         '</div>' +
 
         '<div class="payment-manager-client">' +
-        '<h3>' + (sowData.clientName || 'Unknown Client') + '</h3>' +
-        '<p>' + (sowData.packageType || 'N/A') + ' • Total: $' + (sowData.payment ? sowData.payment.total.toFixed(2) : '0') + '</p>' +
+        '<h3>' + (sowData.clientName || t('payMgr.fallback.client')) + '</h3>' +
+        '<p>' + (sowData.packageType || 'N/A') + ' • ' + t('payMgr.label.total') + ' $' + (sowData.payment ? sowData.payment.total.toFixed(2) : '0') + '</p>' +
         '</div>' +
 
         '<div class="payment-manager-summary">' +
@@ -4227,31 +4357,31 @@ ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
         '<div class="summary-progress-bar">' +
         '<div class="summary-progress-fill" style="width: ' + progressPercent + '%;"></div>' +
         '</div>' +
-        '<span class="summary-progress-text">' + paymentInfo.paidCount + ' of ' + paymentInfo.totalCount + ' payments completed</span>' +
+        '<span class="summary-progress-text">' + paymentInfo.paidCount + t('payMgr.summary.of') + paymentInfo.totalCount + t('payMgr.summary.completed') + '</span>' +
         '</div>' +
         '<div class="summary-amounts">' +
         '<div class="summary-amount paid">' +
-        '<span class="amount-label">Paid</span>' +
+        '<span class="amount-label">' + t('payMgr.summary.paid') + '</span>' +
         '<span class="amount-value">$' + paymentInfo.paidAmount.toFixed(2) + '</span>' +
         '</div>' +
         '<div class="summary-amount owed">' +
-        '<span class="amount-label">Owed</span>' +
+        '<span class="amount-label">' + t('payMgr.summary.owed') + '</span>' +
         '<span class="amount-value">$' + paymentInfo.owedAmount.toFixed(2) + '</span>' +
         '</div>' +
         '</div>' +
         '</div>' +
 
         '<div class="payment-manager-list">' +
-        '<h4>Payment Schedule</h4>' +
-        '<p class="payment-manager-hint">Check the box to mark a payment as received</p>' +
+        '<h4>' + t('payMgr.section.schedule') + '</h4>' +
+        '<p class="payment-manager-hint">' + t('payMgr.helper.checkBox') + '</p>' +
         '<div class="payment-grid">' +
         paymentRowsHtml +
         '</div>' +
         '</div>' +
 
         '<div class="payment-manager-actions">' +
-        '<button class="btn btn-secondary" onclick="window.contractFormHandler.closePaymentManager()">Cancel</button>' +
-        '<button class="btn btn-primary" onclick="window.contractFormHandler.savePaymentStatus(\'' + sowData.id + '\')">Save Changes</button>' +
+        '<button class="btn btn-secondary" onclick="window.contractFormHandler.closePaymentManager()">' + t('payMgr.btn.cancel') + '</button>' +
+        '<button class="btn btn-primary" onclick="window.contractFormHandler.savePaymentStatus(\'' + sowData.id + '\')">' + t('payMgr.btn.save') + '</button>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -4319,7 +4449,7 @@ ContractFormHandler.prototype.renderPaymentManagerModal = function(sowData) {
             if (paidValueEl) paidValueEl.textContent = '$' + paidAmount.toFixed(2);
             if (owedValueEl) owedValueEl.textContent = '$' + owedAmount.toFixed(2);
             if (progressFillEl) progressFillEl.style.width = progressPercent + '%';
-            if (progressTextEl) progressTextEl.textContent = paidCount + ' of ' + totalCount + ' payments completed';
+            if (progressTextEl) progressTextEl.textContent = paidCount + t('dash.payment.of') + totalCount + t('dash.payment.completed');
         });
     });
 };
@@ -4335,7 +4465,7 @@ ContractFormHandler.prototype.savePaymentStatus = function(sowId) {
     var sowData = self.currentPaymentSOW;
 
     if (!sowData || !sowData.payment) {
-        alert('Error: SOW data not found');
+        alert(t('sow.err.dataNotFound'));
         return;
     }
 
@@ -4387,13 +4517,13 @@ ContractFormHandler.prototype.savePaymentStatus = function(sowId) {
         })
         .then(function() {
             console.log('Payment status updated successfully');
-            alert('✓ Payment status saved successfully');
+            alert(t('dash.payment.msg.saveSuccess'));
             self.closePaymentManager();
             self.loadSOWDocuments(); // Refresh the list
         })
         .catch(function(error) {
             console.error('Error saving payment status:', error);
-            alert('Error saving payment status: ' + error.message);
+            alert(t('dash.payment.err.save') + error.message);
         });
 };
 
@@ -4407,12 +4537,12 @@ ContractFormHandler.prototype.showChangeRequestModal = function(sowData) {
 
     // SOW sections that can be changed
     var sections = [
-        { id: 'package', label: 'Package Tier', desc: 'Change to a different package level' },
-        { id: 'features', label: 'Features & Deliverables', desc: 'Add, remove, or modify features' },
-        { id: 'timeline', label: 'Timeline', desc: 'Adjust project duration or milestones' },
-        { id: 'payment', label: 'Payment Structure', desc: 'Modify payment schedule or amounts' },
-        { id: 'maintenance', label: 'Maintenance Plan', desc: 'Change ongoing maintenance options' },
-        { id: 'other', label: 'Other', desc: 'Any other modifications not listed above' }
+        { id: 'package', label: t('changeModal.section.packageTier'), desc: t('changeModal.section.packageTierDesc') },
+        { id: 'features', label: t('changeModal.section.features'), desc: t('changeModal.section.featuresDesc') },
+        { id: 'timeline', label: t('changeModal.section.timeline'), desc: t('changeModal.section.timelineDesc') },
+        { id: 'payment', label: t('changeModal.section.payment'), desc: t('changeModal.section.paymentDesc') },
+        { id: 'maintenance', label: t('changeModal.section.maintenance'), desc: t('changeModal.section.maintenanceDesc') },
+        { id: 'other', label: t('changeModal.section.other'), desc: t('changeModal.section.otherDesc') }
     ];
 
     var sectionsHtml = sections.map(function(section) {
@@ -4428,41 +4558,41 @@ ContractFormHandler.prototype.showChangeRequestModal = function(sowData) {
     var modalHtml = '<div id="changeRequestModal" class="modal-overlay" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">' +
         '<div class="modal-content change-request-modal-content" style="max-width: 720px; width: 100%; padding: 0; background: linear-gradient(165deg, rgba(30, 30, 30, 0.95) 0%, rgba(18, 18, 18, 0.98) 100%); border: 1px solid rgba(228, 216, 196, 0.15); border-radius: 20px; box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 40px rgba(228, 216, 196, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.05); overflow: hidden;">' +
         '<div class="modal-header" style="position: relative; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(228, 216, 196, 0.1); background: linear-gradient(180deg, rgba(228, 216, 196, 0.03) 0%, transparent 100%);">' +
-        '<h2 style="margin: 0; font-size: 1.25rem; color: #fff; font-weight: 600; letter-spacing: -0.02em;">Request SOW Change</h2>' +
+        '<h2 style="margin: 0; font-size: 1.25rem; color: #fff; font-weight: 600; letter-spacing: -0.02em;">' + t('changeModal.title') + '</h2>' +
         '<button type="button" class="modal-close" onclick="window.contractFormHandler.closeChangeRequestModal()" style="position: absolute; top: 0.75rem; right: 1rem; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); width: 32px; height: 32px; border-radius: 50%; color: rgba(255,255,255,0.7); font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s ease;">×</button>' +
         '</div>' +
         '<div class="modal-body" style="color: #fff; padding: 1.25rem 1.5rem; max-height: 65vh; overflow-y: auto;">' +
 
         '<div class="change-request-info" style="background: linear-gradient(135deg, rgba(228, 216, 196, 0.08) 0%, rgba(228, 216, 196, 0.03) 100%); border: 1px solid rgba(228, 216, 196, 0.15); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; gap: 2rem; align-items: center;">' +
-        '<p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);"><span style="color: rgba(228, 216, 196, 0.7); font-weight: 500;">SOW</span> <strong style="color: #E4D8C4; margin-left: 0.5rem;">' + (sowData.packageType || 'N/A') + ' Package</strong></p>' +
-        '<p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);"><span style="color: rgba(228, 216, 196, 0.7); font-weight: 500;">Current Total</span> <strong style="color: #E4D8C4; margin-left: 0.5rem;">$' + (sowData.payment ? sowData.payment.total.toFixed(0) : '0') + '</strong></p>' +
+        '<p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);"><span style="color: rgba(228, 216, 196, 0.7); font-weight: 500;">' + t('changeModal.label.sow') + '</span> <strong style="color: #E4D8C4; margin-left: 0.5rem;">' + (sowData.packageType || 'N/A') + ' Package</strong></p>' +
+        '<p style="margin: 0; font-size: 0.85rem; color: rgba(255,255,255,0.9);"><span style="color: rgba(228, 216, 196, 0.7); font-weight: 500;">' + t('changeModal.label.currentTotal') + '</span> <strong style="color: #E4D8C4; margin-left: 0.5rem;">$' + (sowData.payment ? sowData.payment.total.toFixed(0) : '0') + '</strong></p>' +
         '</div>' +
 
         '<div class="form-group" style="margin: 0;">' +
-        '<label class="form-label" style="display: block; margin-bottom: 0.6rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Which sections do you want to modify?</label>' +
+        '<label class="form-label" style="display: block; margin-bottom: 0.6rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">' + t('changeModal.label.whichSections') + '</label>' +
         '<div class="change-sections-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">' +
         sectionsHtml +
         '</div>' +
         '</div>' +
 
         '<div class="form-group" style="margin: 1rem 0 0;">' +
-        '<label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Describe the changes you need</label>' +
-        '<textarea id="changeRequestDescription" class="form-input" rows="3" placeholder="Please describe in detail what changes you would like to make..." style="width: 100%; resize: vertical; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem; color: #fff; font-size: 0.9rem; transition: all 0.2s ease; outline: none;"></textarea>' +
+        '<label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">' + t('changeModal.label.describeChanges') + '</label>' +
+        '<textarea id="changeRequestDescription" class="form-input" rows="3" placeholder="' + t('changeModal.placeholder.describe') + '" style="width: 100%; resize: vertical; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem; color: #fff; font-size: 0.9rem; transition: all 0.2s ease; outline: none;"></textarea>' +
         '</div>' +
 
         '<div class="form-group" style="margin: 0.75rem 0 0;">' +
-        '<label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">Priority Level</label>' +
+        '<label class="form-label" style="display: block; margin-bottom: 0.4rem; font-weight: 500; font-size: 0.9rem; color: rgba(255,255,255,0.9);">' + t('changeModal.label.priority') + '</label>' +
         '<select id="changeRequestPriority" class="form-input" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0.75rem; color: #fff; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease; outline: none;">' +
-        '<option value="normal" style="background: #1a1a1a; color: #fff;">Normal - Can wait for next review cycle</option>' +
-        '<option value="high" style="background: #1a1a1a; color: #fff;">High - Needed before project continues</option>' +
-        '<option value="urgent" style="background: #1a1a1a; color: #fff;">Urgent - Critical blocker</option>' +
+        '<option value="normal" style="background: #1a1a1a; color: #fff;">' + t('changeModal.priority.normal') + '</option>' +
+        '<option value="high" style="background: #1a1a1a; color: #fff;">' + t('changeModal.priority.high') + '</option>' +
+        '<option value="urgent" style="background: #1a1a1a; color: #fff;">' + t('changeModal.priority.urgent') + '</option>' +
         '</select>' +
         '</div>' +
 
         '</div>' +
         '<div class="modal-footer" style="display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.5rem; background: rgba(0,0,0,0.2); border-top: 1px solid rgba(255,255,255,0.05);">' +
-        '<button type="button" class="btn btn-secondary" onclick="window.contractFormHandler.closeChangeRequestModal()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); padding: 0.6rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: all 0.2s ease;">Cancel</button>' +
-        '<button type="button" class="btn btn-primary" onclick="window.contractFormHandler.submitChangeRequest()" style="background: linear-gradient(135deg, rgba(228, 216, 196, 0.9) 0%, rgba(228, 216, 196, 0.7) 100%); border: none; color: #121212; padding: 0.6rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s ease;">Submit Request</button>' +
+        '<button type="button" class="btn btn-secondary" onclick="window.contractFormHandler.closeChangeRequestModal()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); padding: 0.6rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 500; font-size: 0.85rem; transition: all 0.2s ease;">' + t('changeModal.btn.cancel') + '</button>' +
+        '<button type="button" class="btn btn-primary" onclick="window.contractFormHandler.submitChangeRequest()" style="background: linear-gradient(135deg, rgba(228, 216, 196, 0.9) 0%, rgba(228, 216, 196, 0.7) 100%); border: none; color: #121212; padding: 0.6rem 1.25rem; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.2s ease;">' + t('changeModal.btn.submit') + '</button>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -4583,7 +4713,7 @@ ContractFormHandler.prototype.submitChangeRequest = function() {
     var sowData = this.currentChangeRequestSOW;
 
     if (!sowData) {
-        alert('Error: No SOW data found');
+        alert(t('sow.err.dataNotFound'));
         return;
     }
 
@@ -4594,13 +4724,13 @@ ContractFormHandler.prototype.submitChangeRequest = function() {
     });
 
     if (selectedSections.length === 0) {
-        alert('Please select at least one section to modify');
+        alert(t('change.val.selectSection'));
         return;
     }
 
     var description = document.getElementById('changeRequestDescription').value.trim();
     if (!description) {
-        alert('Please describe the changes you need');
+        alert(t('change.val.describeChanges'));
         return;
     }
 
@@ -4653,7 +4783,7 @@ ContractFormHandler.prototype.submitChangeRequest = function() {
                 btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
                 btn.style.color = 'white';
                 btn.style.border = 'none';
-                btn.innerHTML = '💬 View Request';
+                btn.innerHTML = t('change.btn.viewRequest');
                 btn.onclick = function() {
                     window.contractFormHandler.viewChangeRequest(changeRequestId);
                 };
@@ -4668,11 +4798,11 @@ ContractFormHandler.prototype.submitChangeRequest = function() {
             }
 
             self.closeChangeRequestModal();
-            alert('✓ Change request submitted successfully!\n\nThe developer will review your request and respond shortly.');
+            alert(t('change.msg.submitSuccess'));
         })
         .catch(function(error) {
             console.error('Error submitting change request:', error);
-            alert('Error submitting change request: ' + error.message);
+            alert(t('change.err.submit') + error.message);
         });
 };
 
@@ -4685,7 +4815,7 @@ ContractFormHandler.prototype.viewChangeRequest = function(changeRequestId) {
         .get()
         .then(function(doc) {
             if (!doc.exists) {
-                alert('Change request not found');
+                alert(t('change.err.notFound'));
                 return;
             }
 
@@ -4706,7 +4836,7 @@ ContractFormHandler.prototype.viewChangeRequest = function(changeRequestId) {
         })
         .catch(function(error) {
             console.error('Error loading change request:', error);
-            alert('Error loading change request: ' + error.message);
+            alert(t('change.err.load') + error.message);
         });
 };
 
@@ -4717,26 +4847,26 @@ ContractFormHandler.prototype.showChangeRequestDetailModal = function(request) {
     this.currentChangeRequest = request;
 
     var sectionLabels = {
-        'package': '📦 Package Tier',
-        'features': '✨ Features & Deliverables',
-        'timeline': '⏱️ Timeline',
-        'payment': '💰 Payment Structure',
-        'maintenance': '🔧 Maintenance Plan',
-        'other': '📝 Other'
+        'package': t('changeOrder.section.package'),
+        'features': t('changeOrder.section.features'),
+        'timeline': t('changeOrder.section.timeline'),
+        'payment': t('changeOrder.section.payment'),
+        'maintenance': t('changeOrder.section.maintenance'),
+        'other': t('changeOrder.section.other')
     };
 
     var priorityStyles = {
-        'normal': { bg: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af', label: 'Normal' },
-        'high': { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', label: 'High Priority' },
-        'urgent': { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', label: 'Urgent' }
+        'normal': { bg: 'rgba(107, 114, 128, 0.2)', color: '#9ca3af', label: t('changeOrder.priority.normal') },
+        'high': { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', label: t('changeOrder.priority.high') },
+        'urgent': { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', label: t('changeOrder.priority.urgent') }
     };
 
     var statusStyles = {
-        'pending': { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', label: '⏳ Pending Review' },
-        'approved': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981', label: '✅ Approved' },
-        'rejected': { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', label: '❌ Rejected' },
-        'change_order': { bg: 'rgba(99, 102, 241, 0.2)', color: '#6366f1', label: '📋 Change Order Created' },
-        'completed': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981', label: '✅ Completed' }
+        'pending': { bg: 'rgba(251, 191, 36, 0.2)', color: '#fbbf24', label: t('changeOrder.status.pending') },
+        'approved': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981', label: t('changeOrder.status.approved') },
+        'rejected': { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', label: t('changeOrder.status.rejected') },
+        'change_order': { bg: 'rgba(99, 102, 241, 0.2)', color: '#6366f1', label: t('changeOrder.status.change_order') },
+        'completed': { bg: 'rgba(16, 185, 129, 0.2)', color: '#10b981', label: t('changeOrder.status.completed') }
     };
 
     var sectionsHtml = request.sections.map(function(sectionId) {
@@ -4951,7 +5081,7 @@ ContractFormHandler.prototype.sendChangeRequestMessage = function(changeRequestI
     var sendBtn = document.querySelector('.conversation-send-btn');
     if (sendBtn) {
         sendBtn.disabled = true;
-        sendBtn.textContent = 'Sending...';
+        sendBtn.textContent = t('change.btn.sending');
     }
 
     firebase.firestore().collection('change_requests')
@@ -4977,7 +5107,7 @@ ContractFormHandler.prototype.sendChangeRequestMessage = function(changeRequestI
                 var msgHtml = '<div class="conversation-message self">' +
                     '<div class="message-sender">' + senderName + '</div>' +
                     '<div class="message-text">' + text + '</div>' +
-                    '<div class="message-time">Just now</div>' +
+                    '<div class="message-time">' + t('change.time.justNow') + '</div>' +
                     '</div>';
                 thread.insertAdjacentHTML('beforeend', msgHtml);
                 thread.scrollTop = thread.scrollHeight;
@@ -4986,15 +5116,15 @@ ContractFormHandler.prototype.sendChangeRequestMessage = function(changeRequestI
             // Re-enable send button
             if (sendBtn) {
                 sendBtn.disabled = false;
-                sendBtn.textContent = 'Send';
+                sendBtn.textContent = t('change.btn.send');
             }
         })
         .catch(function(error) {
             console.error('Error sending message:', error);
-            alert('Failed to send message. Please try again.');
+            alert(t('change.err.sendFailed'));
             if (sendBtn) {
                 sendBtn.disabled = false;
-                sendBtn.textContent = 'Send';
+                sendBtn.textContent = t('change.btn.send');
             }
         });
 };
@@ -5017,7 +5147,7 @@ ContractFormHandler.prototype.updateChangeRequestLastViewed = function(changeReq
 ContractFormHandler.prototype.approveChangeRequest = function(changeRequestId) {
     var self = this;
 
-    if (!confirm('Are you sure you want to approve this change request?')) {
+    if (!confirm(t('change.confirm.approve'))) {
         return;
     }
 
@@ -5025,7 +5155,7 @@ ContractFormHandler.prototype.approveChangeRequest = function(changeRequestId) {
     var approvalMessage = {
         sender: 'developer',
         senderName: 'Carlos (Developer)',
-        text: '✅ Change request has been APPROVED. I will now proceed with the requested changes.',
+        text: t('change.msg.approveSystem'),
         timestamp: new Date().toISOString()
     };
 
@@ -5053,19 +5183,19 @@ ContractFormHandler.prototype.approveChangeRequest = function(changeRequestId) {
         })
         .then(function() {
             self.closeChangeRequestDetailModal();
-            alert('Change request approved! You can now edit the SOW with the requested changes.');
+            alert(t('change.msg.approved'));
             self.loadSOWDocuments();
         })
         .catch(function(error) {
             console.error('Error approving change request:', error);
-            alert('Error: ' + error.message);
+            alert(t('contract.err.prefix') + error.message);
         });
 };
 
 ContractFormHandler.prototype.rejectChangeRequest = function(changeRequestId) {
     var self = this;
 
-    if (!confirm('Are you sure you want to reject this change request? Consider sending a message to explain why before rejecting.')) {
+    if (!confirm(t('change.confirm.reject'))) {
         return;
     }
 
@@ -5073,7 +5203,7 @@ ContractFormHandler.prototype.rejectChangeRequest = function(changeRequestId) {
     var rejectionMessage = {
         sender: 'developer',
         senderName: 'Carlos (Developer)',
-        text: '❌ Change request has been REJECTED. Please see my previous messages for details.',
+        text: t('change.msg.rejectSystem'),
         timestamp: new Date().toISOString()
     };
 
@@ -5100,12 +5230,12 @@ ContractFormHandler.prototype.rejectChangeRequest = function(changeRequestId) {
         })
         .then(function() {
             self.closeChangeRequestDetailModal();
-            alert('Change request rejected. The client has been notified.');
+            alert(t('change.msg.rejected'));
             self.loadSOWDocuments();
         })
         .catch(function(error) {
             console.error('Error rejecting change request:', error);
-            alert('Error: ' + error.message);
+            alert(t('contract.err.prefix') + error.message);
         });
 };
 
@@ -5117,7 +5247,7 @@ ContractFormHandler.prototype.createChangeOrderFromRequest = function(changeRequ
         .get()
         .then(function(doc) {
             if (!doc.exists) {
-                alert('Change request not found');
+                alert(t('change.err.notFound'));
                 return;
             }
 
@@ -5163,13 +5293,13 @@ ContractFormHandler.prototype.createChangeOrderFromRequest = function(changeRequ
                         };
                         self.editSOW(sowData);
                     } else {
-                        alert('SOW not found');
+                        alert(t('sow.err.notFound'));
                     }
                 });
         })
         .catch(function(error) {
             console.error('Error creating change order:', error);
-            alert('Error: ' + error.message);
+            alert(t('contract.err.prefix') + error.message);
         });
 };
 
@@ -5177,12 +5307,12 @@ ContractFormHandler.prototype.showChangeOrderModal = function(changeRequest) {
     var self = this;
 
     var sectionLabels = {
-        'package': 'Package Tier',
-        'features': 'Features & Deliverables',
-        'timeline': 'Timeline',
-        'payment': 'Payment Structure',
-        'maintenance': 'Maintenance Plan',
-        'other': 'Other'
+        'package': t('changeOrder.section.package'),
+        'features': t('changeOrder.section.features'),
+        'timeline': t('changeOrder.section.timeline'),
+        'payment': t('changeOrder.section.payment'),
+        'maintenance': t('changeOrder.section.maintenance'),
+        'other': t('changeOrder.section.other')
     };
 
     var sectionsText = changeRequest.sections.map(function(s) { return sectionLabels[s] || s; }).join(', ');
@@ -5190,20 +5320,20 @@ ContractFormHandler.prototype.showChangeOrderModal = function(changeRequest) {
     var modalHtml = '<div id="changeOrderModal" class="modal-overlay-fixed">' +
         '<div class="modal-content" style="max-width: 600px;">' +
         '<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">' +
-        '<h2 style="margin: 0; font-size: 1.25rem;">📋 Create Change Order</h2>' +
+        '<h2 style="margin: 0; font-size: 1.25rem;">' + t('changeOrder.createTitle') + '</h2>' +
         '<button style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 36px; height: 36px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" onmouseover="this.style.background=\'rgba(255,255,255,0.2)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.1)\'" onclick="document.getElementById(\'changeOrderModal\').remove()">&times;</button>' +
         '</div>' +
         '<div class="modal-body" style="padding: 1.5rem;">' +
 
         '<div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">' +
-        '<p style="margin: 0; font-size: 0.9rem;"><strong>Client:</strong> ' + changeRequest.clientName + '</p>' +
-        '<p style="margin: 0.5rem 0 0; font-size: 0.9rem;"><strong>Sections:</strong> ' + sectionsText + '</p>' +
-        '<p style="margin: 0.5rem 0 0; font-size: 0.9rem;"><strong>Request:</strong> ' + changeRequest.description.substring(0, 100) + (changeRequest.description.length > 100 ? '...' : '') + '</p>' +
+        '<p style="margin: 0; font-size: 0.9rem;"><strong>' + t('changeOrder.label.client') + '</strong> ' + changeRequest.clientName + '</p>' +
+        '<p style="margin: 0.5rem 0 0; font-size: 0.9rem;"><strong>' + t('changeOrder.label.sections') + '</strong> ' + sectionsText + '</p>' +
+        '<p style="margin: 0.5rem 0 0; font-size: 0.9rem;"><strong>' + t('changeOrder.label.request') + '</strong> ' + changeRequest.description.substring(0, 100) + (changeRequest.description.length > 100 ? '...' : '') + '</p>' +
         '</div>' +
 
         '<div class="form-group">' +
-        '<label class="form-label">Change Order Description:</label>' +
-        '<textarea id="changeOrderDescription" class="form-input" rows="4" placeholder="Describe the approved changes in detail..." style="width: 100%; resize: vertical;">' + changeRequest.description + '</textarea>' +
+        '<label class="form-label">' + t('changeOrder.label.description') + '</label>' +
+        '<textarea id="changeOrderDescription" class="form-input" rows="4" placeholder="' + t('changeOrder.descPlaceholder') + '" style="width: 100%; resize: vertical;">' + changeRequest.description + '</textarea>' +
         '</div>' +
 
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">' +
@@ -5226,8 +5356,8 @@ ContractFormHandler.prototype.showChangeOrderModal = function(changeRequest) {
 
         '</div>' +
         '<div class="modal-footer" style="display: flex; gap: 1rem; justify-content: flex-end; padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">' +
-        '<button class="btn btn-secondary" onclick="document.getElementById(\'changeOrderModal\').remove()">Cancel</button>' +
-        '<button class="btn btn-primary" onclick="window.contractFormHandler.saveChangeOrder(\'' + changeRequest.id + '\', \'' + changeRequest.sowId + '\')">Create Change Order</button>' +
+        '<button class="btn btn-secondary" onclick="document.getElementById(\'changeOrderModal\').remove()">' + t('changeOrder.btn.cancel') + '</button>' +
+        '<button class="btn btn-primary" onclick="window.contractFormHandler.saveChangeOrder(\'' + changeRequest.id + '\', \'' + changeRequest.sowId + '\')">' + t('changeOrder.btn.create') + '</button>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -5244,7 +5374,7 @@ ContractFormHandler.prototype.saveChangeOrder = function(changeRequestId, sowId)
     var notes = document.getElementById('changeOrderNotes').value.trim();
 
     if (!description) {
-        alert('Please provide a description for the change order');
+        alert(t('changeOrder.val.description'));
         return;
     }
 
@@ -5303,12 +5433,12 @@ ContractFormHandler.prototype.saveChangeOrder = function(changeRequestId, sowId)
         })
         .then(function() {
             document.getElementById('changeOrderModal').remove();
-            alert('✓ Change Order created successfully!\n\nThe client will be notified to review and approve the changes.');
+            alert(t('changeOrder.msg.success'));
             self.loadSOWDocuments();
         })
         .catch(function(error) {
             console.error('Error creating change order:', error);
-            alert('Error: ' + error.message);
+            alert(t('contract.err.prefix') + error.message);
         });
 };
 
@@ -5332,7 +5462,7 @@ ContractFormHandler.prototype.editSOWFromChangeRequest = function(sowId) {
         })
         .catch(function(error) {
             console.error('Error loading SOW:', error);
-            alert('Error loading SOW: ' + error.message);
+            alert(t('sow.err.load') + error.message);
         });
 };
 
@@ -5344,36 +5474,36 @@ ContractFormHandler.prototype.showSOWCreator = function() {
     
     var html = '<div class="sow-creator-form">' +
         '<div class="sow-form-header">' +
-        '<h4 style="display: flex; align-items: center; gap: 0.5rem;"><img src="/images/morph-logo14.png" alt="Logo" style="height: 2rem; width: auto;"> Create Statement of Work</h4>' +
+        '<h4 style="display: flex; align-items: center; gap: 0.5rem;"><img src="/images/morph-logo14.png" alt="Logo" style="height: 2rem; width: auto;"> ' + t('sowCreator.title') + '</h4>' +
         '<button class="btn-close-sow">×</button>' +
         '</div>' +
         
         // Client Information
         '<div class="sow-form-section client-info-section">' +
-        '<h5><span class="section-icon">👤</span> Client Information</h5>' +
+        '<h5><span class="section-icon">👤</span> ' + t('sowCreator.section.clientInfo') + '</h5>' +
 
         // Searchable User Dropdown (users without SOW)
         '<div class="sow-user-search-container">' +
-        '<label class="sow-search-label">Quick Select: Existing User (without SOW)</label>' +
+        '<label class="sow-search-label">' + t('sowCreator.quickSelect') + '</label>' +
         '<div class="sow-search-wrapper">' +
-        '<input type="text" id="sowUserSearch" placeholder="Search by name, email, or phone..." class="sow-input sow-search-input" autocomplete="off" />' +
+        '<input type="text" id="sowUserSearch" placeholder="' + t('sowCreator.searchPlaceholder') + '" class="sow-input sow-search-input" autocomplete="off" />' +
         '<div class="sow-search-icon">🔍</div>' +
         '<div id="sowUserDropdown" class="sow-user-dropdown" style="display: none;"></div>' +
         '</div>' +
         '<div class="sow-search-actions">' +
-        '<p class="sow-search-hint">Or enter client details manually below</p>' +
-        '<button type="button" id="btnAddUser" class="btn-add-user">+ Add User</button>' +
+        '<p class="sow-search-hint">' + t('sowCreator.manualEntry') + '</p>' +
+        '<button type="button" id="btnAddUser" class="btn-add-user">' + t('sowCreator.btn.addUser') + '</button>' +
         '</div>' +
         // Add User inline form (hidden by default)
         '<div id="addUserForm" class="add-user-form" style="display: none;">' +
         '<div class="add-user-form-inner">' +
-        '<input type="text" id="addUserName" placeholder="Display Name (optional)" class="sow-input" />' +
+        '<input type="text" id="addUserName" placeholder="' + t('sowCreator.label.displayName') + '" class="sow-input" />' +
         '<div class="add-user-auth-section">' +
         '<div class="add-user-auth-row">' +
-        '<input type="email" id="addUserEmail" placeholder="Email" class="sow-input" oninput="window.toggleAuthFields()" />' +
-        '<input type="password" id="addUserPassword" placeholder="Password (min 6 chars)" class="sow-input" style="display: none;" />' +
+        '<input type="email" id="addUserEmail" placeholder="' + t('sowCreator.label.email') + '" class="sow-input" oninput="window.toggleAuthFields()" />' +
+        '<input type="password" id="addUserPassword" placeholder="' + t('sowCreator.label.password') + '" class="sow-input" style="display: none;" />' +
         '</div>' +
-        '<div class="add-user-auth-divider"><span>OR</span></div>' +
+        '<div class="add-user-auth-divider"><span>' + t('sowCreator.label.or') + '</span></div>' +
         '<div class="add-user-auth-row">' +
         '<div class="phone-input-wrapper sow-phone-wrapper">' +
         '<select id="addUserPhoneCountryCode" class="country-code-select sow-country-code">' +
@@ -5389,14 +5519,14 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<option value="+52">MX +52</option>' +
         '<option value="+55">BR +55</option>' +
         '</select>' +
-        '<input type="tel" id="addUserPhone" placeholder="Phone Number" class="sow-input" oninput="window.toggleAuthFields()" />' +
+        '<input type="tel" id="addUserPhone" placeholder="' + t('sowCreator.label.phone') + '" class="sow-input" oninput="window.toggleAuthFields()" />' +
         '</div>' +
-        '<input type="text" id="addUserCode" placeholder="Verification Code (4-6 digits)" class="sow-input" style="display: none;" maxlength="6" />' +
+        '<input type="text" id="addUserCode" placeholder="' + t('sowCreator.label.verificationCode') + '" class="sow-input" style="display: none;" maxlength="6" />' +
         '</div>' +
         '</div>' +
         '<div class="add-user-buttons">' +
-        '<button type="button" id="btnSaveUser" class="btn-save-user">Save User</button>' +
-        '<button type="button" id="btnCancelAddUser" class="btn-cancel-add-user">Cancel</button>' +
+        '<button type="button" id="btnSaveUser" class="btn-save-user">' + t('sowCreator.btn.saveUser') + '</button>' +
+        '<button type="button" id="btnCancelAddUser" class="btn-cancel-add-user">' + t('sowCreator.btn.cancel') + '</button>' +
         '</div>' +
         '</div>' +
         '</div>' +
@@ -5405,29 +5535,29 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         // Combined toggles row (Email/Phone + Individual/Business)
         '<div class="toggles-row">' +
         '<div class="client-id-toggle">' +
-        '<span class="toggle-label" id="emailToggleLabel">Email</span>' +
+        '<span class="toggle-label" id="emailToggleLabel">' + t('sowCreator.toggle.email') + '</span>' +
         '<label class="toggle-switch">' +
         '<input type="checkbox" id="clientIdTypeToggle" />' +
         '<span class="toggle-slider"></span>' +
         '</label>' +
-        '<span class="toggle-label" id="phoneToggleLabel">Phone</span>' +
+        '<span class="toggle-label" id="phoneToggleLabel">' + t('sowCreator.toggle.phone') + '</span>' +
         '</div>' +
         '<div class="entity-type-toggle">' +
-        '<span class="toggle-label active" id="sowIndividualLabel">Individual</span>' +
+        '<span class="toggle-label active" id="sowIndividualLabel">' + t('sowCreator.toggle.individual') + '</span>' +
         '<label class="toggle-switch">' +
         '<input type="checkbox" id="sowEntityTypeToggle" />' +
         '<span class="toggle-slider"></span>' +
         '</label>' +
-        '<span class="toggle-label" id="sowBusinessLabel">Business Entity</span>' +
+        '<span class="toggle-label" id="sowBusinessLabel">' + t('sowCreator.toggle.business') + '</span>' +
         '</div>' +
         '</div>' +
 
         // Individual client fields (shown by default)
         '<div id="sowIndividualFields">' +
         '<div class="sow-input-group client-inputs-row">' +
-        '<input type="text" id="sowClientName" placeholder="Client Name *" class="sow-input" required />' +
+        '<input type="text" id="sowClientName" placeholder="' + t('sowCreator.label.clientName') + '" class="sow-input" required />' +
         '<div id="sowClientEmailWrapper" class="sow-input-wrapper-single">' +
-        '<input type="email" id="sowClientEmail" placeholder="Client Email *" class="sow-input" />' +
+        '<input type="email" id="sowClientEmail" placeholder="' + t('sowCreator.label.clientEmail') + '" class="sow-input" />' +
         '</div>' +
         '<div id="sowClientPhoneWrapper" class="phone-input-wrapper sow-phone-wrapper" style="display: none;">' +
         '<select id="sowClientPhoneCountryCode" class="country-code-select sow-country-code">' +
@@ -5443,7 +5573,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<option value="+52">MX +52</option>' +
         '<option value="+55">BR +55</option>' +
         '</select>' +
-        '<input type="tel" id="sowClientPhone" placeholder="Client Phone *" class="sow-input" />' +
+        '<input type="tel" id="sowClientPhone" placeholder="' + t('sowCreator.label.clientPhone') + '" class="sow-input" />' +
         '</div>' +
         '</div>' +
         '</div>' +
@@ -5451,19 +5581,19 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         // Business entity fields (hidden by default)
         '<div id="sowBusinessFields" style="display: none;">' +
         '<div class="sow-input-group">' +
-        '<input type="text" id="sowBusinessName" placeholder="Business Legal Name *" class="sow-input" />' +
+        '<input type="text" id="sowBusinessName" placeholder="' + t('sowCreator.label.businessName') + '" class="sow-input" />' +
         '<select id="sowEntityType" class="sow-select" style="flex: 1;">' +
-        '<option value="">Entity Type *</option>' +
-        '<option value="LLC">LLC</option>' +
-        '<option value="Corporation">Corporation</option>' +
-        '<option value="Partnership">Partnership</option>' +
-        '<option value="Sole Proprietorship">Sole Proprietorship</option>' +
+        '<option value="">' + t('sowCreator.label.entityType') + '</option>' +
+        '<option value="LLC">' + t('sowCreator.entity.llc') + '</option>' +
+        '<option value="Corporation">' + t('sowCreator.entity.corp') + '</option>' +
+        '<option value="Partnership">' + t('sowCreator.entity.partnership') + '</option>' +
+        '<option value="Sole Proprietorship">' + t('sowCreator.entity.sole') + '</option>' +
         '</select>' +
         '</div>' +
         '<div class="sow-input-group">' +
-        '<input type="text" id="sowStateOfFormation" placeholder="State of Formation (optional)" class="sow-input" />' +
+        '<input type="text" id="sowStateOfFormation" placeholder="' + t('sowCreator.label.stateFormation') + '" class="sow-input" />' +
         '<div id="sowBusinessEmailWrapper" class="sow-input-wrapper-single">' +
-        '<input type="email" id="sowBusinessEmail" placeholder="Business Email *" class="sow-input" />' +
+        '<input type="email" id="sowBusinessEmail" placeholder="' + t('sowCreator.label.businessEmail') + '" class="sow-input" />' +
         '</div>' +
         '<div id="sowBusinessPhoneWrapper" class="phone-input-wrapper sow-phone-wrapper" style="display: none;">' +
         '<select id="sowBusinessPhoneCountryCode" class="country-code-select sow-country-code">' +
@@ -5479,27 +5609,27 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<option value="+52">MX +52</option>' +
         '<option value="+55">BR +55</option>' +
         '</select>' +
-        '<input type="tel" id="sowBusinessPhone" placeholder="Business Phone *" class="sow-input" />' +
+        '<input type="tel" id="sowBusinessPhone" placeholder="' + t('sowCreator.label.businessPhone') + '" class="sow-input" />' +
         '</div>' +
         '</div>' +
         '<div class="sow-input-group">' +
-        '<input type="text" id="sowRepName" placeholder="Representative Name *" class="sow-input" />' +
-        '<input type="text" id="sowRepTitle" placeholder="Title (e.g., CEO, Managing Member) *" class="sow-input" />' +
+        '<input type="text" id="sowRepName" placeholder="' + t('sowCreator.label.repName') + '" class="sow-input" />' +
+        '<input type="text" id="sowRepTitle" placeholder="' + t('sowCreator.label.repTitle') + '" class="sow-input" />' +
         '</div>' +
         '</div>' +
         '</div>' +
         
         // Package Selection
         '<div class="sow-form-section">' +
-        '<h5><span class="section-icon">📦</span> Package Tier</h5>' +
+        '<h5><span class="section-icon">📦</span> ' + t('sowCreator.section.package') + '</h5>' +
         '<select id="sowPackage" class="sow-select" onchange="setTimeout(syncDeferredWithTotal, 50)">' +
-        '<option value="">Select a package tier...</option>' +
-        '<option value="essential">Essential — Landing Page ($1,000 - $3,000)</option>' +
-        '<option value="starter">Tier 1 — Starter ($3,000 - $6,000)</option>' +
-        '<option value="growth">Tier 2 — Growth ($6,000 - $12,000)</option>' +
-        '<option value="professional">Tier 3 — Professional ($12,000 - $25,000)</option>' +
-        '<option value="enterprise">Tier 4 — Enterprise ($25,000 - $50,000)</option>' +
-        '<option value="custom">Custom Quote (Manual Entry)</option>' +
+        '<option value="">' + t('sowCreator.pkg.select') + '</option>' +
+        '<option value="essential">' + t('sowCreator.pkg.essential') + '</option>' +
+        '<option value="starter">' + t('sowCreator.pkg.tier1') + '</option>' +
+        '<option value="growth">' + t('sowCreator.pkg.tier2') + '</option>' +
+        '<option value="professional">' + t('sowCreator.pkg.tier3') + '</option>' +
+        '<option value="enterprise">' + t('sowCreator.pkg.tier4') + '</option>' +
+        '<option value="custom">' + t('sowCreator.pkg.custom') + '</option>' +
         '</select>' +
         
         // Custom pricing (only shown if custom selected)
@@ -5510,79 +5640,79 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         
         // Project Timeline
         '<div class="sow-form-section">' +
-        '<h5><span class="section-icon">⏱️</span> Project Timeline</h5>' +
+        '<h5><span class="section-icon">⏱️</span> ' + t('sowCreator.section.timeline') + '</h5>' +
         '<label class="sow-checkbox retroactive-toggle" style="margin-bottom: 10px; padding: 8px 12px; background: rgba(245, 158, 11, 0.1); border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);">' +
         '<input type="checkbox" id="sowRetroactive" onchange="toggleRetroactiveFields()" />' +
-        '<span style="color: #f59e0b; font-weight: 500;">Retroactive Project</span>' +
-        '<span style="font-size: 0.8em; color: #888; margin-left: 8px;">(project already in development)</span>' +
+        '<span style="color: #f59e0b; font-weight: 500;">' + t('sowCreator.timeline.retroactive') + '</span>' +
+        '<span style="font-size: 0.8em; color: #888; margin-left: 8px;">' + t('sowCreator.timeline.retroactiveDesc') + '</span>' +
         '</label>' +
         '<div class="sow-input-group">' +
-        '<input type="number" id="sowWeeks" placeholder="Estimated Weeks *" class="sow-input" min="1" max="52" required />' +
-        '<input type="date" id="sowStartDate" class="sow-input" title="Target completion date" />' +
+        '<input type="number" id="sowWeeks" placeholder="' + t('sowCreator.timeline.estWeeks') + '" class="sow-input" min="1" max="52" required />' +
+        '<input type="date" id="sowStartDate" class="sow-input" title="' + t('sowCreator.timeline.targetDate') + '" />' +
         '</div>' +
         '<div id="retroactiveDurationFields" style="display: none; margin-top: 10px; padding: 10px; background: rgba(245, 158, 11, 0.05); border-radius: 6px; border: 1px dashed rgba(245, 158, 11, 0.3);">' +
-        '<label style="font-size: 0.85em; color: #f59e0b; margin-bottom: 5px; display: block;">Development Duration</label>' +
+        '<label style="font-size: 0.85em; color: #f59e0b; margin-bottom: 5px; display: block;">' + t('sowCreator.timeline.devDuration') + '</label>' +
         '<div class="sow-input-group">' +
-        '<input type="number" id="sowDevDuration" placeholder="Duration *" class="sow-input" min="1" max="52" style="flex: 1;" />' +
+        '<input type="number" id="sowDevDuration" placeholder="' + t('sowCreator.timeline.duration') + '" class="sow-input" min="1" max="52" style="flex: 1;" />' +
         '<select id="sowDevDurationUnit" class="sow-input" style="flex: 1;">' +
-        '<option value="weeks">Weeks</option>' +
-        '<option value="months">Months</option>' +
+        '<option value="weeks">' + t('sowCreator.timeline.weeks') + '</option>' +
+        '<option value="months">' + t('sowCreator.timeline.months') + '</option>' +
         '</select>' +
         '</div>' +
-        '<label style="font-size: 0.85em; color: #f59e0b; margin-bottom: 5px; margin-top: 10px; display: block;">Estimated Final Revision</label>' +
-        '<input type="date" id="sowRetroactiveEndDate" class="sow-input" title="Estimated final revision date" />' +
+        '<label style="font-size: 0.85em; color: #f59e0b; margin-bottom: 5px; margin-top: 10px; display: block;">' + t('sowCreator.timeline.estFinalRevision') + '</label>' +
+        '<input type="date" id="sowRetroactiveEndDate" class="sow-input" title="' + t('sowCreator.timeline.estFinalRevisionDate') + '" />' +
         '</div>' +
         '</div>' +
         
         // Features & Deliverables
         '<div class="sow-form-section">' +
-        '<h5><span class="section-icon">✨</span> Features & Deliverables</h5>' +
+        '<h5><span class="section-icon">✨</span> ' + t('sowCreator.section.features') + '</h5>' +
         '<div class="sow-checkboxes">' +
 
         // Standard Features
         '<div class="feature-group">' +
-        '<p class="feature-group-title">Standard Features</p>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="responsive_design" /> Cross-Device Optimization (Mobile, Tablet, Desktop)</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="custom_ui" /> Brand-Matched Design System</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="animations" /> Scroll & Micro-Interactions</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="seo_optimization" /> Technical SEO Setup (Meta, Sitemap, Schema)</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="analytics" /> GA4 + Custom Event Tracking</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="contact_forms" /> Multi-Step Contact Forms</label>' +
+        '<p class="feature-group-title">' + t('sowCreator.features.standard') + '</p>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="responsive_design" /> ' + t('sowCreator.features.crossDevice') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="custom_ui" /> ' + t('sowCreator.features.brandDesign') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="animations" /> ' + t('sowCreator.features.scrollInteractions') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="seo_optimization" /> ' + t('sowCreator.features.seoSetup') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="analytics" /> ' + t('sowCreator.features.ga4') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="contact_forms" /> ' + t('sowCreator.features.contactForms') + '</label>' +
         '</div>' +
 
         // Premium Add-ons
         '<div class="feature-group">' +
-        '<p class="feature-group-title">Premium Add-ons</p>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="firebase_auth" /> User Authentication System <span class="third-party-note">+ Firebase costs</span></label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="firebase_db" /> Database & Data Management <span class="third-party-note">+ Firebase costs</span></label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="user_profiles" /> Client Portal / User Dashboard</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="file_storage" /> Media Upload System <span class="third-party-note">+ Firebase costs</span></label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="api_integration" /> Third-Party Integrations (CRM, Zapier, etc.)</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="email_integration" /> Email Notifications (SendGrid) <span class="third-party-note">+ SendGrid costs</span></label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="music_media" /> Audio/Video Player Integration</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="booking_basic" /> Scheduling & Booking System</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="newsletter" /> Newsletter Integration</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="social_feed" /> Social Media Feed Integration</label>' +
+        '<p class="feature-group-title">' + t('sowCreator.features.premium') + '</p>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="firebase_auth" /> ' + t('sowCreator.features.authSystem') + ' <span class="third-party-note">' + t('sowCreator.features.firebaseCosts') + '</span></label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="firebase_db" /> ' + t('sowCreator.features.database') + ' <span class="third-party-note">' + t('sowCreator.features.firebaseCosts') + '</span></label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="user_profiles" /> ' + t('sowCreator.features.clientPortal') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="file_storage" /> ' + t('sowCreator.features.mediaUpload') + ' <span class="third-party-note">' + t('sowCreator.features.firebaseCosts') + '</span></label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="api_integration" /> ' + t('sowCreator.features.thirdParty') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="email_integration" /> ' + t('sowCreator.features.emailNotif') + ' <span class="third-party-note">' + t('sowCreator.features.sendgridCosts') + '</span></label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="music_media" /> ' + t('sowCreator.features.audioVideo') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="booking_basic" /> ' + t('sowCreator.features.scheduling') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="newsletter" /> ' + t('sowCreator.features.newsletter') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="social_feed" /> ' + t('sowCreator.features.socialMedia') + '</label>' +
         '</div>' +
 
         // Enterprise Features
         '<div class="feature-group">' +
-        '<p class="feature-group-title">Enterprise Features</p>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="user_roles" /> Role-Based Access Control</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="cms_integration" /> Content Management System</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="booking_system" /> Advanced Booking + Availability</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="blog" /> Blog/News Module</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="gallery" /> Media Gallery System</label>' +
-        '<label class="sow-checkbox"><input type="checkbox" value="notifications" /> In-App Notifications</label>' +
+        '<p class="feature-group-title">' + t('sowCreator.features.enterprise') + '</p>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="user_roles" /> ' + t('sowCreator.features.rbac') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="cms_integration" /> ' + t('sowCreator.features.cms') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="booking_system" /> ' + t('sowCreator.features.advBooking') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="blog" /> ' + t('sowCreator.features.blog') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="gallery" /> ' + t('sowCreator.features.gallery') + '</label>' +
+        '<label class="sow-checkbox"><input type="checkbox" value="notifications" /> ' + t('sowCreator.features.inAppNotif') + '</label>' +
         '</div>' +
 
         // E-Commerce Options
         '<div class="feature-group">' +
-        '<p class="feature-group-title">E-Commerce Options</p>' +
+        '<p class="feature-group-title">' + t('sowCreator.features.ecommerce') + '</p>' +
         '<div class="ecommerce-radio-group">' +
-        '<label class="sow-radio"><input type="radio" name="ecommerce_option" value="none" checked /> No E-Commerce</label>' +
-        '<label class="sow-radio"><input type="radio" name="ecommerce_option" value="basic_cart" /> Basic E-Commerce Setup (+$3,000 - $8,000) <span class="third-party-note">+ Stripe fees</span></label>' +
-        '<label class="sow-radio"><input type="radio" name="ecommerce_option" value="full_store" /> Full E-Commerce Store (+$8,000 - $20,000) <span class="third-party-note">+ Stripe fees</span></label>' +
+        '<label class="sow-radio"><input type="radio" name="ecommerce_option" value="none" checked /> ' + t('sowCreator.features.noEcommerce') + '</label>' +
+        '<label class="sow-radio"><input type="radio" name="ecommerce_option" value="basic_cart" /> ' + t('sowCreator.features.basicEcommerce') + ' <span class="third-party-note">' + t('sowCreator.features.stripeCosts') + '</span></label>' +
+        '<label class="sow-radio"><input type="radio" name="ecommerce_option" value="full_store" /> ' + t('sowCreator.features.fullEcommerce') + ' <span class="third-party-note">' + t('sowCreator.features.stripeCosts') + '</span></label>' +
         '</div>' +
         '</div>' +
 
@@ -5591,54 +5721,54 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         
         // Additional Requirements
         '<div class="sow-form-section">' +
-        '<h5><span class="section-icon">📝</span> Additional Requirements</h5>' +
-        '<textarea id="sowNotes" placeholder="Any special requirements, integrations, or custom features..." class="sow-textarea" rows="4"></textarea>' +
+        '<h5><span class="section-icon">📝</span> ' + t('sowCreator.section.additionalReqs') + '</h5>' +
+        '<textarea id="sowNotes" placeholder="' + t('sowCreator.additionalReqs.placeholder') + '" class="sow-textarea" rows="4"></textarea>' +
         '</div>' +
         
         // Ongoing Maintenance
         '<div class="sow-form-section">' +
-        '<h5><span class="section-icon">🔧</span> Ongoing Maintenance Plan</h5>' +
+        '<h5><span class="section-icon">🔧</span> ' + t('sowCreator.section.maintenance') + '</h5>' +
         '<select id="sowMaintenance" class="sow-select" required>' +
-        '<option value="">Select a maintenance plan...</option>' +
-        '<option value="none">No Maintenance — $0/month</option>' +
-        '<option value="basic" selected>Basic Care — $167/month (2-3 hrs/mo)</option>' +
-        '<option value="professional">Professional Care — $335/month (4-6 hrs/mo)</option>' +
-        '<option value="premium">Premium Care — $670/month (8-12 hrs/mo)</option>' +
+        '<option value="">' + t('sowCreator.maint.select') + '</option>' +
+        '<option value="none">' + t('sowCreator.maint.none') + '</option>' +
+        '<option value="basic" selected>' + t('sowCreator.maint.basic') + '</option>' +
+        '<option value="professional">' + t('sowCreator.maint.professional') + '</option>' +
+        '<option value="premium">' + t('sowCreator.maint.premium') + '</option>' +
         '</select>' +
         '</div>' +
 
         // Deferred Payment Section
         '<div class="sow-form-section" id="deferredPaymentSection">' +
-        '<h5><span class="section-icon">🔄</span> Deferred Payment Option</h5>' +
+        '<h5><span class="section-icon">🔄</span> ' + t('sowCreator.section.deferred') + '</h5>' +
 
         '<label class="sow-checkbox deferred-toggle" style="margin-bottom: 10px; padding: 8px 12px; background: rgba(99, 102, 241, 0.1); border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.3);">' +
         '<input type="checkbox" id="sowDeferredPayment" onchange="toggleDeferredPaymentFields()" />' +
-        '<span style="color: #6366f1; font-weight: 500;">Enable Deferred Payment</span>' +
-        '<span style="font-size: 0.8em; color: #888; margin-left: 8px;">(client pays later with terms)</span>' +
+        '<span style="color: #6366f1; font-weight: 500;">' + t('sowCreator.deferred.enable') + '</span>' +
+        '<span style="font-size: 0.8em; color: #888; margin-left: 8px;">' + t('sowCreator.deferred.enableDesc') + '</span>' +
         '</label>' +
 
         '<div id="deferredPaymentFields" style="display: none; margin-top: 10px; padding: 15px; background: rgba(99, 102, 241, 0.05); border-radius: 8px; border: 1px dashed rgba(99, 102, 241, 0.3);">' +
 
         '<div class="deferred-split-type">' +
-        '<label style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; display: block;">Payment Type</label>' +
+        '<label style="font-size: 0.9em; color: #94a3b8; margin-bottom: 8px; display: block;">' + t('sowCreator.deferred.paymentType') + '</label>' +
         '<div class="deferred-radio-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">' +
         '<label class="sow-radio deferred-type-card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">' +
         '<input type="radio" name="deferred_split" value="lump_sum" checked onchange="toggleDeferredSplitType()" style="display: none;" />' +
         '<span style="font-size: 1.5em;">💵</span>' +
-        '<span style="font-weight: 500; font-size: 0.85em;">Lump Sum</span>' +
-        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">Single payment on one date</span>' +
+        '<span style="font-weight: 500; font-size: 0.85em;">' + t('sowCreator.deferred.lumpSum') + '</span>' +
+        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">' + t('sowCreator.deferred.lumpSumDesc') + '</span>' +
         '</label>' +
         '<label class="sow-radio deferred-type-card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">' +
         '<input type="radio" name="deferred_split" value="recurring" onchange="toggleDeferredSplitType()" style="display: none;" />' +
         '<span style="font-size: 1.5em;">📅</span>' +
-        '<span style="font-weight: 500; font-size: 0.85em;">Payment Plan</span>' +
-        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">Recurring schedule</span>' +
+        '<span style="font-weight: 500; font-size: 0.85em;">' + t('sowCreator.deferred.paymentPlan') + '</span>' +
+        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">' + t('sowCreator.deferred.paymentPlanDesc') + '</span>' +
         '</label>' +
         '<label class="sow-radio deferred-type-card" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;">' +
         '<input type="radio" name="deferred_split" value="custom" onchange="toggleDeferredSplitType()" style="display: none;" />' +
         '<span style="font-size: 1.5em;">✏️</span>' +
-        '<span style="font-weight: 500; font-size: 0.85em;">Custom</span>' +
-        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">Manual dates & amounts</span>' +
+        '<span style="font-weight: 500; font-size: 0.85em;">' + t('sowCreator.deferred.custom') + '</span>' +
+        '<span style="font-size: 0.7em; color: #94a3b8; text-align: center;">' + t('sowCreator.deferred.customDesc') + '</span>' +
         '</label>' +
         '</div>' +
         '</div>' +
@@ -5646,11 +5776,11 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<div id="lumpSumFields" style="margin-top: 15px;">' +
         '<div class="sow-input-group" style="display: flex; gap: 10px;">' +
         '<div style="flex: 1;">' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Amount to Defer</label>' +
-        '<input type="number" id="sowDeferredAmount" placeholder="Amount $" class="sow-input" min="0" step="0.01" onchange="calculateLateFee()" oninput="calculateLateFee()" />' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.amountToDefer') + '</label>' +
+        '<input type="number" id="sowDeferredAmount" placeholder="' + t('sowCreator.deferred.amountLabel') + '" class="sow-input" min="0" step="0.01" onchange="calculateLateFee()" oninput="calculateLateFee()" />' +
         '</div>' +
         '<div style="flex: 1;">' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Due Date</label>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.dueDate') + '</label>' +
         '<input type="date" id="sowDeferredDueDate" class="sow-input" />' +
         '</div>' +
         '</div>' +
@@ -5659,52 +5789,52 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<div id="recurringFields" style="display: none; margin-top: 15px;">' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">' +
         '<div>' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Total Amount to Defer</label>' +
-        '<input type="number" id="sowRecurringTotalAmount" placeholder="Total $" class="sow-input" min="0" step="0.01" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.totalAmount') + '</label>' +
+        '<input type="number" id="sowRecurringTotalAmount" placeholder="' + t('sowCreator.deferred.totalLabel') + '" class="sow-input" min="0" step="0.01" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
         '</div>' +
         '<div>' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">First Payment Date</label>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.firstPayment') + '</label>' +
         '<input type="date" id="sowRecurringStartDate" class="sow-input" onchange="updateRecurringSchedule()" />' +
         '</div>' +
         '</div>' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">' +
         '<div>' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Payment Frequency</label>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.frequency') + '</label>' +
         '<select id="sowRecurringFrequency" class="sow-select" onchange="updateRecurringSchedule()" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">' +
-        '<option value="weekly">Weekly</option>' +
-        '<option value="biweekly" selected>Bi-Weekly (Every 2 Weeks)</option>' +
-        '<option value="semimonthly">Semi-Monthly (1st & 15th)</option>' +
-        '<option value="monthly">Monthly</option>' +
-        '<option value="bimonthly">Bi-Monthly (Every 2 Months)</option>' +
+        '<option value="weekly">' + t('sowCreator.deferred.weekly') + '</option>' +
+        '<option value="biweekly" selected>' + t('sowCreator.deferred.biweekly') + '</option>' +
+        '<option value="semimonthly">' + t('sowCreator.deferred.semimonthly') + '</option>' +
+        '<option value="monthly">' + t('sowCreator.deferred.monthly') + '</option>' +
+        '<option value="bimonthly">' + t('sowCreator.deferred.bimonthly') + '</option>' +
         '</select>' +
         '</div>' +
         '<div>' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Calculate By</label>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.calculateBy') + '</label>' +
         '<select id="sowRecurringCalcMode" class="sow-select" onchange="toggleRecurringCalcMode(); updateRecurringSchedule();" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff;">' +
-        '<option value="amount">Fixed Payment Amount</option>' +
-        '<option value="count">Number of Payments</option>' +
+        '<option value="amount">' + t('sowCreator.deferred.fixedAmount') + '</option>' +
+        '<option value="count">' + t('sowCreator.deferred.numPayments') + '</option>' +
         '</select>' +
         '</div>' +
         '</div>' +
         '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">' +
         '<div id="recurringAmountField">' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Amount Per Payment</label>' +
-        '<input type="number" id="sowRecurringPaymentAmount" placeholder="e.g. 300" class="sow-input" min="1" step="0.01" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.amountPerPayment') + '</label>' +
+        '<input type="number" id="sowRecurringPaymentAmount" placeholder="' + t('sowCreator.deferred.amountPerPaymentPlaceholder') + '" class="sow-input" min="1" step="0.01" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
         '</div>' +
         '<div id="recurringCountField" style="display: none;">' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Number of Payments</label>' +
-        '<input type="number" id="sowRecurringPaymentCount" placeholder="e.g. 6" class="sow-input" min="2" max="52" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.numPayments') + '</label>' +
+        '<input type="number" id="sowRecurringPaymentCount" placeholder="' + t('sowCreator.deferred.numPaymentsPlaceholder') + '" class="sow-input" min="2" max="52" onchange="updateRecurringSchedule()" oninput="updateRecurringSchedule()" />' +
         '</div>' +
         '<div id="recurringCalcResult" style="display: flex; align-items: flex-end;">' +
         '<div style="padding: 10px 14px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; width: 100%;">' +
-        '<span style="font-size: 0.75em; color: #10b981; display: block;">Calculated</span>' +
+        '<span style="font-size: 0.75em; color: #10b981; display: block;">' + t('sowCreator.deferred.calculated') + '</span>' +
         '<span id="recurringCalcDisplay" style="font-size: 1.1em; font-weight: 600; color: #10b981;">--</span>' +
         '</div>' +
         '</div>' +
         '</div>' +
         '<div id="recurringSchedulePreview" style="display: none; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;">' +
         '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">' +
-        '<span style="font-size: 0.85em; font-weight: 500; color: #6366f1;">Payment Schedule Preview</span>' +
+        '<span style="font-size: 0.85em; font-weight: 500; color: #6366f1;">' + t('sowCreator.deferred.schedulePreview') + '</span>' +
         '<span id="recurringScheduleSummary" style="font-size: 0.75em; color: #94a3b8;"></span>' +
         '</div>' +
         '<div id="recurringScheduleList" style="display: grid; gap: 6px;"></div>' +
@@ -5712,27 +5842,27 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '</div>' +
 
         '<div id="customSplitFields" style="display: none; margin-top: 15px;">' +
-        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">Custom Payment Schedule</label>' +
+        '<label style="font-size: 0.85em; color: #6366f1; margin-bottom: 5px; display: block;">' + t('sowCreator.deferred.customSchedule') + '</label>' +
         '<div id="customPaymentsList" class="custom-payments-list"></div>' +
         '<button type="button" class="btn-add-payment" onclick="addCustomPaymentRow()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 8px 16px; background: rgba(99, 102, 241, 0.15); border: 1px dashed rgba(99, 102, 241, 0.4); border-radius: 6px; color: #818cf8; cursor: pointer; font-size: 0.9em;">' +
-        '<span>+ Add Payment</span>' +
+        '<span>' + t('sowCreator.deferred.addPayment') + '</span>' +
         '</button>' +
         '</div>' +
 
         '<div class="late-fee-section" style="margin-top: 15px; padding: 12px; background: rgba(245, 158, 11, 0.08); border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">' +
         '<div style="display: flex; justify-content: space-between; align-items: center;">' +
         '<div>' +
-        '<span style="color: #f59e0b; font-weight: 500;">Late Fee (10%):</span>' +
+        '<span style="color: #f59e0b; font-weight: 500;">' + t('sowCreator.deferred.lateFee') + '</span>' +
         '<span id="lateFeeDisplay" style="color: #fff; margin-left: 8px;">$0</span>' +
-        '<span style="font-size: 0.75em; color: #94a3b8; margin-left: 6px;">(if payment is late)</span>' +
+        '<span style="font-size: 0.75em; color: #94a3b8; margin-left: 6px;">' + t('sowCreator.deferred.lateFeeDesc') + '</span>' +
         '</div>' +
         '<label class="sow-checkbox" style="margin: 0; display: flex; align-items: center; gap: 6px;">' +
         '<input type="checkbox" id="sowWaiveLateFee" onchange="calculateLateFee()" />' +
-        '<span style="font-size: 0.85em; color: #f59e0b;">Waive Late Fee</span>' +
+        '<span style="font-size: 0.85em; color: #f59e0b;">' + t('sowCreator.deferred.waiveLateFee') + '</span>' +
         '</label>' +
         '</div>' +
         '<div style="margin-top: 8px;">' +
-        '<span style="color: #94a3b8; font-size: 0.85em;">Total Deferred Amount:</span>' +
+        '<span style="color: #94a3b8; font-size: 0.85em;">' + t('sowCreator.deferred.totalDeferred') + '</span>' +
         '<span id="totalDeferredDisplay" style="color: #10b981; font-weight: 600; margin-left: 8px;">$0</span>' +
         '</div>' +
         '</div>' +
@@ -5740,11 +5870,11 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<div class="deferred-options" style="margin-top: 15px;">' +
         '<label class="sow-checkbox" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">' +
         '<input type="checkbox" id="sowAllowPartialPayments" checked />' +
-        '<span>Allow partial payments toward balance during deferral</span>' +
+        '<span>' + t('sowCreator.deferred.allowPartial') + '</span>' +
         '</label>' +
         '<label class="sow-checkbox" style="display: flex; align-items: center; gap: 8px;">' +
         '<input type="checkbox" id="sowMaintenanceDuringDeferral" checked />' +
-        '<span>Client pays monthly maintenance during deferral period</span>' +
+        '<span>' + t('sowCreator.deferred.maintDuringDeferral') + '</span>' +
         '</label>' +
         '</div>' +
 
@@ -5753,10 +5883,10 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
         // Coupon / Discount Code
         '<div class="sow-form-section coupon-section">' +
-        '<h5><span class="section-icon">🎟️</span> Discount Code</h5>' +
+        '<h5><span class="section-icon">🎟️</span> ' + t('sowCreator.section.discount') + '</h5>' +
         '<div class="coupon-input-group">' +
         '<select id="sowCouponSelect" class="sow-select coupon-select" onchange="setTimeout(syncDeferredWithTotal, 50)">' +
-        '<option value="">No discount applied</option>' +
+        '<option value="">' + t('sowCreator.discount.noDiscount') + '</option>' +
         '</select>' +
         '<div id="couponValidationMessage" class="coupon-validation-message"></div>' +
         '</div>' +
@@ -5764,7 +5894,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
         // Pricing Summary
         '<div class="sow-form-section pricing-summary">' +
-        '<h5><span class="section-icon">💰</span> Pricing Summary</h5>' +
+        '<h5><span class="section-icon">💰</span> ' + t('sowCreator.section.pricing') + '</h5>' +
 
         // Itemized breakdown
         '<div class="pricing-itemized-container">' +
@@ -5775,24 +5905,24 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         '<div class="pricing-breakdown">' +
         '<div class="pricing-divider"></div>' +
         '<div class="pricing-row total-row">' +
-        '<span><strong>Project Total:</strong></span>' +
+        '<span><strong>' + t('sowCreator.pricing.projectTotal') + '</strong></span>' +
         '<span id="sowTotalPrice" class="price-value total-value">$0.00</span>' +
         '</div>' +
         '<div class="pricing-row deposit-row">' +
-        '<span>Deposit (50%):</span>' +
+        '<span>' + t('sowCreator.pricing.deposit') + '</span>' +
         '<span id="sowDepositCalc" class="price-value">$0.00</span>' +
         '</div>' +
         '<div class="pricing-row">' +
-        '<span>Milestone Payment (25%):</span>' +
+        '<span>' + t('sowCreator.pricing.milestone') + '</span>' +
         '<span id="sowMilestone1Calc" class="price-value">$0.00</span>' +
         '</div>' +
         '<div class="pricing-row">' +
-        '<span>Final Payment (25%):</span>' +
+        '<span>' + t('sowCreator.pricing.finalPayment') + '</span>' +
         '<span id="sowFinalCalc" class="price-value">$0.00</span>' +
         '</div>' +
         '<div class="pricing-divider"></div>' +
         '<div class="pricing-row maintenance-row" id="maintenanceRow">' +
-        '<span>Monthly Maintenance:</span>' +
+        '<span>' + t('sowCreator.pricing.monthlyMaint') + '</span>' +
         '<span id="sowMaintenanceCalc" class="price-value">$167/month</span>' +
         '</div>' +
         '</div>' +
@@ -5800,9 +5930,9 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
         // Action Buttons
         '<div class="sow-form-actions">' +
-        '<button class="btn-cancel-sow btn-secondary">Cancel</button>' +
-        '<button class="btn-save-sow btn-primary"><span class="btn-icon">💾</span> Save SOW</button>' +
-        '<button class="btn-generate-sow-pdf btn-primary"><span class="btn-icon">📄</span> Generate PDF</button>' +
+        '<button class="btn-cancel-sow btn-secondary">' + t('sowCreator.btn.cancelSow') + '</button>' +
+        '<button class="btn-save-sow btn-primary"><span class="btn-icon">💾</span> ' + t('sowCreator.btn.saveSow') + '</button>' +
+        '<button class="btn-generate-sow-pdf btn-primary"><span class="btn-icon">📄</span> ' + t('sowCreator.btn.generatePdf') + '</button>' +
         '</div>' +
         
         '</div>';
@@ -5859,9 +5989,9 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
     // E-Commerce radio options (2025 Scarlo Pricing Guide)
     var ecommercePricing = {
-        'none': { price: 0, label: 'No E-Commerce' },
-        'basic_cart': { price: 5500, label: 'Basic E-Commerce Setup', thirdParty: true, note: 'Stripe fees' },  // $3,000-$8,000
-        'full_store': { price: 14000, label: 'Full E-Commerce Store', thirdParty: true, note: 'Stripe fees' }    // $8,000-$20,000
+        'none': { price: 0, label: t('ecommerce.none') },
+        'basic_cart': { price: 5500, label: t('ecommerce.basicCart'), thirdParty: true, note: 'Stripe fees' },  // $3,000-$8,000
+        'full_store': { price: 14000, label: t('ecommerce.fullStore'), thirdParty: true, note: 'Stripe fees' }    // $8,000-$20,000
     };
 
     // Package-feature mapping (what's included in each package)
@@ -6531,7 +6661,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
         // Show loading state
         if (userSearchInput) {
-            userSearchInput.placeholder = 'Loading users...';
+            userSearchInput.placeholder = t('dash.search.loading');
             userSearchInput.disabled = true;
         }
 
@@ -6575,7 +6705,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
             });
 
             if (userSearchInput) {
-                userSearchInput.placeholder = 'Search by name, email, or phone...';
+                userSearchInput.placeholder = t('dash.search.placeholder');
                 userSearchInput.disabled = false;
             }
             console.log('Realtime: Loaded ' + usersWithoutSOW.length + ' users without SOW');
@@ -6596,7 +6726,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
             }, function(error) {
                 console.error('❌ Error listening to users:', error);
                 if (userSearchInput) {
-                    userSearchInput.placeholder = 'Search unavailable - enter manually';
+                    userSearchInput.placeholder = t('dash.search.unavailable');
                     userSearchInput.disabled = false;
                 }
             });
@@ -6671,17 +6801,17 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         var hasPhone = phone && phone.trim();
 
         if (!hasEmail && !hasPhone) {
-            alert('Please enter either an email or phone number.');
+            alert(t('dash.user.val.emailOrPhone'));
             return Promise.reject('No email or phone provided');
         }
 
         if (hasEmail && (!password || password.length < 6)) {
-            alert('Password must be at least 6 characters for email authentication.');
+            alert(t('dash.user.val.passwordLength'));
             return Promise.reject('Password too short');
         }
 
         if (hasPhone && (!verificationCode || !/^\d{4,6}$/.test(verificationCode))) {
-            alert('Verification code must be 4-6 digits for phone authentication.');
+            alert(t('dash.user.val.codeFormat'));
             return Promise.reject('Invalid verification code');
         }
 
@@ -6728,7 +6858,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
         }
 
         if (matches.length === 0) {
-            userDropdown.innerHTML = '<div class="sow-dropdown-empty">No users without SOW found</div>';
+            userDropdown.innerHTML = '<div class="sow-dropdown-empty">' + t('sowCreator.noUsersFound') + '</div>';
             userDropdown.style.display = 'block';
             return;
         }
@@ -6746,8 +6876,8 @@ ContractFormHandler.prototype.showSOWCreator = function() {
                    '<span class="sow-dropdown-name">' + displayText + '</span>' +
                    '<span class="sow-dropdown-contact">' + subText + '</span>' +
                    '<span class="sow-dropdown-badges">' +
-                   (hasEmail ? '<span class="badge-email">Email</span>' : '') +
-                   (hasPhone ? '<span class="badge-phone">Phone</span>' : '') +
+                   (hasEmail ? '<span class="badge-email">' + t('sowCreator.badge.email') + '</span>' : '') +
+                   (hasPhone ? '<span class="badge-phone">' + t('sowCreator.badge.phone') + '</span>' : '') +
                    '</span>' +
                    '</div>';
         }).join('');
@@ -6875,7 +7005,7 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
             // Disable button while saving
             btnSaveUser.disabled = true;
-            btnSaveUser.textContent = 'Saving...';
+            btnSaveUser.textContent = t('dash.user.btn.saving');
 
             addUserToFirestore(name, email, password, phone, verificationCode)
                 .then(function(userData) {
@@ -6892,18 +7022,18 @@ ContractFormHandler.prototype.showSOWCreator = function() {
 
                     // Reset button
                     btnSaveUser.disabled = false;
-                    btnSaveUser.textContent = 'Save User';
+                    btnSaveUser.textContent = t('dash.user.btn.save');
 
                     // The realtime listener will automatically update the dropdown
-                    alert('User added successfully! They can now sign in and will appear in the dropdown.');
+                    alert(t('dash.user.msg.success'));
                 })
                 .catch(function(error) {
                     // Reset button
                     btnSaveUser.disabled = false;
-                    btnSaveUser.textContent = 'Save User';
+                    btnSaveUser.textContent = t('dash.user.btn.save');
 
                     if (error !== 'No email or phone provided' && error !== 'Password too short' && error !== 'Invalid verification code') {
-                        alert('Error adding user: ' + (error.message || error));
+                        alert(t('dash.user.err.add') + (error.message || error));
                     }
                 });
         });
@@ -7229,40 +7359,40 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
         return;
     }
 
-    // Feature display labels for nice formatting
+    // Feature display labels for nice formatting (translated)
     var featureLabels = {
-        'responsive_design': 'Responsive Design',
-        'custom_ui': 'Custom UI/UX Design',
-        'animations': 'Animations & Micro-interactions',
-        'seo_optimization': 'SEO Optimization',
-        'analytics': 'Analytics Integration (GA4)',
-        'contact_forms': 'Contact Forms',
-        'firebase_auth': 'User Authentication',
-        'firebase_db': 'Database Integration',
-        'user_profiles': 'User Profiles & Dashboard',
-        'file_storage': 'File/Media Storage',
-        'api_integration': 'API Integrations',
-        'email_integration': 'Email Notifications',
-        'newsletter': 'Newsletter Integration',
-        'user_roles': 'Role-Based Access Control',
-        'notifications': 'In-App Notifications',
-        'booking_basic': 'Basic Booking System',
-        'booking_system': 'Advanced Booking + Availability',
-        'blog': 'Blog Module',
-        'cms_integration': 'Content Management System',
-        'gallery': 'Media Gallery',
-        'music_media': 'Music/Video Player',
-        'social_feed': 'Social Media Feed'
+        'responsive_design': t('feature.responsive_design'),
+        'custom_ui': t('feature.custom_ui'),
+        'animations': t('feature.animations'),
+        'seo_optimization': t('feature.seo_optimization'),
+        'analytics': t('feature.analytics'),
+        'contact_forms': t('feature.contact_forms'),
+        'firebase_auth': t('feature.firebase_auth'),
+        'firebase_db': t('feature.firebase_db'),
+        'user_profiles': t('feature.user_profiles'),
+        'file_storage': t('feature.file_storage'),
+        'api_integration': t('feature.api_integration'),
+        'email_integration': t('feature.email_integration'),
+        'newsletter': t('feature.newsletter'),
+        'user_roles': t('feature.user_roles'),
+        'notifications': t('feature.notifications'),
+        'booking_basic': t('feature.booking_basic'),
+        'booking_system': t('feature.booking_system'),
+        'blog': t('feature.blog'),
+        'cms_integration': t('feature.cms_integration'),
+        'gallery': t('feature.gallery'),
+        'music_media': t('feature.music_media'),
+        'social_feed': t('feature.social_feed')
     };
 
-    // Package tier display names
+    // Package tier display names (translated)
     var packageTierNames = {
-        'essential': 'Essential — Landing Page',
-        'starter': 'Tier 1 — Starter',
-        'growth': 'Tier 2 — Growth',
-        'professional': 'Tier 3 — Professional',
-        'enterprise': 'Tier 4 — Enterprise',
-        'custom': 'Custom Quote'
+        'essential': t('pkg.essential'),
+        'starter': t('pkg.starter'),
+        'growth': t('pkg.growth'),
+        'professional': t('pkg.professional'),
+        'enterprise': t('pkg.enterprise'),
+        'custom': t('pkg.custom')
     };
 
     var html = '';
@@ -7270,7 +7400,7 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
 
     // Show placeholder if no package selected
     if (!packageType) {
-        html = '<div class="pricing-empty-state">Select a package to see pricing breakdown</div>';
+        html = '<div class="pricing-empty-state">' + t('pricing.selectPackage') + '</div>';
         container.innerHTML = html;
         return;
     }
@@ -7287,7 +7417,7 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
 
     // Show included features
     if (includedFeatures.length > 0 && packageType !== 'custom') {
-        html += '<div class="pricing-section-header">Included in Package</div>';
+        html += '<div class="pricing-section-header">' + t('pricing.includedInPackage') + '</div>';
         html += '<div class="pricing-included-features">';
         includedFeatures.forEach(function(featureKey) {
             var label = featureLabels[featureKey] || featureKey.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
@@ -7309,11 +7439,11 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
 
     if (nonEcommerceAddOns.length > 0) {
         // For custom quotes, show as "Included Features" instead of "Add-Ons"
-        html += '<div class="pricing-section-header">' + (packageType === 'custom' ? 'Included Features' : 'Add-Ons') + '</div>';
+        html += '<div class="pricing-section-header">' + (packageType === 'custom' ? t('pricing.includedFeatures') : t('pricing.addOns')) + '</div>';
         nonEcommerceAddOns.forEach(function(item) {
             var label = featureLabels[item.key] || item.label;
             var priceDisplay = item.price === 0 ?
-                '<span class="included-badge">Included</span>' :
+                '<span class="included-badge">' + t('pricing.included') + '</span>' :
                 '+$' + item.price.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
             html += '<div class="pricing-line-item add-on">' +
                 '<span class="item-label">' + label +
@@ -7327,10 +7457,10 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
     // E-commerce (if selected)
     if (ecommerceAddOn) {
         if (nonEcommerceAddOns.length === 0) {
-            html += '<div class="pricing-section-header">' + (packageType === 'custom' ? 'Included Features' : 'Add-Ons') + '</div>';
+            html += '<div class="pricing-section-header">' + (packageType === 'custom' ? t('pricing.includedFeatures') : t('pricing.addOns')) + '</div>';
         }
         var ecommercePriceDisplay = ecommerceAddOn.price === 0 ?
-            '<span class="included-badge">Included</span>' :
+            '<span class="included-badge">' + t('pricing.included') + '</span>' :
             '+$' + ecommerceAddOn.price.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
         html += '<div class="pricing-line-item add-on ecommerce-item">' +
             '<span class="item-label">' + ecommerceAddOn.label +
@@ -7342,7 +7472,7 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
 
     // Discounts
     if (pricingData.discounts.length > 0) {
-        html += '<div class="pricing-section-header">Removed Features (50% Credit)</div>';
+        html += '<div class="pricing-section-header">' + t('pricing.removedFeatures') + '</div>';
         pricingData.discounts.forEach(function(item) {
             var label = featureLabels[item.key] || item.label;
             html += '<div class="pricing-line-item discount">' +
@@ -7357,11 +7487,11 @@ ContractFormHandler.prototype.renderItemizedPricing = function(pricingData, pack
         var coupon = pricingData.coupon;
         var discountLabel = coupon.code;
         if (coupon.discountType === 'percentage') {
-            discountLabel += ' (' + coupon.discountValue + '% off)';
+            discountLabel += ' (' + coupon.discountValue + t('pricing.percentOff') + ')';
         } else {
-            discountLabel += ' ($' + coupon.discountValue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' off)';
+            discountLabel += ' ($' + coupon.discountValue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + t('pricing.dollarOff') + ')';
         }
-        html += '<div class="pricing-section-header coupon-header">Discount Applied</div>';
+        html += '<div class="pricing-section-header coupon-header">' + t('pricing.discountApplied') + '</div>';
         html += '<div class="pricing-line-item coupon-discount">' +
             '<span class="item-label"><span class="coupon-icon">🎟️</span> ' + discountLabel + '</span>' +
             '<span class="item-price coupon-value">-$' + pricingData.couponDiscount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</span>' +
@@ -7429,7 +7559,7 @@ ContractFormHandler.prototype.updateSOWPricing = function(packagePricing, mainte
             // Show success message
             if (couponMessage) {
                 couponMessage.className = 'coupon-validation-message success';
-                couponMessage.innerHTML = '✓ ' + validation.discountDisplay + ' discount applied!';
+                couponMessage.innerHTML = t('coupon.msg.discountAppliedPrefix') + validation.discountDisplay + t('coupon.msg.discountAppliedSuffix');
             }
         } else {
             // Show error message
@@ -7572,11 +7702,11 @@ ContractFormHandler.prototype.saveSOW = function() {
         }
 
         if (missingFields.length > 0) {
-            alert('Please fill in all required fields:\n- ' + missingFields.join('\n- '));
+            alert(t('sow.val.fillRequired') + missingFields.join('\n- '));
             return;
         }
         if (!businessEmail && !businessPhone) {
-            alert('Please provide either a Business Email or Business Phone number.');
+            alert(t('sow.val.businessEmailOrPhone'));
             return;
         }
     } else {
@@ -7591,11 +7721,11 @@ ContractFormHandler.prototype.saveSOW = function() {
         }
 
         if (missingFields.length > 0) {
-            alert('Please fill in all required fields:\n- ' + missingFields.join('\n- '));
+            alert(t('sow.val.fillRequired') + missingFields.join('\n- '));
             return;
         }
         if (!clientEmail && !clientPhone) {
-            alert('Please provide either a Client Email or Client Phone number.');
+            alert(t('sow.val.clientEmailOrPhone'));
             return;
         }
     }
@@ -7714,37 +7844,37 @@ ContractFormHandler.prototype.saveSOW = function() {
 
         // Validation
         if (deferredData.deferredAmount <= 0) {
-            alert('Please enter a valid deferred amount.');
+            alert(t('sow.val.deferredAmount'));
             return;
         }
         if (deferredData.splitType === 'lump_sum' && !deferredData.dueDate) {
-            alert('Please select a due date for the deferred payment.');
+            alert(t('sow.val.deferredDueDate'));
             return;
         }
         if (deferredData.splitType === 'custom' && deferredData.customSchedule.length === 0) {
-            alert('Please add at least one payment to the custom schedule.');
+            alert(t('sow.val.customSchedule'));
             return;
         }
         if (deferredData.splitType === 'recurring') {
             if (!deferredData.startDate) {
-                alert('Please select a first payment date for the payment plan.');
+                alert(t('sow.val.firstPaymentDate'));
                 return;
             }
             if (deferredData.calculationMode === 'amount' && (!deferredData.amountPerPayment || deferredData.amountPerPayment <= 0)) {
-                alert('Please enter a valid payment amount.');
+                alert(t('sow.val.paymentAmount'));
                 return;
             }
             if (deferredData.calculationMode === 'count' && (!deferredData.numberOfPayments || deferredData.numberOfPayments < 2)) {
-                alert('Please enter a valid number of payments (minimum 2).');
+                alert(t('sow.val.paymentCount'));
                 return;
             }
             if (deferredData.customSchedule.length === 0) {
-                alert('Could not generate payment schedule. Please check your inputs.');
+                alert(t('sow.val.scheduleError'));
                 return;
             }
         }
         if (deferredData.deferredAmount > totalPrice) {
-            alert('Deferred amount cannot exceed the total project price.');
+            alert(t('sow.val.deferredExceedsTotal'));
             return;
         }
     }
@@ -7807,7 +7937,7 @@ ContractFormHandler.prototype.saveSOW = function() {
     firebase.firestore().collection('sow_documents').add(sowData)
         .then(function(docRef) {
             console.log('SOW saved with ID:', docRef.id);
-            alert('✓ SOW saved successfully!\n\nYou can now generate the PDF or attach it to a contract.');
+            alert(t('sow.msg.saveSuccess'));
             $('#sowCreatorContainer').style.display = 'none';
             
             // Refresh the SOW list
@@ -7815,7 +7945,7 @@ ContractFormHandler.prototype.saveSOW = function() {
         })
         .catch(function(error) {
             console.error('Error saving SOW:', error);
-            alert('Error saving SOW: ' + error.message);
+            alert(t('sow.err.save') + error.message);
         });
 };
 
@@ -7830,7 +7960,7 @@ ContractFormHandler.prototype.showSOWSigningModal = function(sowId) {
         .get()
         .then(function(doc) {
             if (!doc.exists) {
-                alert('SOW not found');
+                alert(t('sow.err.notFound'));
                 return;
             }
             
@@ -7839,7 +7969,7 @@ ContractFormHandler.prototype.showSOWSigningModal = function(sowId) {
             
             // Check if already signed
             if (sowData.clientSignature && sowData.devSignature) {
-                alert('This SOW is already fully signed by both parties.');
+                alert(t('sow.msg.alreadySigned'));
                 self.generateSOWPDF(sowData);
                 return;
             }
@@ -7849,7 +7979,7 @@ ContractFormHandler.prototype.showSOWSigningModal = function(sowId) {
         })
         .catch(function(error) {
             console.error('Error loading SOW:', error);
-            alert('Error loading SOW: ' + error.message);
+            alert(t('sow.err.load') + error.message);
         });
 };
 
@@ -7865,7 +7995,7 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
                    (userPhone && sowData.clientPhone && userPhone === sowData.clientPhone);
 
     if (!isDeveloper && !isClient) {
-        alert('You do not have permission to sign this SOW');
+        alert(t('sow.msg.noPermission'));
         return;
     }
     
@@ -7884,7 +8014,7 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
         '</button>' +
         
         '<div class="modal-header">' +
-        '<h1>📋 Statement of Work - Signature Required</h1>' +
+        '<h1>📋 ' + t('sowSign.title') + '</h1>' +
         '<p class="modal-subtitle">' + sowData.clientName + ' | ' + sowData.packageType.toUpperCase() + '</p>' +
         '</div>' +
         
@@ -7892,12 +8022,12 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
         
         // SOW Summary
         '<div class="contract-section-inner">' +
-        '<h2>SOW Summary</h2>' +
-        '<p><strong>Client:</strong> ' + sowData.clientName + '</p>' +
-        '<p><strong>Package:</strong> ' + sowData.packageType + '</p>' +
-        '<p><strong>Total Cost:</strong> $' + (sowData.payment ? sowData.payment.total.toFixed(0) : '0') + '</p>' +
-        '<p><strong>Timeline:</strong> ' + (sowData.estimatedWeeks || 'TBD') + ' weeks</p>' +
-        '<p><strong>Features:</strong> ' + (sowData.features ? sowData.features.length : 0) + ' selected</p>' +
+        '<h2>' + t('sowSign.summary') + '</h2>' +
+        '<p><strong>' + t('sowSign.label.client') + '</strong> ' + sowData.clientName + '</p>' +
+        '<p><strong>' + t('sowSign.label.package') + '</strong> ' + sowData.packageType + '</p>' +
+        '<p><strong>' + t('sowSign.label.totalCost') + '</strong> $' + (sowData.payment ? sowData.payment.total.toFixed(0) : '0') + '</p>' +
+        '<p><strong>' + t('sowSign.label.timeline') + '</strong> ' + (sowData.estimatedWeeks || 'TBD') + ' ' + t('sowTab.detail.weeks') + '</p>' +
+        '<p><strong>' + t('sowSign.label.features') + '</strong> ' + (sowData.features ? sowData.features.length : 0) + ' ' + t('sowSign.label.selected') + '</p>' +
         '</div>' +
         
         // Signature Sections
@@ -7906,13 +8036,13 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
     
     // CLIENT SIGNATURE BLOCK
     html += '<div class="signature-block" id="sowClientSignatureBlock">' +
-        '<h3>Client Signature — ' + sowData.clientName + '</h3>';
-    
+        '<h3>' + t('sowSign.clientSig') + sowData.clientName + '</h3>';
+
     if (sowData.clientSignature) {
         // Already signed
         html += '<div class="pending-notice">' +
-            '<p><strong>✓ Client has signed this SOW</strong></p>' +
-            '<p>Signed on: ' + (sowData.clientSignedDate || 'N/A') + '</p>' +
+            '<p><strong>✓ ' + t('sowSign.clientSigned') + '</strong></p>' +
+            '<p>' + t('sowSign.signedOn') + (sowData.clientSignedDate || 'N/A') + '</p>' +
             '</div>' +
             '<div class="signature-pad-container">' +
             '<canvas id="sowClientSigPad" class="signature-pad"></canvas>' +
@@ -7921,27 +8051,27 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
         // Client needs to sign
         html += '<div class="form-row">' +
             '<div class="form-group">' +
-            '<label>Name *</label>' +
+            '<label>' + t('sowSign.nameLabel') + '</label>' +
             '<input type="text" id="sowClientSignerName" value="' + sowData.clientName + '" required />' +
             '</div>' +
             '<div class="form-group">' +
-            '<label>Date *</label>' +
+            '<label>' + t('sowSign.dateLabel') + '</label>' +
             '<input type="date" id="sowClientSignDate" required />' +
             '</div>' +
             '</div>' +
             '<div class="form-group">' +
-            '<label>Signature *</label>' +
+            '<label>' + t('sowSign.signatureLabel') + '</label>' +
             '<div class="signature-pad-container">' +
             '<canvas id="sowClientSigPad" class="signature-pad"></canvas>' +
-            '<button class="clear-btn" data-canvas="sowClientSigPad">Clear</button>' +
+            '<button class="clear-btn" data-canvas="sowClientSigPad">' + t('sowSign.btn.clear') + '</button>' +
             '</div>' +
             '</div>';
     } else {
         // Developer viewing - client hasn't signed yet
         html += '<div class="pending-notice">' +
             '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>' +
-            '<p><strong>Awaiting Client Signature</strong></p>' +
-            '<p>Client has not signed this SOW yet.</p>' +
+            '<p><strong>' + t('sowSign.awaitingClient') + '</strong></p>' +
+            '<p>' + t('sowSign.awaitingClientText') + '</p>' +
             '</div>';
     }
     
@@ -7949,13 +8079,13 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
     
     // DEVELOPER SIGNATURE BLOCK
     html += '<div class="signature-block" id="sowDevSignatureBlock">' +
-        '<h3>Developer Signature — Scarlo</h3>';
-    
+        '<h3>' + t('sowSign.devSig') + '</h3>';
+
     if (sowData.devSignature) {
         // Already signed
         html += '<div class="pending-notice">' +
-            '<p><strong>✓ Developer has signed this SOW</strong></p>' +
-            '<p>Signed on: ' + (sowData.devSignedDate || 'N/A') + '</p>' +
+            '<p><strong>✓ ' + t('sowSign.devSigned') + '</strong></p>' +
+            '<p>' + t('sowSign.signedOn') + (sowData.devSignedDate || 'N/A') + '</p>' +
             '</div>' +
             '<div class="signature-pad-container">' +
             '<canvas id="sowDevSigPad" class="signature-pad"></canvas>' +
@@ -7964,27 +8094,27 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
         // Developer needs to sign
         html += '<div class="form-row">' +
             '<div class="form-group">' +
-            '<label>Name</label>' +
+            '<label>' + t('sowSign.devNameLabel') + '</label>' +
             '<input type="text" id="sowDevSignerName" value="Carlos Martin" required />' +
             '</div>' +
             '<div class="form-group">' +
-            '<label>Date *</label>' +
+            '<label>' + t('sowSign.devDateLabel') + '</label>' +
             '<input type="date" id="sowDevSignDate" required />' +
             '</div>' +
             '</div>' +
             '<div class="form-group">' +
-            '<label>Signature</label>' +
+            '<label>' + t('sowSign.devSignatureLabel') + '</label>' +
             '<div class="signature-pad-container">' +
             '<canvas id="sowDevSigPad" class="signature-pad"></canvas>' +
-            '<button class="clear-btn" data-canvas="sowDevSigPad">Clear</button>' +
+            '<button class="clear-btn" data-canvas="sowDevSigPad">' + t('sowSign.btn.clear') + '</button>' +
             '</div>' +
             '</div>';
     } else {
         // Client viewing - developer hasn't signed yet
         html += '<div class="pending-notice">' +
             '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>' +
-            '<p><strong>Awaiting Developer Signature</strong></p>' +
-            '<p>Developer will review and sign shortly.</p>' +
+            '<p><strong>' + t('sowSign.awaitingDev') + '</strong></p>' +
+            '<p>' + t('sowSign.awaitingDevText') + '</p>' +
             '</div>';
     }
     
@@ -7997,17 +8127,17 @@ ContractFormHandler.prototype.renderSOWSigningModal = function(sowData) {
     if (sowData.clientSignature && sowData.devSignature) {
         // Both signed - show download
         html += '<button class="btn btn-primary" id="downloadSOWBtn">' +
-            '<span>📄 Download Signed SOW</span>' +
+            '<span>📄 ' + t('sowSign.btn.downloadSigned') + '</span>' +
             '</button>';
     } else if (isClient && !sowData.clientSignature) {
         // Client can sign
         html += '<button class="btn btn-primary" id="submitSOWClientSig">' +
-            '<span>✍️ Submit Signature</span>' +
+            '<span>✍️ ' + t('sowSign.btn.submitSignature') + '</span>' +
             '</button>';
     } else if (isDeveloper && !sowData.devSignature && sowData.clientSignature) {
         // Developer can sign (only if client signed first)
         html += '<button class="btn btn-primary" id="submitSOWDevSig">' +
-            '<span>✍️ Sign SOW</span>' +
+            '<span>✍️ ' + t('sowSign.btn.signSow') + '</span>' +
             '</button>';
     }
     
@@ -8119,24 +8249,24 @@ ContractFormHandler.prototype.initSOWSignaturePads = function(sowData, isDevelop
 
 ContractFormHandler.prototype.submitSOWClientSignature = function(sowId, signaturePad) {
     var self = this;
-    
+
     if (!signaturePad || signaturePad.isEmpty()) {
-        alert('Please provide your signature');
+        alert(t('sow.val.signature'));
         return;
     }
-    
+
     var signerName = document.getElementById('sowClientSignerName').value.trim();
     var signDate = document.getElementById('sowClientSignDate').value;
-    
+
     if (!signerName || !signDate) {
-        alert('Please fill in all fields');
+        alert(t('sow.val.fillAllFields'));
         return;
     }
-    
+
     var submitBtn = document.getElementById('submitSOWClientSig');
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>Submitting...</span>';
+        submitBtn.innerHTML = '<span>' + t('sow.btn.submitting') + '</span>';
     }
     
     var updateData = {
@@ -8152,7 +8282,7 @@ ContractFormHandler.prototype.submitSOWClientSignature = function(sowId, signatu
         .update(updateData)
         .then(function() {
             console.log('✓ Client signed SOW');
-            alert('✓ SOW signed successfully!\n\nThe developer will review and sign shortly.');
+            alert(t('sow.msg.clientSignSuccess'));
             
             var modal = document.getElementById('sowSigningModal');
             if (modal) modal.remove();
@@ -8160,34 +8290,34 @@ ContractFormHandler.prototype.submitSOWClientSignature = function(sowId, signatu
         })
         .catch(function(error) {
             console.error('Error signing SOW:', error);
-            alert('Error signing SOW: ' + error.message);
+            alert(t('sow.err.sign') + error.message);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>✍️ Submit Signature</span>';
+                submitBtn.innerHTML = '<span>' + t('sow.btn.submitSignature') + '</span>';
             }
         });
 };
 
 ContractFormHandler.prototype.submitSOWDeveloperSignature = function(sowId, signaturePad) {
     var self = this;
-    
+
     if (!signaturePad || signaturePad.isEmpty()) {
-        alert('Please provide your signature');
+        alert(t('sow.val.signature'));
         return;
     }
-    
+
     var signerName = document.getElementById('sowDevSignerName').value.trim();
     var signDate = document.getElementById('sowDevSignDate').value;
-    
+
     if (!signerName || !signDate) {
-        alert('Please fill in all fields');
+        alert(t('sow.val.fillAllFields'));
         return;
     }
-    
+
     var submitBtn = document.getElementById('submitSOWDevSig');
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>Signing...</span>';
+        submitBtn.innerHTML = '<span>' + t('sow.btn.signing') + '</span>';
     }
     
     var updateData = {
@@ -8203,7 +8333,7 @@ ContractFormHandler.prototype.submitSOWDeveloperSignature = function(sowId, sign
         .update(updateData)
         .then(function() {
             console.log('✓ Developer signed SOW');
-            alert('✓ SOW fully executed!\n\nBoth parties have signed.');
+            alert(t('sow.msg.fullySigned'));
             
             var modal = document.getElementById('sowSigningModal');
             if (modal) modal.remove();
@@ -8216,10 +8346,10 @@ ContractFormHandler.prototype.submitSOWDeveloperSignature = function(sowId, sign
         })
         .catch(function(error) {
             console.error('Error signing SOW:', error);
-            alert('Error signing SOW: ' + error.message);
+            alert(t('sow.err.sign') + error.message);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>✍️ Sign SOW</span>';
+                submitBtn.innerHTML = '<span>' + t('sow.btn.signSow') + '</span>';
             }
         });
 };
@@ -8270,7 +8400,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         var maintenanceField = $('#sowMaintenance');
 
         if (!packageField) {
-            alert('Please select a Package Tier to generate PDF');
+            alert(t('sow.val.selectPackage'));
             return;
         }
 
@@ -8288,7 +8418,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         }
 
         if (!clientName) {
-            alert('Please fill in the ' + (isBusinessEntityForm ? 'Business Name' : 'Client Name') + ' to generate PDF');
+            alert((isBusinessEntityForm ? t('sow.val.fillBusinessName') : t('sow.val.fillClientName')));
             return;
         }
 
@@ -8364,194 +8494,137 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         return;
     }
 
-    // Package definitions (comprehensive) - 2025 Revised Structure
+    // Package definitions (comprehensive) - 2025 Revised Structure (translated)
     var packageDefinitions = {
         'essential': {
-            name: 'Essential — Landing Page',
-            priceRange: '$1,000 - $3,000',
+            name: t('pkgDef.essential.name'),
+            priceRange: t('pkgDef.essential.priceRange'),
             defaultPrice: 2000,
-            timeline: '1-2 weeks',
-            description: 'Clean, effective landing page for establishing your online presence quickly.',
+            timeline: t('pkgDef.essential.timeline'),
+            description: t('pkgDef.essential.desc'),
             includes: [
-                'Single-page landing page (1-3 sections)',
-                'Cross-device optimization (mobile, tablet, desktop)',
-                'Clean, modern React/Next.js design',
-                'Contact form with validation',
-                'Basic SEO setup (meta tags)',
-                'DNS & hosting configuration (client pays for domain)',
-                '1 round of revisions',
-                '14-day post-launch support'
+                t('pkgDef.essential.i1'), t('pkgDef.essential.i2'), t('pkgDef.essential.i3'),
+                t('pkgDef.essential.i4'), t('pkgDef.essential.i5'), t('pkgDef.essential.i6'),
+                t('pkgDef.essential.i7')
             ],
             notIncluded: [
-                'Custom animations or micro-interactions',
-                'Advanced SEO (sitemap, schema)',
-                'Analytics integration',
-                'User authentication',
-                'Database functionality'
+                t('pkgDef.essential.ni1'), t('pkgDef.essential.ni2'), t('pkgDef.essential.ni3'),
+                t('pkgDef.essential.ni4'), t('pkgDef.essential.ni5')
             ]
         },
         'starter': {
-            name: 'Tier 1 — Starter',
-            priceRange: '$3,000 - $6,000',
+            name: t('pkgDef.starter.name'),
+            priceRange: t('pkgDef.starter.priceRange'),
             defaultPrice: 4500,
-            timeline: '2-3 weeks',
-            description: 'Polished single-page website for individuals and small businesses needing a professional online presence.',
+            timeline: t('pkgDef.starter.timeline'),
+            description: t('pkgDef.starter.desc'),
             includes: [
-                'Multi-section single-page React/Next.js website',
-                'Brand-matched design system',
-                'Cross-device optimization (mobile, tablet, desktop)',
-                'Scroll animations & micro-interactions',
-                'Multi-step contact forms with validation',
-                'GA4 + custom event tracking',
-                'Full technical SEO (meta tags, sitemap, schema)',
-                'DNS & hosting configuration (client pays for domain)',
-                '2 rounds of revisions per milestone',
-                '30-day post-launch support'
+                t('pkgDef.starter.i1'), t('pkgDef.starter.i2'), t('pkgDef.starter.i3'),
+                t('pkgDef.starter.i4'), t('pkgDef.starter.i5'), t('pkgDef.starter.i6'),
+                t('pkgDef.starter.i7'), t('pkgDef.starter.i8'), t('pkgDef.starter.i9'),
+                t('pkgDef.starter.i10')
             ],
             notIncluded: [
-                'User authentication or login systems',
-                'Database integration',
-                'E-commerce functionality',
-                'Backend development'
+                t('pkgDef.starter.ni1'), t('pkgDef.starter.ni2'), t('pkgDef.starter.ni3'),
+                t('pkgDef.starter.ni4')
             ]
         },
         'growth': {
-            name: 'Tier 2 — Growth',
-            priceRange: '$6,000 - $12,000',
+            name: t('pkgDef.growth.name'),
+            priceRange: t('pkgDef.growth.priceRange'),
             defaultPrice: 9000,
-            timeline: '3-5 weeks',
-            description: 'For businesses needing auth-protected content, form data capture, and user data management.',
+            timeline: t('pkgDef.growth.timeline'),
+            description: t('pkgDef.growth.desc'),
             includes: [
-                'Everything in Starter',
-                'Firebase Authentication (email/password login)',
-                'Protected content areas (auth-gated pages/sections)',
-                'Form data capture & storage',
-                'User session management',
-                'Domain, hosting & SSL included (first year)',
-                '3 rounds of revisions',
-                '45-day post-launch support'
+                t('pkgDef.growth.i1'), t('pkgDef.growth.i2'), t('pkgDef.growth.i3'),
+                t('pkgDef.growth.i4'), t('pkgDef.growth.i5'), t('pkgDef.growth.i6'),
+                t('pkgDef.growth.i7'), t('pkgDef.growth.i8')
             ],
             notIncluded: [
-                'User dashboard or profile pages',
-                'Database-driven content',
-                'Multiple API integrations',
-                'E-commerce functionality'
+                t('pkgDef.growth.ni1'), t('pkgDef.growth.ni2'), t('pkgDef.growth.ni3'),
+                t('pkgDef.growth.ni4')
             ]
         },
         'professional': {
-            name: 'Tier 3 — Professional',
-            priceRange: '$12,000 - $25,000',
+            name: t('pkgDef.professional.name'),
+            priceRange: t('pkgDef.professional.priceRange'),
             defaultPrice: 18500,
-            timeline: '5-8 weeks',
-            description: 'Full-featured application with user dashboard, profiles, and database-driven functionality.',
+            timeline: t('pkgDef.professional.timeline'),
+            description: t('pkgDef.professional.desc'),
             includes: [
-                'Everything in Growth',
-                'Full Firebase backend (Auth, Firestore, Storage)',
-                'User dashboard with personalized content',
-                'User profile management',
-                'File/media upload system',
-                'Multiple API integrations (CRMs, Zapier, etc.)',
-                'Email notifications (SendGrid)',
-                'Domain, hosting & SSL included (first year)',
-                'Priority support response (24-48 hours)',
-                '4 rounds of revisions',
-                '2 months of included maintenance'
+                t('pkgDef.professional.i1'), t('pkgDef.professional.i2'), t('pkgDef.professional.i3'),
+                t('pkgDef.professional.i4'), t('pkgDef.professional.i5'), t('pkgDef.professional.i6'),
+                t('pkgDef.professional.i7'), t('pkgDef.professional.i8'), t('pkgDef.professional.i9'),
+                t('pkgDef.professional.i10'), t('pkgDef.professional.i11')
             ],
             notIncluded: [
-                'Role-based access control (RBAC)',
-                'Multi-page application routing',
-                'E-commerce functionality',
-                'Mobile app development'
+                t('pkgDef.professional.ni1'), t('pkgDef.professional.ni2'), t('pkgDef.professional.ni3'),
+                t('pkgDef.professional.ni4')
             ]
         },
         'enterprise': {
-            name: 'Tier 4 — Enterprise',
-            priceRange: '$25,000 - $50,000',
+            name: t('pkgDef.enterprise.name'),
+            priceRange: t('pkgDef.enterprise.priceRange'),
             defaultPrice: 37500,
-            timeline: '8-14 weeks',
-            description: 'Enterprise-grade web application with full infrastructure, role-based access, and scalable architecture.',
+            timeline: t('pkgDef.enterprise.timeline'),
+            description: t('pkgDef.enterprise.desc'),
             includes: [
-                'Everything in Professional',
-                'Multi-page Next.js application with routing',
-                'Role-based access control (admin, editor, user, etc.)',
-                'In-app notification system',
-                'Custom admin dashboards and analytics',
-                'Scalable, production-ready architecture',
-                'Database design and optimization',
-                'Security best practices implementation',
-                'Domain, hosting & SSL included (first year)',
-                'Documentation and training materials',
-                '5 rounds of revisions',
-                '3 months of premium maintenance included',
-                'Dedicated support channel'
+                t('pkgDef.enterprise.i1'), t('pkgDef.enterprise.i2'), t('pkgDef.enterprise.i3'),
+                t('pkgDef.enterprise.i4'), t('pkgDef.enterprise.i5'), t('pkgDef.enterprise.i6'),
+                t('pkgDef.enterprise.i7'), t('pkgDef.enterprise.i8'), t('pkgDef.enterprise.i9'),
+                t('pkgDef.enterprise.i10'), t('pkgDef.enterprise.i11'), t('pkgDef.enterprise.i12'),
+                t('pkgDef.enterprise.i13')
             ],
             notIncluded: [
-                'Native mobile app development (available separately)',
-                'Machine learning / AI features',
-                '24/7 on-call support (available separately)'
+                t('pkgDef.enterprise.ni1'), t('pkgDef.enterprise.ni2'), t('pkgDef.enterprise.ni3')
             ]
         },
         'custom': {
-            name: 'Custom Quote',
-            priceRange: 'Custom Pricing',
+            name: t('pkgDef.custom.name'),
+            priceRange: t('pkgDef.custom.priceRange'),
             defaultPrice: 0,
-            timeline: 'TBD',
-            description: 'Tailored solution designed to meet your specific requirements.',
-            includes: ['Custom scope to be defined'],
+            timeline: t('pkgDef.custom.timeline'),
+            description: t('pkgDef.custom.desc'),
+            includes: [t('pkgDef.custom.i1')],
             notIncluded: []
         }
     };
 
     var maintenanceDefinitions = {
         'none': {
-            name: 'No Maintenance Plan',
+            name: t('maint.none.name'),
             price: '$0/month',
-            description: 'Developer will NOT provide any ongoing maintenance, updates, or support after the post-launch period ends. Client is solely responsible for website maintenance.',
+            description: t('maint.none.desc'),
             includes: []
         },
         'basic': {
-            name: 'Basic Care',
-            price: '$167/month',
-            description: 'Ideal for websites requiring occasional updates and minor adjustments (2-3 hrs/month).',
+            name: t('maint.basic.name'),
+            price: t('maint.basic.price'),
+            description: t('maint.basic.desc'),
             includes: [
-                'Minor text and image updates (up to 2-3 hours/month)',
-                'Security updates and patches',
-                'Uptime monitoring',
-                'Monthly backup verification',
-                'Email support (48-72 hour response)',
-                'Bug fixes for existing functionality'
+                t('maint.basic.i1'), t('maint.basic.i2'), t('maint.basic.i3'),
+                t('maint.basic.i4'), t('maint.basic.i5'), t('maint.basic.i6')
             ]
         },
         'professional': {
-            name: 'Professional Care',
-            price: '$335/month',
-            description: 'For businesses requiring regular updates and more hands-on support (4-6 hrs/month).',
+            name: t('maint.professional.name'),
+            price: t('maint.professional.price'),
+            description: t('maint.professional.desc'),
             includes: [
-                'Everything in Basic Care',
-                'Content updates (up to 4-6 hours/month)',
-                'Performance optimization',
-                'Analytics review and recommendations',
-                'Priority email support (24-48 hour response)',
-                'Minor feature enhancements',
-                'Third-party integration monitoring',
-                'Monthly status reports'
+                t('maint.professional.i1'), t('maint.professional.i2'), t('maint.professional.i3'),
+                t('maint.professional.i4'), t('maint.professional.i5'), t('maint.professional.i6'),
+                t('maint.professional.i7'), t('maint.professional.i8')
             ]
         },
         'premium': {
-            name: 'Premium Care',
-            price: '$670/month',
-            description: 'Comprehensive support for mission-critical websites and applications (8-12 hrs/month).',
+            name: t('maint.premium.name'),
+            price: t('maint.premium.price'),
+            description: t('maint.premium.desc'),
             includes: [
-                'Everything in Professional Care',
-                'Priority support (same-day response)',
-                'New component development (up to 8-12 hours/month)',
-                'SEO optimization and monitoring',
-                'A/B testing setup and analysis',
-                'Dedicated support channel (Slack/Discord)',
-                'Quarterly strategy calls',
-                'Proactive performance improvements',
-                'Database optimization',
-                'Emergency support availability'
+                t('maint.premium.i1'), t('maint.premium.i2'), t('maint.premium.i3'),
+                t('maint.premium.i4'), t('maint.premium.i5'), t('maint.premium.i6'),
+                t('maint.premium.i7'), t('maint.premium.i8'), t('maint.premium.i9'),
+                t('maint.premium.i10')
             ]
         }
     };
@@ -8588,15 +8661,16 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     var couponDiscount = breakdown ? breakdown.couponDiscount : 0;
 
     // Format dates
-    var generatedDate = new Date().toLocaleDateString('en-US', {
+    var dateLocale = typeof getCurrentLang === 'function' && getCurrentLang() === 'es' ? 'es-MX' : 'en-US';
+    var generatedDate = new Date().toLocaleDateString(dateLocale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
 
     var formattedStartDate = startDate ?
-        new Date(startDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) :
-        'To be determined';
+        new Date(startDate).toLocaleDateString(dateLocale, { year: 'numeric', month: 'long', day: 'numeric' }) :
+        t('pdf.sow.toBeDeterm');
 
     // Build HTML first, then open window with Blob URL
     var htmlContent = '<!DOCTYPE html>' +
@@ -8673,53 +8747,54 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // HEADER
     '<div class="header">' +
     '<img src="' + getLogoForPDF() + '" alt="Scarlo Logo" class="logo" />' +
-    '<h1>Statement of Work</h1>' +
-    '<div class="subtitle">Scarlo — Professional Web Development</div>' +
-    '<div class="meta-date">Document Generated: ' + generatedDate + '</div>' +
+    '<h1>' + t('pdf.sow.title') + '</h1>' +
+    '<div class="subtitle">' + t('pdf.sow.subtitle') + '</div>' +
+    '<div class="meta-date">' + t('pdf.sow.generated') + ' ' + generatedDate + '</div>' +
     '</div>' +
 
     // LEGAL INCORPORATION
     '<div class="legal-notice">' +
-    '<strong>INCORPORATION:</strong> This SOW is incorporated into and governed by the Website Development Agreement between Scarlo and ' + clientName + '. All Agreement terms apply. In case of conflict, the Agreement controls.' +
+    '<strong>' + t('pdf.sow.incorporation') + '</strong> ' + t('pdf.sow.incorporationText') + ' ' + clientName + t('pdf.sow.incorporationText2') +
     '</div>' +
 
     // CLIENT INFORMATION
     '<div class="section">' +
-    '<h2>1. Client Information</h2>' +
+    '<h2>' + t('pdf.sow.clientInfo') + '</h2>' +
     '<div class="info-box">' +
     '<div class="info-grid">' +
     (isBusinessEntity
-        ? '<div class="info-item"><strong>Business Name:</strong> ' + businessName + '</div>' +
-          '<div class="info-item"><strong>Entity Type:</strong> ' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</div>' +
-          '<div class="info-item"><strong>Representative:</strong> ' + representativeName + ', ' + representativeTitle + '</div>'
-        : '<div class="info-item"><strong>Client Name:</strong> ' + clientName + '</div>') +
-    '<div class="info-item"><strong>Contact:</strong> ' + clientEmail + '</div>' +
-    '<div class="info-item"><strong>Package Selected:</strong> ' + packageInfo.name + '</div>' +
+        ? '<div class="info-item"><strong>' + t('pdf.sow.businessName') + '</strong> ' + businessName + '</div>' +
+          '<div class="info-item"><strong>' + t('pdf.sow.entityType') + '</strong> ' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</div>' +
+          '<div class="info-item"><strong>' + t('pdf.sow.representative') + '</strong> ' + representativeName + ', ' + representativeTitle + '</div>'
+        : '<div class="info-item"><strong>' + t('pdf.sow.clientName') + '</strong> ' + clientName + '</div>') +
+    '<div class="info-item"><strong>' + t('pdf.sow.contact') + '</strong> ' + clientEmail + '</div>' +
+    '<div class="info-item"><strong>' + t('pdf.sow.packageSelected') + '</strong> ' + packageInfo.name + '</div>' +
     (isRetroactive
-        ? '<div class="info-item"><strong>Development Duration:</strong> ' + (devDuration || estimatedWeeks) + ' ' + devDurationUnit + '</div>'
-        : '<div class="info-item"><strong>Estimated Timeline:</strong> ' + estimatedWeeks + ' weeks</div>') +
-    '<div class="info-item"><strong>Estimated Final Revision:</strong> ' + formattedStartDate + '</div>' +
-    '<div class="info-item"><strong>SOW Reference:</strong> ' + sowId + '</div>' +
+        ? '<div class="info-item"><strong>' + t('pdf.sow.devDuration') + '</strong> ' + (devDuration || estimatedWeeks) + ' ' + devDurationUnit + '</div>'
+        : '<div class="info-item"><strong>' + t('pdf.sow.estimatedTimeline') + '</strong> ' + estimatedWeeks + ' ' + t('sow.weeks') + '</div>') +
+    '<div class="info-item"><strong>' + t('pdf.sow.estimatedFinalRevision') + '</strong> ' + formattedStartDate + '</div>' +
+    '<div class="info-item"><strong>' + t('pdf.sow.sowReference') + '</strong> ' + sowId + '</div>' +
     '</div>' +
     '</div>' +
     '</div>' +
 
     // PROJECT OVERVIEW
     '<div class="section">' +
-    '<h2>2. Project Overview</h2>' +
+    '<h2>' + t('pdf.sow.projectOverview') + '</h2>' +
     '<div class="package-box">' +
     '<div class="package-header">' +
     '<span class="package-name">' + packageInfo.name + '</span>' +
     '<span class="package-price">' + packageInfo.priceRange + '</span>' +
     '</div>' +
     '<p style="font-size: 9pt; margin-bottom: 10px;">' + packageInfo.description + '</p>' +
-    '<h3 style="font-size: 9pt; margin-top: 10px;">Included in This Package:</h3>' +
+    '<h3 style="font-size: 9pt; margin-top: 10px;">' + t('pdf.sow.includedInPackage') + '</h3>' +
     '<ul class="feature-list">';
 
     // For custom quotes, show selected features; for packages, show package includes
     if (packageType === 'custom' && addOns && addOns.length > 0) {
         addOns.forEach(function(addon) {
-            htmlContent += '<li>' + addon.label + '</li>';
+            var addonLabel = addon.key ? translateAddonByKey(addon.key, addon.label) : translateStoredFeature(addon.label);
+            htmlContent += '<li>' + addonLabel + '</li>';
         });
     } else {
         packageInfo.includes.forEach(function(item) {
@@ -8737,11 +8812,12 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     if (trueAddOns.length > 0) {
         htmlContent += '<div class="section">' +
-        '<h2>3. Additional Features</h2>' +
+        '<h2>3. ' + t('pdf.sow.additionalFeatures').replace(/^\d+\.\s*/, '') + '</h2>' +
         '<div class="info-box">' +
         '<ul class="feature-list">';
         trueAddOns.forEach(function(addon) {
-            htmlContent += '<li>' + addon.label + '</li>';
+            var addonLabel = addon.key ? translateAddonByKey(addon.key, addon.label) : translateStoredFeature(addon.label);
+            htmlContent += '<li>' + addonLabel + '</li>';
         });
         htmlContent += '</ul></div></div>';
     }
@@ -8749,7 +8825,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // SPECIAL REQUIREMENTS
     if (notes && notes.trim()) {
         htmlContent += '<div class="section">' +
-        '<h2>' + (trueAddOns.length > 0 ? '4' : '3') + '. Special Requirements & Notes</h2>' +
+        '<h2>' + (trueAddOns.length > 0 ? '4' : '3') + '. ' + t('pdf.sow.specialRequirements') + '</h2>' +
         '<div class="info-box">' +
         '<p style="font-size: 9pt; margin-bottom: 0;">' + notes + '</p>' +
         '</div>' +
@@ -8761,32 +8837,32 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // PROJECT TIMELINE (hidden for retroactive projects)
     if (!isRetroactive) {
         htmlContent += '<div class="section">' +
-        '<h2>' + sectionNum + '. Project Timeline & Milestones</h2>' +
+        '<h2>' + sectionNum + '. ' + t('pdf.sow.projectTimeline') + '</h2>' +
         '<div class="timeline-box">' +
-        '<div class="timeline-header">Estimated Project Duration: ' + estimatedWeeks + ' Weeks</div>' +
+        '<div class="timeline-header">' + t('pdf.sow.estimatedDuration') + ' ' + estimatedWeeks + ' ' + t('pdf.sow.weeks') + '</div>' +
 
         '<div class="milestone">' +
-        '<div class="milestone-title">1. Discovery & Planning (Week 1)</div>' +
-        '<div class="milestone-desc">Requirements gathering, sitemap, wireframes, project kickoff.</div>' +
-        '</div>' +
-
-        '<div class="milestone">' +
-        '<div class="milestone-title">2. UI/UX Design (Weeks 2-3)</div>' +
-        '<div class="milestone-desc">Visual mockups, component design, approval. <strong>Milestone Payment due.</strong></div>' +
+        '<div class="milestone-title">' + t('pdf.sow.phase1Title') + '</div>' +
+        '<div class="milestone-desc">' + t('pdf.sow.phase1Desc') + '</div>' +
         '</div>' +
 
         '<div class="milestone">' +
-        '<div class="milestone-title">3. Development (Weeks 4-' + Math.max(4, parseInt(estimatedWeeks) - 2 || 4) + ')</div>' +
-        '<div class="milestone-desc">Frontend/backend development, feature implementation, testing.</div>' +
+        '<div class="milestone-title">' + t('pdf.sow.phase2Title') + '</div>' +
+        '<div class="milestone-desc">' + t('pdf.sow.phase2Desc') + ' <strong>' + t('pdf.sow.phase2Payment') + '</strong></div>' +
         '</div>' +
 
         '<div class="milestone">' +
-        '<div class="milestone-title">4. Testing & Deployment (Final Week)</div>' +
-        '<div class="milestone-desc">QA, bug fixes, optimization, deployment. <strong>Final Payment due.</strong></div>' +
+        '<div class="milestone-title">' + t('pdf.sow.phase3Title') + Math.max(4, parseInt(estimatedWeeks) - 2 || 4) + ')</div>' +
+        '<div class="milestone-desc">' + t('pdf.sow.phase3Desc') + '</div>' +
+        '</div>' +
+
+        '<div class="milestone">' +
+        '<div class="milestone-title">' + t('pdf.sow.phase4Title') + '</div>' +
+        '<div class="milestone-desc">' + t('pdf.sow.phase4Desc') + ' <strong>' + t('pdf.sow.phase4Payment') + '</strong></div>' +
         '</div>' +
 
         '</div>' +
-        '<p style="font-size: 9pt; font-style: italic; margin-top: 6px;">Timeline is an estimate. See Agreement Section 8 for terms.</p>' +
+        '<p style="font-size: 9pt; font-style: italic; margin-top: 6px;">' + t('pdf.sow.timelineNote') + '</p>' +
         '</div>';
 
         sectionNum++;
@@ -8794,7 +8870,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // PRICING SUMMARY (individualized breakdown)
     htmlContent += '<div class="section">' +
-    '<h2>' + sectionNum + '. Pricing Summary</h2>' +
+    '<h2>' + sectionNum + '. ' + t('pdf.sow.pricingSummary') + '</h2>' +
     '<table class="payment-table" style="width: 100%;">' +
     '<tbody>';
 
@@ -8807,11 +8883,12 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // Add-ons / Included Features (for custom quotes, show as "Included" instead of price)
     if (addOns && addOns.length > 0) {
         addOns.forEach(function(addon) {
+            var addonLabel = addon.key ? translateAddonByKey(addon.key, addon.label) : translateStoredFeature(addon.label);
             var priceDisplay = addon.price === 0 ?
-                '<span style="color: #2e7d32; font-style: italic;">Included</span>' :
+                '<span style="color: #2e7d32; font-style: italic;">' + t('pdf.sow.included') + '</span>' :
                 '<span style="color: #2e7d32;">+$' + addon.price.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</span>';
             htmlContent += '<tr>' +
-            '<td>' + addon.label + '</td>' +
+            '<td>' + addonLabel + '</td>' +
             '<td style="text-align: right;">' + priceDisplay + '</td>' +
             '</tr>';
         });
@@ -8820,8 +8897,9 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // Discounts (removed features)
     if (discounts && discounts.length > 0) {
         discounts.forEach(function(discount) {
+            var discountLabel = discount.key ? translateAddonByKey(discount.key, discount.label) : translateStoredFeature(discount.label);
             htmlContent += '<tr>' +
-            '<td>' + discount.label + ' <span style="font-size: 8pt; color: #666;">(removed)</span></td>' +
+            '<td>' + discountLabel + ' <span style="font-size: 8pt; color: #666;">' + t('pdf.sow.removed') + '</span></td>' +
             '<td style="text-align: right; color: #c62828;">-$' + discount.price.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
             '</tr>';
         });
@@ -8830,14 +8908,14 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // Coupon discount
     if (couponCode && couponDiscount > 0) {
         htmlContent += '<tr>' +
-        '<td>Coupon: ' + couponCode + '</td>' +
+        '<td>' + t('pdf.sow.coupon') + ' ' + couponCode + '</td>' +
         '<td style="text-align: right; color: #c62828;">-$' + couponDiscount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</td>' +
         '</tr>';
     }
 
     // Total row
     htmlContent += '<tr style="border-top: 2px solid #333;">' +
-    '<td><strong>TOTAL</strong></td>' +
+    '<td><strong>' + t('pdf.sow.total') + '</strong></td>' +
     '<td style="text-align: right;"><strong>$' + totalPrice.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
     '</tr>' +
     '</tbody>' +
@@ -8875,18 +8953,18 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     var potentialSavings = Math.max(0, tierRates.localHigh - totalPrice);
 
     htmlContent += '<div class="section" style="page-break-inside: avoid;">' +
-    '<h2>' + sectionNum + '. Your Value Summary</h2>' +
+    '<h2>' + sectionNum + '. ' + t('pdf.sow.valueSummary') + '</h2>' +
 
     '<div style="border: 2px solid #000; padding: 12px 15px; margin: 8px 0;">' +
 
     // Price comparison - anchored
     '<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #ccc; margin-bottom: 10px;">' +
     '<div style="font-size: 9pt;">' +
-    '<div style="color: #666; margin-bottom: 2px;">Fresno/Central Valley agencies typically charge:</div>' +
+    '<div style="color: #666; margin-bottom: 2px;">' + t('pdf.sow.marketRatesIntro') + '</div>' +
     '<div style="font-size: 11pt; font-weight: bold;">' + tierRates.local + '</div>' +
     '</div>' +
     '<div style="text-align: right;">' +
-    '<div style="color: #666; font-size: 9pt; margin-bottom: 2px;">Your Scarlo Quote:</div>' +
+    '<div style="color: #666; font-size: 9pt; margin-bottom: 2px;">' + t('pdf.sow.yourQuote') + '</div>' +
     '<div style="font-size: 14pt; font-weight: bold;">$' + totalPrice.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</div>' +
     '</div>' +
     '</div>' +
@@ -8894,20 +8972,20 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     // Savings callout
     (potentialSavings > 500 ?
     '<div style="background: #f0f7f0; padding: 8px 12px; margin-bottom: 10px; text-align: center; border-left: 3px solid #2e7d32;">' +
-    '<span style="font-size: 9pt; color: #666;">Potential savings vs. local market: </span>' +
-    '<strong style="font-size: 11pt; color: #2e7d32;">Up to $' + potentialSavings.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong>' +
+    '<span style="font-size: 9pt; color: #666;">' + t('pdf.sow.potentialSavings') + ' </span>' +
+    '<strong style="font-size: 11pt; color: #2e7d32;">' + t('pdf.sow.upTo') + ' $' + potentialSavings.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong>' +
     '</div>' : '') +
 
-    // Value propositions - 3 key differentiators focused on functionality & purpose
+    // Value propositions
     '<div style="font-size: 9pt;">' +
-    '<div style="margin-bottom: 4px;"><strong style="color: #2e7d32;">✓</strong> <strong>Advanced Functionality</strong> — Real features that work: auth systems, dashboards, integrations — not static pages</div>' +
-    '<div style="margin-bottom: 4px;"><strong style="color: #2e7d32;">✓</strong> <strong>Modern Tech Stack</strong> — React/Next.js built for speed, SEO, and scale — not outdated WordPress themes</div>' +
-    '<div><strong style="color: #2e7d32;">✓</strong> <strong>Creative Solutions</strong> — Your online presence matters. Stand out in a market full of cookie-cutter websites</div>' +
+    '<div style="margin-bottom: 4px;"><strong style="color: #2e7d32;">✓</strong> <strong>' + t('pdf.sow.valueProp1') + '</strong> ' + t('pdf.sow.valueProp1Desc') + '</div>' +
+    '<div style="margin-bottom: 4px;"><strong style="color: #2e7d32;">✓</strong> <strong>' + t('pdf.sow.valueProp2') + '</strong> ' + t('pdf.sow.valueProp2Desc') + '</div>' +
+    '<div><strong style="color: #2e7d32;">✓</strong> <strong>' + t('pdf.sow.valueProp3') + '</strong> ' + t('pdf.sow.valueProp3Desc') + '</div>' +
     '</div>' +
 
     '</div>' +
 
-    '<p style="font-size: 7pt; color: #888; margin-top: 4px; margin-bottom: 0;">Market rates based on Fresno/Central Valley research (2024-2025). Full industry comparison: <a href="https://scarlo.dev/pricing" target="_blank" style="color: #2e7d32; text-decoration: underline;">scarlo.dev/pricing</a></p>' +
+    '<p style="font-size: 7pt; color: #888; margin-top: 4px; margin-bottom: 0;">' + t('pdf.sow.marketNote') + ' <a href="https://scarlo.dev/pricing" target="_blank" style="color: #2e7d32; text-decoration: underline;">scarlo.dev/pricing</a></p>' +
     '</div>';
 
     sectionNum++;
@@ -8916,55 +8994,55 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     if (isRetroactive) {
         // Simple total for retroactive projects
         htmlContent += '<div class="section">' +
-        '<h2>' + sectionNum + '. Payment Summary</h2>' +
+        '<h2>' + sectionNum + '. ' + t('pdf.sow.paymentSummary') + '</h2>' +
         '<div class="info-box" style="text-align: center; padding: 15px;">' +
-        '<div style="font-size: 10pt; color: #666; margin-bottom: 5px;">Total Project Cost</div>' +
+        '<div style="font-size: 10pt; color: #666; margin-bottom: 5px;">' + t('pdf.sow.totalProjectCost') + '</div>' +
         '<div style="font-size: 16pt; font-weight: bold;">$' + totalPrice.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</div>' +
         '</div>' +
-        '<p style="font-size: 9pt; font-style: italic;">Payment terms as agreed. IP rights transfer upon full payment (Section 6.6).</p>' +
+        '<p style="font-size: 9pt; font-style: italic;">' + t('pdf.sow.paymentTermsNote') + '</p>' +
         '</div>';
     } else {
         // Full payment structure for new projects
         htmlContent += '<div class="section">' +
-        '<h2>' + sectionNum + '. Payment Structure</h2>' +
+        '<h2>' + sectionNum + '. ' + t('pdf.sow.paymentStructure') + '</h2>' +
 
         '<table class="payment-table">' +
         '<thead>' +
         '<tr>' +
-        '<th style="width: 25%;">Payment</th>' +
-        '<th style="width: 45%;">Description</th>' +
-        '<th style="width: 15%;">Percentage</th>' +
-        '<th style="width: 15%;">Amount</th>' +
+        '<th style="width: 25%;">' + t('pdf.sow.payment') + '</th>' +
+        '<th style="width: 45%;">' + t('pdf.sow.description') + '</th>' +
+        '<th style="width: 15%;">' + t('pdf.sow.percentage') + '</th>' +
+        '<th style="width: 15%;">' + t('pdf.sow.amount') + '</th>' +
         '</tr>' +
         '</thead>' +
         '<tbody>' +
         '<tr>' +
-        '<td><strong>Deposit</strong></td>' +
-        '<td>Before work begins</td>' +
+        '<td><strong>' + t('pdf.sow.deposit') + '</strong></td>' +
+        '<td>' + t('pdf.sow.beforeWorkBegins') + '</td>' +
         '<td>50%</td>' +
         '<td><strong>$' + deposit.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
         '</tr>' +
         '<tr>' +
-        '<td><strong>Milestone</strong></td>' +
-        '<td>Upon design approval</td>' +
+        '<td><strong>' + t('pdf.sow.milestone') + '</strong></td>' +
+        '<td>' + t('pdf.sow.uponDesignApproval') + '</td>' +
         '<td>25%</td>' +
         '<td><strong>$' + milestone1.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
         '</tr>' +
         '<tr>' +
-        '<td><strong>Final</strong></td>' +
-        '<td>Prior to deployment</td>' +
+        '<td><strong>' + t('pdf.sow.final') + '</strong></td>' +
+        '<td>' + t('pdf.sow.priorToDeployment') + '</td>' +
         '<td>25%</td>' +
         '<td><strong>$' + finalPayment.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
         '</tr>' +
         '<tr class="total-row">' +
-        '<td colspan="2"><strong>TOTAL PROJECT COST</strong></td>' +
+        '<td colspan="2"><strong>' + t('pdf.sow.totalProjectCostLabel') + '</strong></td>' +
         '<td><strong>100%</strong></td>' +
         '<td><strong>$' + totalPrice.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
         '</tr>' +
         '</tbody>' +
         '</table>' +
 
-        '<p style="font-size: 9pt; font-style: italic;">Late payments subject to interest (Section 3.3). IP rights transfer upon full payment (Section 6.6).</p>' +
+        '<p style="font-size: 9pt; font-style: italic;">' + t('pdf.sow.latePaymentsNote') + '</p>' +
         '</div>';
     }
 
@@ -8975,30 +9053,30 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         var deferred = sowData.payment.deferred;
 
         htmlContent += '<div class="section">' +
-        '<h2>' + sectionNum + '. Deferred Payment Agreement</h2>' +
+        '<h2>' + sectionNum + '. ' + t('pdf.sow.deferredPaymentAgreement') + '</h2>' +
 
         '<div style="background: #fff8e6; border: 2px solid #f59e0b; padding: 10px; margin-bottom: 10px;">' +
-        '<p style="font-size: 9pt; margin: 0 0 5px; color: #92400e; font-weight: bold;">DEFERRED PAYMENT TERMS</p>' +
-        '<p style="font-size: 8pt; margin: 0; color: #78350f;">Client has elected to defer a portion of payment. The following terms apply to the deferred amount and are binding upon both parties.</p>' +
+        '<p style="font-size: 9pt; margin: 0 0 5px; color: #92400e; font-weight: bold;">' + t('pdf.sow.deferredPaymentTerms') + '</p>' +
+        '<p style="font-size: 8pt; margin: 0; color: #78350f;">' + t('pdf.sow.deferredPaymentIntro') + '</p>' +
         '</div>' +
 
         '<table class="payment-table">' +
         '<thead>' +
         '<tr>' +
-        '<th style="width: 50%;">Description</th>' +
-        '<th style="width: 25%;">Due Date</th>' +
-        '<th style="width: 25%;">Amount</th>' +
+        '<th style="width: 50%;">' + t('pdf.sow.description') + '</th>' +
+        '<th style="width: 25%;">' + t('pdf.sow.dueDate') + '</th>' +
+        '<th style="width: 25%;">' + t('pdf.sow.amount') + '</th>' +
         '</tr>' +
         '</thead>' +
         '<tbody>';
 
         // Frequency labels for recurring payments
         var freqLabels = {
-            'weekly': 'Weekly',
-            'biweekly': 'Bi-Weekly',
-            'semimonthly': 'Semi-Monthly',
-            'monthly': 'Monthly',
-            'bimonthly': 'Bi-Monthly'
+            'weekly': t('freq.weekly'),
+            'biweekly': t('freq.biweekly'),
+            'semimonthly': t('freq.semimonthly'),
+            'monthly': t('freq.monthly'),
+            'bimonthly': t('freq.bimonthly')
         };
 
         if ((deferred.splitType === 'custom' || deferred.splitType === 'recurring') && deferred.customSchedule && deferred.customSchedule.length > 0) {
@@ -9007,22 +9085,22 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
                 var freqLabel = freqLabels[deferred.frequency] || deferred.frequency;
                 htmlContent += '<tr style="background: #e0f2fe;">' +
                 '<td colspan="3" style="font-size: 8pt; color: #0369a1; padding: 6px 8px;">' +
-                '<strong>Payment Plan:</strong> ' + deferred.customSchedule.length + ' ' + freqLabel.toLowerCase() + ' payments of $' +
+                '<strong>' + t('pdf.sow.paymentPlan') + '</strong> ' + deferred.customSchedule.length + ' ' + freqLabel.toLowerCase() + ' ' + t('pdf.sow.paymentsOf') + ' $' +
                 (deferred.customSchedule[0].amount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) +
                 '</td></tr>';
             }
             deferred.customSchedule.forEach(function(payment, index) {
-                var formattedDate = payment.dueDate ? new Date(payment.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
+                var formattedDate = payment.dueDate ? new Date(payment.dueDate).toLocaleDateString(dateLocale, { year: 'numeric', month: 'long', day: 'numeric' }) : t('common.tbd');
                 htmlContent += '<tr>' +
-                '<td>Payment ' + (index + 1) + '</td>' +
+                '<td>' + t('pdf.sow.paymentNum') + ' ' + (index + 1) + '</td>' +
                 '<td>' + formattedDate + '</td>' +
                 '<td><strong>$' + (payment.amount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
                 '</tr>';
             });
         } else {
-            var formattedDueDate = deferred.dueDate ? new Date(deferred.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
+            var formattedDueDate = deferred.dueDate ? new Date(deferred.dueDate).toLocaleDateString(dateLocale, { year: 'numeric', month: 'long', day: 'numeric' }) : t('common.tbd');
             htmlContent += '<tr>' +
-            '<td>Deferred Payment (Lump Sum)</td>' +
+            '<td>' + t('pdf.sow.deferredLumpSum') + '</td>' +
             '<td>' + formattedDueDate + '</td>' +
             '<td><strong>$' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
             '</tr>';
@@ -9030,7 +9108,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
         // Total deferred amount row
         htmlContent += '<tr class="total-row">' +
-        '<td colspan="2"><strong>TOTAL DEFERRED AMOUNT</strong></td>' +
+        '<td colspan="2"><strong>' + t('pdf.sow.totalDeferredAmount') + '</strong></td>' +
         '<td><strong>$' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong></td>' +
         '</tr>';
 
@@ -9038,41 +9116,41 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         var lateFeeWaived = deferred.lateFeeWaived || deferred.feeWaived;
         var lateFeeAmount = deferred.deferredAmount * 0.10;
         htmlContent += '<tr style="background: #fef3c7;">' +
-        '<td>Late Fee (10%)' + (lateFeeWaived ? ' <em style="color:#666;">(WAIVED)</em>' : '') + '</td>' +
-        '<td style="font-size: 8pt; color: #92400e;">If payment is late</td>' +
+        '<td>' + t('pdf.sow.lateFee10') + (lateFeeWaived ? ' <em style="color:#666;">(' + t('pdf.sow.waived') + ')</em>' : '') + '</td>' +
+        '<td style="font-size: 8pt; color: #92400e;">' + t('pdf.sow.ifPaymentLate') + '</td>' +
         '<td>' + (lateFeeWaived ? '<s>$' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</s> $0' : '<strong>$' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '</strong>') + '</td>' +
         '</tr>' +
         '</tbody></table>';
 
         // Terms and conditions
         var isRecurringPlan = deferred.splitType === 'recurring' || (deferred.splitType === 'custom' && deferred.customSchedule && deferred.customSchedule.length > 1);
-        var lateFeeText = lateFeeWaived ? 'Waived for this agreement.' :
+        var lateFeeText = lateFeeWaived ? t('pdf.sow.term.lateFeeWaived') :
             (isRecurringPlan ?
-                '10% of missed payment amount per late payment. Applied after 5-day grace period.' :
-                'One-time 10% fee ($' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') if payment exceeds grace period.');
+                t('pdf.sow.term.lateFeeRecurring') :
+                t('pdf.sow.term.lateFeeLump1') + '$' + lateFeeAmount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + t('pdf.sow.term.lateFeeLump2'));
 
         htmlContent += '<div class="deferred-terms">' +
-        '<h3 style="font-size: 9pt; margin-top: 10px; margin-bottom: 5px;">Terms and Conditions:</h3>' +
+        '<h3 style="font-size: 9pt; margin-top: 10px; margin-bottom: 5px;">' + t('pdf.sow.termsAndConditions') + '</h3>' +
         '<ol style="font-size: 8pt; margin: 5px 0; padding-left: 18px; line-height: 1.3;">' +
-        '<li><strong>Due Date & Grace Period:</strong> Payments due by specified date(s). 5-day grace period before fees apply.</li>' +
-        '<li><strong>Late Fee:</strong> ' + lateFeeText + '</li>' +
-        '<li><strong>Interest (30+ Days):</strong> 1.5% monthly (18% annually) on balances 30+ days overdue. Compounds monthly.</li>' +
-        '<li><strong>Service Suspension (60+ Days):</strong> Website may be taken offline after 60 days non-payment. 7-day written notice provided. Restored within 24-48 hrs of payment.</li>' +
-        '<li><strong>Collection Costs:</strong> Client pays all collection costs, attorney fees, court costs if collection action required.</li>' +
-        '<li><strong>IP Rights:</strong> All intellectual property rights retained by Developer until full payment received.</li>' +
-        '<li><strong>Default Remedies:</strong> Upon default, Developer may: (a) accelerate payments, (b) apply fees/interest, (c) suspend services, (d) disable website, (e) pursue legal remedies.</li>';
+        '<li><strong>' + t('pdf.sow.term.dueDateTitle') + '</strong> ' + t('pdf.sow.term.dueDateText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.term.lateFeeTitle') + '</strong> ' + lateFeeText + '</li>' +
+        '<li><strong>' + t('pdf.sow.term.interestTitle') + '</strong> ' + t('pdf.sow.term.interestText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.term.suspensionTitle') + '</strong> ' + t('pdf.sow.term.suspensionText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.term.collectionTitle') + '</strong> ' + t('pdf.sow.term.collectionText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.term.ipRightsTitle') + '</strong> ' + t('pdf.sow.term.ipRightsText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.term.defaultTitle') + '</strong> ' + t('pdf.sow.term.defaultText') + '</li>';
 
         if (deferred.allowPartialPayments) {
-            htmlContent += '<li><strong>Partial Payments:</strong> Accepted anytime. Applied to: (1) collection costs, (2) interest, (3) late fees, (4) principal.</li>';
+            htmlContent += '<li><strong>' + t('pdf.sow.term.partialTitle') + '</strong> ' + t('pdf.sow.term.partialText') + '</li>';
         }
 
         if (deferred.maintenanceDuringDeferral) {
-            htmlContent += '<li><strong>Maintenance:</strong> Monthly maintenance fees due during deferral. Separate from deferred project payments.</li>';
+            htmlContent += '<li><strong>' + t('pdf.sow.term.maintTitle') + '</strong> ' + t('pdf.sow.term.maintDuringText') + '</li>';
         } else {
-            htmlContent += '<li><strong>Maintenance:</strong> Maintenance fees deferred with project payments.</li>';
+            htmlContent += '<li><strong>' + t('pdf.sow.term.maintTitle') + '</strong> ' + t('pdf.sow.term.maintDeferredText') + '</li>';
         }
 
-        htmlContent += '<li><strong>Notice:</strong> 7-day written notice via email before any fees or suspension.</li>' +
+        htmlContent += '<li><strong>' + t('pdf.sow.term.noticeTitle') + '</strong> ' + t('pdf.sow.term.noticeText') + '</li>' +
         '</ol>' +
         '</div>' +
         '</div>';
@@ -9082,7 +9160,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // MAINTENANCE PLAN (Required for all projects)
     htmlContent += '<div class="section">' +
-        '<h2>' + sectionNum + '. Ongoing Maintenance Plan</h2>' +
+        '<h2>' + sectionNum + '. ' + t('pdf.sow.ongoingMaintenance') + '</h2>' +
         '<div class="maintenance-box">' +
         '<div class="maintenance-header">' +
         '<span class="maintenance-name">' + maintenanceInfo.name + '</span>' +
@@ -9093,13 +9171,13 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         // Show warning box for No Maintenance selection
         if (maintenancePlan === 'none') {
             htmlContent += '<div style="background: #fff3cd; border: 2px solid #856404; padding: 12px; margin: 10px 0; border-radius: 4px;">' +
-                '<p style="font-size: 9pt; margin: 0; color: #856404; font-weight: bold;">⚠️ IMPORTANT NOTICE:</p>' +
-                '<p style="font-size: 9pt; margin: 5px 0 0; color: #856404;">By selecting No Maintenance Plan, Client acknowledges and agrees that Developer will NOT provide any ongoing maintenance, updates, security patches, bug fixes, or technical support after the included post-launch support period ends. Client assumes full responsibility for all website maintenance going forward.</p>' +
+                '<p style="font-size: 9pt; margin: 0; color: #856404; font-weight: bold;">' + t('pdf.sow.importantNotice') + '</p>' +
+                '<p style="font-size: 9pt; margin: 5px 0 0; color: #856404;">' + t('pdf.sow.noMaintenanceWarning') + '</p>' +
                 '</div>';
         }
 
         if (maintenanceInfo.includes && maintenanceInfo.includes.length > 0) {
-            htmlContent += '<h3 style="font-size: 9pt; margin-top: 10px;">Maintenance Includes:</h3>' +
+            htmlContent += '<h3 style="font-size: 9pt; margin-top: 10px;">' + t('pdf.sow.maintenanceIncludes') + '</h3>' +
             '<ul>';
             maintenanceInfo.includes.forEach(function(item) {
                 htmlContent += '<li>' + item + '</li>';
@@ -9111,9 +9189,9 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // Different footer text based on maintenance selection
     if (maintenancePlan === 'none') {
-        htmlContent += '<p style="font-size: 8pt; font-style: italic;">Support ends after the included post-launch period. See Agreement Section 7.</p>';
+        htmlContent += '<p style="font-size: 8pt; font-style: italic;">' + t('pdf.sow.maintFooterNone') + '</p>';
     } else {
-        htmlContent += '<p style="font-size: 8pt; font-style: italic;">Begins after post-launch support. Billed monthly. 30-day cancellation notice. See Agreement Section 7.</p>';
+        htmlContent += '<p style="font-size: 8pt; font-style: italic;">' + t('pdf.sow.maintFooterActive') + '</p>';
     }
     htmlContent += '</div>';
 
@@ -9121,18 +9199,18 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // ASSUMPTIONS
     htmlContent += '<div class="section">' +
-    '<h2>' + sectionNum + '. Assumptions & Dependencies</h2>' +
+    '<h2>' + sectionNum + '. ' + t('pdf.sow.assumptionsDeps') + '</h2>' +
     '<div class="assumptions-box">' +
     '<ul>' +
-    '<li><strong>Content:</strong> Client provides all content within 5 business days of request</li>' +
-    '<li><strong>Feedback:</strong> Client provides consolidated feedback within 5 business days</li>' +
-    '<li><strong>Contact:</strong> Client designates one authorized representative for approvals</li>' +
-    '<li><strong>Third-Party:</strong> Required APIs/services remain available throughout project</li>' +
-    '<li><strong>Domain & Hosting:</strong> Essential & Starter: Client pays for domain (Developer handles DNS & hosting configuration). Growth, Professional & Enterprise: Domain, hosting & SSL included (first year).</li>' +
-    '<li><strong>Rights:</strong> Client has rights to all materials provided</li>' +
-    '<li><strong>Scope:</strong> Project scope remains substantially unchanged</li>' +
+    '<li><strong>' + t('pdf.sow.assume.contentTitle') + '</strong> ' + t('pdf.sow.assume.contentText') + '</li>' +
+    '<li><strong>' + t('pdf.sow.assume.feedbackTitle') + '</strong> ' + t('pdf.sow.assume.feedbackText') + '</li>' +
+    '<li><strong>' + t('pdf.sow.assume.contactTitle') + '</strong> ' + t('pdf.sow.assume.contactText') + '</li>' +
+    '<li><strong>' + t('pdf.sow.assume.thirdPartyTitle') + '</strong> ' + t('pdf.sow.assume.thirdPartyText') + '</li>' +
+    '<li><strong>' + t('pdf.sow.assume.domainTitle') + '</strong> ' + t('pdf.sow.assume.domainText') + '</li>' +
+    '<li><strong>' + t('pdf.sow.assume.rightsTitle') + '</strong> ' + t('pdf.sow.assume.rightsText') + '</li>' +
+    '<li><strong>' + t('pdf.sow.assume.scopeTitle') + '</strong> ' + t('pdf.sow.assume.scopeText') + '</li>' +
     '</ul>' +
-    '<p style="font-size: 8pt; margin-bottom: 0; margin-top: 6px;">Changes to assumptions may require a Change Order (Section 9).</p>' +
+    '<p style="font-size: 8pt; margin-bottom: 0; margin-top: 6px;">' + t('pdf.sow.assume.footer') + '</p>' +
     '</div>' +
     '</div>';
 
@@ -9140,10 +9218,10 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // ACCEPTANCE CRITERIA
     htmlContent += '<div class="section">' +
-    '<h2>' + sectionNum + '. Acceptance Criteria</h2>' +
+    '<h2>' + sectionNum + '. ' + t('pdf.sow.acceptanceCriteria') + '</h2>' +
     '<div class="info-box">' +
-    '<p style="font-size: 9pt; margin-bottom: 4px;"><strong>Process:</strong> Client has 5 business days to review deliverables. Acceptance occurs when Client: (a) approves in writing, (b) fails to respond, or (c) uses in production. Acceptance triggers payment.</p>' +
-    '<p style="font-size: 9pt; margin-bottom: 0;"><strong>Final Criteria:</strong> Modern browser compatibility (Chrome, Firefox, Safari, Edge), mobile responsiveness (iOS/Android), all features functional, forms working, page load under 5 seconds.</p>' +
+    '<p style="font-size: 9pt; margin-bottom: 4px;"><strong>' + t('pdf.sow.accept.processTitle') + '</strong> ' + t('pdf.sow.accept.processText') + '</p>' +
+    '<p style="font-size: 9pt; margin-bottom: 0;"><strong>' + t('pdf.sow.accept.criteriaTitle') + '</strong> ' + t('pdf.sow.accept.criteriaText') + '</p>' +
     '</div>' +
     '</div>';
 
@@ -9151,42 +9229,42 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // CHANGE ORDER PROCESS
     htmlContent += '<div class="section">' +
-    '<h2>' + sectionNum + '. Scope Changes</h2>' +
+    '<h2>' + sectionNum + '. ' + t('pdf.sow.scopeChanges') + '</h2>' +
     '<div class="info-box">' +
-    '<p style="font-size: 9pt; margin-bottom: 4px;">Any scope modifications require a written Change Order (Agreement Section 9).</p>' +
-    '<p style="font-size: 9pt; margin-bottom: 0;"><strong>Process:</strong> Client submits request → Developer evaluates impact → Change Order issued with revised scope/timeline/pricing → Client signs and pays deposit → Work proceeds.</p>' +
+    '<p style="font-size: 9pt; margin-bottom: 4px;">' + t('pdf.sow.scopeChangesIntro') + '</p>' +
+    '<p style="font-size: 9pt; margin-bottom: 0;"><strong>' + t('pdf.sow.scopeChangesProcessTitle') + '</strong> ' + t('pdf.sow.scopeChangesProcessText') + '</p>' +
     '</div>' +
     '</div>';
 
     // SIGNATURES
     htmlContent += '<div class="signature-section">' +
-    '<h2>Signatures</h2>' +
-    '<p style="font-size: 9pt;">By signing, both parties agree to this SOW and confirm it accurately reflects the project scope, deliverables, timeline, and pricing. Subject to the Website Development Agreement.</p>' +
+    '<h2>' + t('pdf.sow.signatures') + '</h2>' +
+    '<p style="font-size: 9pt;">' + t('pdf.sow.signaturesIntro') + '</p>' +
 
     '<div class="signature-grid">' +
 
     // Developer Signature
     '<div class="signature-block">' +
-    '<h3>DEVELOPER: Scarlo</h3>' +
+    '<h3>' + t('pdf.sow.developerLabel') + ' Scarlo</h3>' +
     (isBusinessEntity ? '<p style="font-size: 9pt; margin-bottom: 8px;">&nbsp;</p>' : '') +
     '<div class="signature-line">' +
-    (devSignature ? '<img src="' + devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">Awaiting Signature</span>') +
+    (devSignature ? '<img src="' + devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">' + t('pdf.sow.awaitingSignature') + '</span>') +
     '</div>' +
-    '<div class="signature-label">Authorized Signature</div>' +
+    '<div class="signature-label">' + t('pdf.sow.authorizedSignature') + '</div>' +
     '<div class="signature-name">' + devSignerName + '</div>' +
-    '<div class="signature-date">Date: ' + (devSignedDate || '_______________') + '</div>' +
+    '<div class="signature-date">' + t('common.date') + ' ' + (devSignedDate || '_______________') + '</div>' +
     '</div>' +
 
     // Client Signature
     '<div class="signature-block">' +
-    '<h3>CLIENT: ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
+    '<h3>' + t('pdf.sow.clientLabel') + ' ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
     (isBusinessEntity ? '<p style="font-size: 9pt; margin-bottom: 8px;">' + entityType + (stateOfFormation ? ', ' + stateOfFormation : '') + '</p>' : '') +
     '<div class="signature-line">' +
-    (clientSignature ? '<img src="' + clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">Awaiting Signature</span>') +
+    (clientSignature ? '<img src="' + clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">' + t('pdf.sow.awaitingSignature') + '</span>') +
     '</div>' +
-    '<div class="signature-label">Authorized Signature</div>' +
-    '<div class="signature-name">' + (isBusinessEntity ? 'By: ' + representativeName + ', ' + representativeTitle : clientSignerName) + '</div>' +
-    '<div class="signature-date">Date: ' + (clientSignedDate || '_______________') + '</div>' +
+    '<div class="signature-label">' + t('pdf.sow.authorizedSignature') + '</div>' +
+    '<div class="signature-name">' + (isBusinessEntity ? t('common.by') + ' ' + representativeName + ', ' + representativeTitle : clientSignerName) + '</div>' +
+    '<div class="signature-date">' + t('common.date') + ' ' + (clientSignedDate || '_______________') + '</div>' +
     '</div>' +
 
     '</div>' +
@@ -9200,28 +9278,28 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
         var monthlyInterest = deferred.deferredAmount * 0.015;
 
         htmlContent += '<div class="signature-section" style="margin-top: 15px; border-top: 2px solid #f59e0b; padding-top: 10px;">' +
-        '<h2 style="color: #92400e; font-size: 11pt; margin-bottom: 8px;">Deferred Payment Acknowledgment</h2>' +
+        '<h2 style="color: #92400e; font-size: 11pt; margin-bottom: 8px;">' + t('pdf.sow.deferredAckTitle') + '</h2>' +
         '<div style="background: #fff8e6; padding: 10px; margin-bottom: 10px; border: 1px solid #f59e0b;">' +
-        '<p style="font-size: 8pt; margin: 0 0 5px; font-weight: bold;">By signing below, Client acknowledges:</p>' +
+        '<p style="font-size: 8pt; margin: 0 0 5px; font-weight: bold;">' + t('pdf.sow.ack.bySigningBelow') + '</p>' +
         '<ul style="font-size: 8pt; margin: 0; padding-left: 18px; line-height: 1.4;">' +
-        '<li><strong>Deferred:</strong> $' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' per schedule above</li>' +
-        '<li><strong>Late Fee:</strong> ' + (lateFeeWaivedAck ? 'Waived' : '10% ($' + lateFeeAmountAck.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') if 5+ days late') + '</li>' +
-        '<li><strong>Interest:</strong> 1.5%/month (~$' + monthlyInterest.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '/mo) after 30 days</li>' +
-        '<li><strong>Suspension:</strong> Site offline after 60 days non-payment</li>' +
-        '<li><strong>Collection:</strong> Client pays all collection/legal costs</li>' +
-        '<li><strong>IP Rights:</strong> Retained by Developer until paid</li>' +
+        '<li><strong>' + t('pdf.sow.ack.deferredLabel') + '</strong> $' + (deferred.deferredAmount || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ' ' + t('pdf.sow.ack.perSchedule') + '</li>' +
+        '<li><strong>' + t('pdf.sow.ack.lateFeeLabel') + '</strong> ' + (lateFeeWaivedAck ? t('pdf.sow.waived') : '10% ($' + lateFeeAmountAck.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + ') ' + t('pdf.sow.ack.if5DaysLate')) + '</li>' +
+        '<li><strong>' + t('pdf.sow.ack.interestLabel') + '</strong> 1.5%/' + t('pdf.sow.ack.month') + ' (~$' + monthlyInterest.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0}) + '/' + t('pdf.sow.ack.mo') + ') ' + t('pdf.sow.ack.after30Days') + '</li>' +
+        '<li><strong>' + t('pdf.sow.ack.suspensionLabel') + '</strong> ' + t('pdf.sow.ack.suspensionText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.ack.collectionLabel') + '</strong> ' + t('pdf.sow.ack.collectionText') + '</li>' +
+        '<li><strong>' + t('pdf.sow.ack.ipRightsLabel') + '</strong> ' + t('pdf.sow.ack.ipRightsText') + '</li>' +
         '</ul>' +
         '</div>' +
 
         '<div class="signature-grid">' +
         '<div class="signature-block">' +
-        '<h3>CLIENT ACKNOWLEDGMENT</h3>' +
+        '<h3>' + t('pdf.sow.clientAcknowledgment') + '</h3>' +
         '<div class="signature-line">' +
-        (deferred.acknowledgmentSigned && clientSignature ? '<img src="' + clientSignature + '" alt="Client Acknowledgment" />' : '<span style="font-style: italic;">Awaiting Acknowledgment</span>') +
+        (deferred.acknowledgmentSigned && clientSignature ? '<img src="' + clientSignature + '" alt="Client Acknowledgment" />' : '<span style="font-style: italic;">' + t('pdf.sow.awaitingAcknowledgment') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Client Signature</div>' +
-        '<div class="signature-name">' + (isBusinessEntity ? 'By: ' + representativeName : clientSignerName) + '</div>' +
-        '<div class="signature-date">Date: ' + (deferred.acknowledgmentDate || '_______________') + '</div>' +
+        '<div class="signature-label">' + t('pdf.sow.clientSignatureLabel') + '</div>' +
+        '<div class="signature-name">' + (isBusinessEntity ? t('common.by') + ' ' + representativeName : clientSignerName) + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + (deferred.acknowledgmentDate || '_______________') + '</div>' +
         '</div>' +
         '</div>' +
         '</div>';
@@ -9229,9 +9307,9 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     // FOOTER
     htmlContent += '<div class="footer">' +
-    '<p><strong>© ' + new Date().getFullYear() + ' Scarlo</strong> — Professional Web Development | Fresno, CA</p>' +
-    '<p class="sow-id">SOW: ' + sowId + ' | Generated: ' + new Date().toLocaleString() + '</p>' +
-    '<p style="font-size: 7pt; font-style: italic;">Valid for 30 days. Must be signed with the Website Development Agreement.</p>' +
+    '<p><strong>© ' + new Date().getFullYear() + ' Scarlo</strong> — ' + t('pdf.sow.footerTagline') + '</p>' +
+    '<p class="sow-id">SOW: ' + sowId + ' | ' + t('pdf.sow.footerGenerated') + ' ' + new Date().toLocaleString(dateLocale) + '</p>' +
+    '<p style="font-size: 7pt; font-style: italic;">' + t('pdf.sow.footerValid') + '</p>' +
     '</div>' +
 
     '</div>' + // Close sow-container
@@ -9258,7 +9336,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
 
     if (!printWindow) {
         URL.revokeObjectURL(blobUrl);
-        alert('Please allow popups to download the PDF');
+        alert(t('alert.allowPopups'));
         return;
     }
 
@@ -9586,9 +9664,9 @@ ContractFormHandler.prototype.editSOW = function(sow) {
         };
         // E-Commerce radio options (2025 Scarlo Pricing Guide)
         var ecommercePricing = {
-            'none': { price: 0, label: 'No E-Commerce' },
-            'basic_cart': { price: 5500, label: 'Basic E-Commerce Setup', thirdParty: true, note: 'Stripe fees' },  // $3,000-$8,000
-            'full_store': { price: 14000, label: 'Full E-Commerce Store', thirdParty: true, note: 'Stripe fees' }    // $8,000-$20,000
+            'none': { price: 0, label: t('ecommerce.none') },
+            'basic_cart': { price: 5500, label: t('ecommerce.basicCart'), thirdParty: true, note: 'Stripe fees' },  // $3,000-$8,000
+            'full_store': { price: 14000, label: t('ecommerce.fullStore'), thirdParty: true, note: 'Stripe fees' }    // $8,000-$20,000
         };
         // Package-feature mapping (hosting, ssl, domain included free in all packages)
         // Add-ons (booking, blog, cms, gallery, music, social_feed, newsletter) available separately for any tier
@@ -9659,12 +9737,12 @@ ContractFormHandler.prototype.editSOW = function(sow) {
         if (sow.editingFromChangeRequest) {
             var changeReq = sow.editingFromChangeRequest;
             var sectionLabels = {
-                'package': '📦 Package Tier',
-                'features': '✨ Features & Deliverables',
-                'timeline': '⏱️ Timeline',
-                'payment': '💰 Payment Structure',
-                'maintenance': '🔧 Maintenance Plan',
-                'other': '📝 Other'
+                'package': t('changeOrder.section.package'),
+                'features': t('changeOrder.section.features'),
+                'timeline': t('changeOrder.section.timeline'),
+                'payment': t('changeOrder.section.payment'),
+                'maintenance': t('changeOrder.section.maintenance'),
+                'other': t('changeOrder.section.other')
             };
             var sectionsHtml = changeReq.sections.map(function(s) {
                 return '<span style="background: rgba(251, 191, 36, 0.2); color: #fbbf24; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; margin-right: 4px;">' + (sectionLabels[s] || s) + '</span>';
@@ -9784,11 +9862,11 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         }
 
         if (missingFields.length > 0) {
-            alert('Please fill in all required fields:\n- ' + missingFields.join('\n- '));
+            alert(t('sow.val.fillRequired') + missingFields.join('\n- '));
             return;
         }
         if (!businessEmail && !businessPhone) {
-            alert('Please provide either a Business Email or Business Phone number.');
+            alert(t('sow.val.businessEmailOrPhone'));
             return;
         }
     } else {
@@ -9803,11 +9881,11 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         }
 
         if (missingFields.length > 0) {
-            alert('Please fill in all required fields:\n- ' + missingFields.join('\n- '));
+            alert(t('sow.val.fillRequired') + missingFields.join('\n- '));
             return;
         }
         if (!clientEmail && !clientPhone) {
-            alert('Please provide either a Client Email or Client Phone number.');
+            alert(t('sow.val.clientEmailOrPhone'));
             return;
         }
     }
@@ -9926,37 +10004,37 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
 
         // Validation
         if (deferredData.deferredAmount <= 0) {
-            alert('Please enter a valid deferred amount.');
+            alert(t('sow.val.deferredAmount'));
             return;
         }
         if (deferredData.splitType === 'lump_sum' && !deferredData.dueDate) {
-            alert('Please select a due date for the deferred payment.');
+            alert(t('sow.val.deferredDueDate'));
             return;
         }
         if (deferredData.splitType === 'custom' && deferredData.customSchedule.length === 0) {
-            alert('Please add at least one payment to the custom schedule.');
+            alert(t('sow.val.customSchedule'));
             return;
         }
         if (deferredData.splitType === 'recurring') {
             if (!deferredData.startDate) {
-                alert('Please select a first payment date for the payment plan.');
+                alert(t('sow.val.firstPaymentDate'));
                 return;
             }
             if (deferredData.calculationMode === 'amount' && (!deferredData.amountPerPayment || deferredData.amountPerPayment <= 0)) {
-                alert('Please enter a valid payment amount.');
+                alert(t('sow.val.paymentAmount'));
                 return;
             }
             if (deferredData.calculationMode === 'count' && (!deferredData.numberOfPayments || deferredData.numberOfPayments < 2)) {
-                alert('Please enter a valid number of payments (minimum 2).');
+                alert(t('sow.val.paymentCount'));
                 return;
             }
             if (deferredData.customSchedule.length === 0) {
-                alert('Could not generate payment schedule. Please check your inputs.');
+                alert(t('sow.val.scheduleError'));
                 return;
             }
         }
         if (deferredData.deferredAmount > totalPrice) {
-            alert('Deferred amount cannot exceed the total project price.');
+            alert(t('sow.val.deferredExceedsTotal'));
             return;
         }
     }
@@ -10029,10 +10107,10 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
                     })
                     .then(function() {
                         self.currentEditChangeRequestId = null; // Clear the reference
-                        alert('✓ SOW updated and change request completed!');
+                        alert(t('sow.msg.updateChangeSuccess'));
                     });
             } else {
-                alert('✓ SOW updated successfully!');
+                alert(t('sow.msg.updateSuccess'));
             }
         })
         .then(function() {
@@ -10041,7 +10119,7 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         })
         .catch(function(error) {
             console.error('Error updating SOW:', error);
-            alert('Error updating SOW: ' + error.message);
+            alert(t('sow.err.update') + error.message);
         });
 };
 
@@ -10052,7 +10130,7 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         // Find the contract
         var contract = contracts.find(function(c) { return c.id === contractId; });
         if (!contract) {
-            alert('Contract not found');
+            alert(t('contract.err.notFound'));
             return;
         }
         
@@ -10090,10 +10168,17 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         modalHeader.style.display = 'block';
     }
     
-    // ✅ SHOW the original modal-close button
+    // ✅ SHOW the original modal-close button and reset positioning
     var modalClose = $('.modal-close');
     if (modalClose) {
         modalClose.style.display = 'flex';
+        modalClose.style.position = '';
+        modalClose.style.top = '';
+        modalClose.style.alignSelf = '';
+        modalClose.style.marginRight = '';
+        modalClose.style.marginTop = '';
+        modalClose.style.marginBottom = '';
+        modalClose.style.flexShrink = '';
     }
     
     // Show developer signature block
@@ -10107,7 +10192,7 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         
         var devHeader = devBlock.querySelector('h3');
         if (devHeader) {
-            devHeader.innerHTML = 'Developer Signature — Scarlo <span style="font-size: 12px; color: #f59e0b;">⏳ Sign Below</span>';
+            devHeader.innerHTML = t('contract.label.devSig') + ' <span style="font-size: 12px; color: #f59e0b;">' + t('contract.label.signBelow') + '</span>';
         }
     }
         
@@ -10124,7 +10209,7 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         if (submitBtn) {
             submitBtn.style.display = 'inline-flex';
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<span id="submitBtnText">Upload & Finalize</span>';
+            submitBtn.innerHTML = '<span id="submitBtnText">' + t('contract.btn.uploadFinalize') + '</span>';
             submitBtn.style.background = '';
         }
         
@@ -10137,7 +10222,7 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         var backBtn = document.createElement('button');
         backBtn.id = 'backToDashboard';
         backBtn.className = 'btn btn-secondary';
-        backBtn.innerHTML = '← Back to Dashboard';
+        backBtn.innerHTML = t('contract.btn.backDashboard');
         backBtn.style.marginRight = '10px';
         backBtn.onclick = function(e) {
             e.preventDefault();
@@ -10167,7 +10252,7 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
         // Find the contract
         var contract = contracts.find(function(c) { return c.id === contractId; });
         if (!contract) {
-            alert('Contract not found');
+            alert(t('contract.err.notFound'));
             return;
         }
         
@@ -10185,6 +10270,12 @@ ContractFormHandler.prototype.updateSOW = function(sowId) {
 
     var self = this;
     var user = firebase.auth().currentUser;
+
+    // ============= ENSURE CLOSE BUTTON IS VISIBLE =============
+    var modalClose = $('.modal-close');
+    if (modalClose) {
+        modalClose.style.display = 'flex';
+    }
 
     // ============= CHECK FOR EXISTING SUBMISSIONS FIRST =============
     var userEmail = user.email;
@@ -10410,13 +10501,13 @@ ContractFormHandler.prototype.showNoSOWNotification = function(errorMsg) {
     }
     
     // Create subtle notification banner with clickable Request Help link
-    var notificationHTML = 
+    var notificationHTML =
         '<div class="sow-missing-notification">' +
         '<div class="notification-icon">📋</div>' +
         '<div class="notification-content">' +
-        '<h4>Statement of Work Required</h4>' +
-        '<p>You need an approved SOW before signing the contract.</p>' +
-        '<p class="notification-action">Please <a href="#" class="request-help-link" style="color: #6366f1; text-decoration: underline; cursor: pointer; font-weight: 700;">Request Help</a> to request your SOW from the developer.</p>' +
+        '<h4>' + t('signing.sowRequired') + '</h4>' +
+        '<p>' + t('signing.sowRequiredMsg') + '</p>' +
+        '<p class="notification-action">' + t('signing.sowRequiredAction') + ' <a href="#" class="request-help-link" style="color: #6366f1; text-decoration: underline; cursor: pointer; font-weight: 700;">' + t('signing.requestHelp') + '</a> ' + t('signing.sowRequiredAction2') + '</p>' +
         '</div>' +
         '</div>';
     
@@ -10449,12 +10540,12 @@ ContractFormHandler.prototype.showNoSOWNotification = function(errorMsg) {
                                 contactField.value = currentUser.email;
                                 contactField.type = 'email';
                                 contactField.placeholder = 'your@email.com';
-                                if (contactLabel) contactLabel.textContent = 'Your Email *';
+                                if (contactLabel) contactLabel.textContent = t('help.label.email');
                             } else if (currentUser.phoneNumber) {
                                 contactField.value = formatPhoneNumber(currentUser.phoneNumber);
                                 contactField.type = 'tel';
                                 contactField.placeholder = '(555) 123-4567';
-                                if (contactLabel) contactLabel.textContent = 'Your Phone Number *';
+                                if (contactLabel) contactLabel.textContent = t('help.label.phone');
                             }
                             contactField.setAttribute('readonly', 'readonly');
                             contactField.style.opacity = '0.7';
@@ -10508,36 +10599,48 @@ ContractFormHandler.prototype.showDualSigningInterface = function(sowData) {
     
     // Insert tabs after close button
     var closeBtn = $('#closeModalBtn');
+
+    // Make close button sticky so it stays visible while scrolling
+    if (closeBtn) {
+        closeBtn.style.position = 'sticky';
+        closeBtn.style.top = '1rem';
+        closeBtn.style.alignSelf = 'flex-end';
+        closeBtn.style.marginRight = '1.5rem';
+        closeBtn.style.marginTop = '1rem';
+        closeBtn.style.marginBottom = '-2.5rem';
+        closeBtn.style.flexShrink = '0';
+    }
+
     var tabsContainer = document.createElement('div');
     tabsContainer.id = 'clientSigningTabs';
     tabsContainer.className = 'client-signing-tabs';
     
-    tabsContainer.innerHTML = 
+    tabsContainer.innerHTML =
         '<div class="signing-tabs-header">' +
         '<button class="signing-tab active" data-tab="contract">' +
         '<span class="tab-icon">📄</span>' +
-        '<span class="tab-title">1. Contract Agreement</span>' +
-        '<span class="tab-status" id="contractStatus">⏳ Pending</span>' +
+        '<span class="tab-title">' + t('signing.contractAgreement') + '</span>' +
+        '<span class="tab-status" id="contractStatus">' + t('signing.pending') + '</span>' +
         '</button>' +
         '<button class="signing-tab" data-tab="sow">' +
         '<span class="tab-icon">📋</span>' +
-        '<span class="tab-title">2. Statement of Work</span>' +
-        '<span class="tab-status" id="sowStatus">⏳ Pending</span>' +
+        '<span class="tab-title">' + t('signing.statementOfWork') + '</span>' +
+        '<span class="tab-status" id="sowStatus">' + t('signing.pending') + '</span>' +
         '</button>' +
         '</div>' +
-        
+
         '<div class="signing-tabs-content">' +
         // Contract Tab
         '<div class="signing-tab-pane active" data-tab="contract">' +
         '<div id="contractSigningContent"></div>' +
         '</div>' +
-        
+
         // SOW Tab
         '<div class="signing-tab-pane" data-tab="sow">' +
         '<div id="sowSigningContent"></div>' +
         '</div>' +
         '</div>' +
-        
+
         '<div class="signing-footer">' +
         '<div class="signing-progress">' +
         '<div class="progress-indicator">' +
@@ -10545,10 +10648,10 @@ ContractFormHandler.prototype.showDualSigningInterface = function(sowData) {
         '<span class="progress-line"></span>' +
         '<span class="progress-dot" id="sowDot"></span>' +
         '</div>' +
-        '<p class="progress-text">Complete both signatures to submit</p>' +
+        '<p class="progress-text">' + t('signing.completeBoth') + '</p>' +
         '</div>' +
         '<button class="btn btn-primary" id="dualSignBtn">' +
-        '<span id="dualSignBtnText">Next: Sign SOW →</span>' +
+        '<span id="dualSignBtnText">' + t('signing.nextSignSOW') + '</span>' +
         '</button>' +
         '</div>';    
     if (closeBtn && closeBtn.nextSibling) {
@@ -10563,7 +10666,7 @@ ContractFormHandler.prototype.showDualSigningInterface = function(sowData) {
         // Add contract header
         var contractHeader = document.createElement('div');
         contractHeader.className = 'modal-header';
-        contractHeader.innerHTML = '<h2>Contract</h2>' +
+        contractHeader.innerHTML = '<h2>' + t('signing.contract') + '</h2>' +
             '<p class="modal-subtitle">Scarlo - Carlos Martin</p>';
         contractContent.appendChild(contractHeader);
         contractContent.appendChild(contractForm);
@@ -10603,7 +10706,39 @@ ContractFormHandler.prototype.showDualSigningInterface = function(sowData) {
 
     // Load SOW content into second tab
     this.renderSOWForClientSigning(sowData);
-    
+
+    // Re-apply language translations after DOM restructure
+    // (contract form was moved into tab — data-i18n elements need re-translation)
+    if (typeof getCurrentLang === 'function' && getCurrentLang() !== 'en') {
+        var navInstance = window.navigation || (window.navInstance);
+        if (navInstance && navInstance.applyLanguage) {
+            navInstance.applyLanguage(getCurrentLang());
+        } else {
+            // Fallback: directly translate data-i18n elements
+            document.querySelectorAll('[data-i18n]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n');
+                var translated = t(key);
+                if (translated && translated !== key) {
+                    el.textContent = translated;
+                }
+            });
+            document.querySelectorAll('[data-i18n-html]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-html');
+                var translated = t(key);
+                if (translated && translated !== key) {
+                    el.innerHTML = translated;
+                }
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+                var key = el.getAttribute('data-i18n-placeholder');
+                var translated = t(key);
+                if (translated && translated !== key) {
+                    el.placeholder = translated;
+                }
+            });
+        }
+    }
+
     // Setup tab switching
     $$('.signing-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -10626,7 +10761,7 @@ ContractFormHandler.prototype.showDualSigningInterface = function(sowData) {
                 // VALIDATE CONTRACT FIELDS
                 var errors = self.validateContractTab();
                 if (errors.length > 0) {
-                    alert('Please complete all required fields:\n\n' + errors.join('\n'));
+                    alert(t('signing.pleaseComplete') + '\n\n' + errors.join('\n'));
                     return;
                 }
                 
@@ -10728,29 +10863,29 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
     if (!sowContent) return;
 
     var packageNames = {
-        'essential': 'Essential — Landing Page',
-        'starter': 'Tier 1 — Starter',
-        'growth': 'Tier 2 — Growth',
-        'professional': 'Tier 3 — Professional',
-        'enterprise': 'Tier 4 — Enterprise',
-        'custom': 'Custom Quote'
+        'essential': t('pkg.essential'),
+        'starter': t('pkg.starter'),
+        'growth': t('pkg.growth'),
+        'professional': t('pkg.professional'),
+        'enterprise': t('pkg.enterprise'),
+        'custom': t('pkg.custom')
     };
 
     var packageDetails = {
         'essential': {
-            includes: ['Single-page landing page (1-3 sections)', 'Cross-device optimization', 'Clean, modern React/Next.js design', 'Contact form with validation', 'Basic SEO setup', 'DNS & hosting configuration (client pays for domain)']
+            includes: [t('pkg.essential.i1'), t('pkg.essential.i2'), t('pkg.essential.i3'), t('pkg.essential.i4'), t('pkg.essential.i5'), t('pkg.essential.i6')]
         },
         'starter': {
-            includes: ['Multi-section React/Next.js website', 'Brand-matched design system', 'Scroll animations & micro-interactions', 'Multi-step contact forms', 'GA4 + custom event tracking', 'Full technical SEO', 'DNS & hosting configuration (client pays for domain)']
+            includes: [t('pkg.starter.i1'), t('pkg.starter.i2'), t('pkg.starter.i3'), t('pkg.starter.i4'), t('pkg.starter.i5'), t('pkg.starter.i6'), t('pkg.starter.i7')]
         },
         'growth': {
-            includes: ['Everything in Starter', 'Firebase Authentication', 'Protected content areas', 'Form data capture & storage', 'Newsletter integration', '3 rounds of revisions', 'Domain, hosting & SSL included (first year)']
+            includes: [t('pkg.growth.i1'), t('pkg.growth.i2'), t('pkg.growth.i3'), t('pkg.growth.i4'), t('pkg.growth.i5'), t('pkg.growth.i6'), t('pkg.growth.i7')]
         },
         'professional': {
-            includes: ['Everything in Growth', 'Full Firebase backend', 'User dashboard & profiles', 'File/media upload system', 'API integrations', 'Email notifications (SendGrid)', '2 months of maintenance included', 'Domain, hosting & SSL included (first year)']
+            includes: [t('pkg.professional.i1'), t('pkg.professional.i2'), t('pkg.professional.i3'), t('pkg.professional.i4'), t('pkg.professional.i5'), t('pkg.professional.i6'), t('pkg.professional.i7'), t('pkg.professional.i8')]
         },
         'enterprise': {
-            includes: ['Everything in Professional', 'Multi-page application', 'Role-based access control', 'In-app notifications', 'Admin dashboards', 'Documentation & training', '3 months of premium maintenance included', 'Domain, hosting & SSL included (first year)']
+            includes: [t('pkg.enterprise.i1'), t('pkg.enterprise.i2'), t('pkg.enterprise.i3'), t('pkg.enterprise.i4'), t('pkg.enterprise.i5'), t('pkg.enterprise.i6'), t('pkg.enterprise.i7'), t('pkg.enterprise.i8')]
         }
     };
 
@@ -10772,42 +10907,51 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
 
         // HEADER
         '<div class="modal-header">' +
-        '<h2>STATEMENT OF WORK</h2>' +
+        '<h2>' + t('sow.title') + '</h2>' +
         '<p class="modal-subtitle">Scarlo - Carlos Martin</p>' +
         '</div>' +
 
         // CLIENT INFO BOX
         '<section class="contract-section-inner">' +
-        '<h3>Client Information</h3>' +
+        '<h3>' + t('sow.clientInfo') + '</h3>' +
         '<div class="sow-info-grid">' +
-        '<div class="sow-info-item"><strong>Client Name:</strong> ' + sowData.clientName + '</div>' +
-        '<div class="sow-info-item"><strong>Contact:</strong> ' + (sowData.clientEmail || sowData.clientPhone || 'N/A') + '</div>' +
-        '<div class="sow-info-item"><strong>Package:</strong> ' + (packageNames[sowData.packageType] || sowData.packageType) + '</div>' +
-        '<div class="sow-info-item"><strong>Timeline:</strong> ' + (sowData.estimatedWeeks || 'TBD') + ' weeks</div>' +
+        '<div class="sow-info-item"><strong>' + t('sow.clientName') + '</strong> ' + sowData.clientName + '</div>' +
+        '<div class="sow-info-item"><strong>' + t('sow.contact') + '</strong> ' + (sowData.clientEmail || sowData.clientPhone || t('common.na')) + '</div>' +
+        '<div class="sow-info-item"><strong>' + t('sow.package') + '</strong> ' + (packageNames[sowData.packageType] || sowData.packageType) + '</div>' +
+        '<div class="sow-info-item"><strong>' + t('sow.timeline') + '</strong> ' + (sowData.estimatedWeeks || t('common.tbd')) + ' ' + t('sow.weeks') + '</div>' +
         '</div>' +
         '</section>' +
 
         // PACKAGE INCLUDES
         '<section class="contract-section-inner">' +
-        '<h3>Package Includes</h3>' +
+        '<h3>' + t('sow.packageIncludes') + '</h3>' +
         '<ul class="sow-list">';
     
-    if (packageInfo.includes && packageInfo.includes.length > 0) {
-        packageInfo.includes.forEach(function(item) {
-            html += '<li>' + item + '</li>';
-        });
+    if (sowData.packageType === 'custom') {
+        // Custom packages: all selected features ARE the package
+        if (sowData.features && sowData.features.length > 0) {
+            sowData.features.forEach(function(feature) {
+                html += '<li>' + translateStoredFeature(feature) + '</li>';
+            });
+        }
+    } else {
+        if (packageInfo.includes && packageInfo.includes.length > 0) {
+            packageInfo.includes.forEach(function(item) {
+                html += '<li>' + item + '</li>';
+            });
+        }
     }
-    
+
     html += '</ul></section>';
 
-    // SELECTED FEATURES
-    if (sowData.features && sowData.features.length > 0) {
+    // SELECTED FEATURES (non-custom packages only — custom shows features above)
+    if (sowData.packageType !== 'custom' && sowData.features && sowData.features.length > 0) {
         html += '<section class="contract-section-inner">' +
-            '<h3>Additional Features & Deliverables</h3>' +
+            '<h3>' + t('sow.additionalFeatures') + '</h3>' +
             '<ul class="sow-list">';
 
         sowData.features.forEach(function(feature) {
-            html += '<li>' + feature + '</li>';
+            html += '<li>' + translateStoredFeature(feature) + '</li>';
         });
 
         html += '</ul></section>';
@@ -10816,26 +10960,26 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
     // SPECIAL REQUIREMENTS
     if (sowData.notes) {
         html += '<section class="contract-section-inner">' +
-            '<h3>Special Requirements</h3>' +
+            '<h3>' + t('sow.specialRequirements') + '</h3>' +
             '<p>' + sowData.notes + '</p>' +
             '</section>';
     }
 
     // PRICING BREAKDOWN (show itemized costs)
     html += '<section class="contract-section-inner">' +
-        '<h3>Pricing Breakdown</h3>' +
+        '<h3>' + t('sow.pricingBreakdown') + '</h3>' +
         '<table class="sow-payment-table pricing-breakdown-table">' +
         '<thead>' +
         '<tr>' +
-        '<th>Item</th>' +
-        '<th>Description</th>' +
-        '<th>Amount</th>' +
+        '<th>' + t('sow.item') + '</th>' +
+        '<th>' + t('sow.description') + '</th>' +
+        '<th>' + t('sow.amount') + '</th>' +
         '</tr>' +
         '</thead>' +
         '<tbody>' +
         '<tr class="base-package-row">' +
-        '<td><strong>' + (packageNames[sowData.packageType] || 'Package') + '</strong></td>' +
-        '<td>Base package price</td>' +
+        '<td><strong>' + (packageNames[sowData.packageType] || t('common.package')) + '</strong></td>' +
+        '<td>' + t('sow.basePackagePrice') + '</td>' +
         '<td><strong>$' + basePrice.toFixed(0) + '</strong></td>' +
         '</tr>';
 
@@ -10843,9 +10987,10 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
     if (addOns && addOns.length > 0) {
         addOns.forEach(function(addon) {
             var thirdPartyNote = addon.thirdParty ? ' <span class="third-party-indicator">*</span>' : '';
+            var addonLabel = addon.key ? translateAddonByKey(addon.key, addon.label) : translateStoredFeature(addon.label);
             html += '<tr class="addon-row">' +
-                '<td>' + addon.label + thirdPartyNote + '</td>' +
-                '<td>Additional feature</td>' +
+                '<td>' + addonLabel + thirdPartyNote + '</td>' +
+                '<td>' + t('sow.additionalFeature') + '</td>' +
                 '<td class="addon-price">+$' + addon.price.toFixed(0) + '</td>' +
                 '</tr>';
         });
@@ -10854,9 +10999,10 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
     // Discounts (features removed from package)
     if (discounts && discounts.length > 0) {
         discounts.forEach(function(discount) {
+            var discountLabel = discount.key ? translateAddonByKey(discount.key, discount.label) : translateStoredFeature(discount.label);
             html += '<tr class="discount-row">' +
-                '<td>' + discount.label + '</td>' +
-                '<td>Feature removed (50% credit)</td>' +
+                '<td>' + discountLabel + '</td>' +
+                '<td>' + t('sow.featureRemoved') + '</td>' +
                 '<td class="discount-price">-$' + discount.price.toFixed(0) + '</td>' +
                 '</tr>';
         });
@@ -10866,13 +11012,13 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
     if (couponCode && couponDiscount > 0) {
         html += '<tr class="coupon-row">' +
             '<td>' + couponCode + '</td>' +
-            '<td>Coupon discount</td>' +
+            '<td>' + t('sow.couponDiscount') + '</td>' +
             '<td class="discount-price">-$' + couponDiscount.toFixed(0) + '</td>' +
             '</tr>';
     }
 
     html += '<tr class="sow-total-row">' +
-        '<td colspan="2"><strong>Total Project Cost</strong></td>' +
+        '<td colspan="2"><strong>' + t('sow.totalProjectCost') + '</strong></td>' +
         '<td><strong>$' + totalPrice.toFixed(0) + '</strong></td>' +
         '</tr>' +
         '</tbody>' +
@@ -10880,42 +11026,42 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
 
     // Third-party costs note
     if (addOns && addOns.some(function(a) { return a.thirdParty; })) {
-        html += '<p class="third-party-note-text"><span class="third-party-indicator">*</span> These features may incur additional third-party costs (e.g., Firebase, Stripe, hosting, domain) which are billed separately by the respective providers.</p>';
+        html += '<p class="third-party-note-text"><span class="third-party-indicator">*</span> ' + t('sow.thirdPartyNote') + '</p>';
     }
 
     // View Industry Pricing button
     html += '<button type="button" class="view-industry-pricing-btn" onclick="window.contractFormHandler.showPricingComparisonModal()">' +
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>' +
-        'View Industry Pricing' +
+        t('sow.viewIndustryPricing') +
         '</button>';
 
     html += '</section>';
 
     // PAYMENT STRUCTURE
     html += '<section class="contract-section-inner">' +
-        '<h3>Payment Schedule</h3>' +
+        '<h3>' + t('sow.paymentSchedule') + '</h3>' +
         '<table class="sow-payment-table">' +
         '<thead>' +
         '<tr>' +
-        '<th>Payment Milestone</th>' +
-        '<th>Description</th>' +
-        '<th>Amount</th>' +
+        '<th>' + t('sow.paymentMilestone') + '</th>' +
+        '<th>' + t('sow.description') + '</th>' +
+        '<th>' + t('sow.amount') + '</th>' +
         '</tr>' +
         '</thead>' +
         '<tbody>' +
         '<tr>' +
-        '<td><strong>Initial Deposit</strong></td>' +
-        '<td>Due before work begins (50%)</td>' +
+        '<td><strong>' + t('sow.initialDeposit') + '</strong></td>' +
+        '<td>' + t('sow.dueBeforeWork') + '</td>' +
         '<td><strong>$' + deposit.toFixed(0) + '</strong></td>' +
         '</tr>' +
         '<tr>' +
-        '<td><strong>Milestone 1</strong></td>' +
-        '<td>UI/UX Design Approval (25%)</td>' +
+        '<td><strong>' + t('sow.milestone1') + '</strong></td>' +
+        '<td>' + t('sow.designApproval') + '</td>' +
         '<td><strong>$' + milestone1.toFixed(0) + '</strong></td>' +
         '</tr>' +
         '<tr>' +
-        '<td><strong>Final Payment</strong></td>' +
-        '<td>Prior to deployment (25%)</td>' +
+        '<td><strong>' + t('sow.finalPayment') + '</strong></td>' +
+        '<td>' + t('sow.priorToDeployment') + '</td>' +
         '<td><strong>$' + finalPayment.toFixed(0) + '</strong></td>' +
         '</tr>' +
         '</tbody>' +
@@ -10924,31 +11070,31 @@ ContractFormHandler.prototype.renderSOWForClientSigning = function(sowData) {
     
     // TERMS
     html += '<section class="contract-section-inner">' +
-        '<h3>Terms & Conditions</h3>' +
-        '<p>This Statement of Work is subject to the terms outlined in the Website Development Agreement between Scarlo and <strong>' + sowData.clientName + '</strong>. All work will be performed using modern technologies including React, Next.js, Firebase, and associated development tools in accordance with industry best practices.</p>' +
-        '<p>The project timeline is an estimate and may be adjusted based on client feedback, content delivery, and scope changes. Any requests beyond the defined scope require a signed Change Order.</p>' +
+        '<h3>' + t('sow.termsConditions') + '</h3>' +
+        '<p>' + t('sow.termsText1') + ' <strong>' + sowData.clientName + '</strong>' + t('sow.termsText2') + '</p>' +
+        '<p>' + t('sow.termsText3') + '</p>' +
         '</section>' +
 
         // SIGNATURE BLOCK
         '<section class="contract-section-inner signatures">' +
-        '<h3>Client Signature Required</h3>' +
-        '<p>Please review the above Statement of Work carefully. By signing below, you acknowledge that you have read and agree to the scope, timeline, and payment terms outlined in this document.</p>' +
+        '<h3>' + t('sow.clientSignatureRequired') + '</h3>' +
+        '<p>' + t('sow.signatureInstructions') + '</p>' +
 
         '<div class="signature-block">' +
-        '<h3>Client Signature — ' + sowData.clientName + '</h3>' +
+        '<h3>' + t('sow.clientSignature') + ' ' + sowData.clientName + '</h3>' +
         '<div class="form-row">' +
         '<div class="form-group">' +
-        '<label>Full Name *</label>' +
+        '<label>' + t('sow.fullName') + '</label>' +
         '<input type="text" id="sowClientName" value="' + sowData.clientName + '" required />' +
         '</div>' +
         '<div class="form-group">' +
-        '<label>Date *</label>' +
+        '<label>' + t('sow.date') + '</label>' +
         '<input type="date" id="sowClientDate" required />' +
         '</div>' +
         '</div>' +
         '<div class="signature-pad-container">' +
         '<canvas id="sowClientSignaturePad" class="signature-pad"></canvas>' +
-        '<button class="clear-btn" data-canvas="sowClientSignaturePad">Clear</button>' +
+        '<button class="clear-btn" data-canvas="sowClientSignaturePad">' + t('sow.clear') + '</button>' +
         '</div>' +
         '</div>' +
 
@@ -11080,14 +11226,14 @@ ContractFormHandler.prototype.switchSigningTab = function(tabName) {
     
     if (tabName === 'contract') {
         // On Contract tab - show "Next" button
-        if (btnText) btnText.textContent = 'Next: Sign SOW →';
+        if (btnText) btnText.textContent = t('signing.nextSignSOW');
         if (dualBtn) {
             dualBtn.disabled = false;
             dualBtn.style.display = 'inline-flex';
         }
     } else if (tabName === 'sow') {
         // On SOW tab - show "Submit" button
-        if (btnText) btnText.textContent = '✍️ Submit for Developer Signature';
+        if (btnText) btnText.textContent = t('signing.submitForDev');
         
         // Enable button only if SOW is signed
         var sowSigned = window.sowClientPad && !window.sowClientPad.isEmpty();
@@ -11127,7 +11273,7 @@ ContractFormHandler.prototype.updateSignatureStatus = function(type, signed) {
     
     if (signed) {
         if (statusEl) {
-            statusEl.textContent = '✓ Signed';
+            statusEl.textContent = t('signing.signed');
             statusEl.style.color = '#10b981';
         }
         if (dotEl) {
@@ -11135,7 +11281,7 @@ ContractFormHandler.prototype.updateSignatureStatus = function(type, signed) {
         }
     } else {
         if (statusEl) {
-            statusEl.textContent = '⏳ Pending';
+            statusEl.textContent = t('signing.pending');
             statusEl.style.color = '#f59e0b';
         }
         if (dotEl) {
@@ -11234,10 +11380,10 @@ ContractFormHandler.prototype.validateContractTab = function() {
         // Create or update success message
         var messageDiv = $('#clientSubmitMessage');
         if (messageDiv) {
-            messageDiv.innerHTML = '<p><strong>✓ Your contract has been fully executed!</strong></p>' +
-                '<p>Both you and the developer have signed the agreement.</p>' +
-                '<p>Contract Date: ' + (data.clientDate || 'N/A') + '</p>' +
-                '<p>Finalized: ' + (data.finalizedTimestamp ? new Date(data.finalizedTimestamp.toDate()).toLocaleDateString() : 'N/A') + '</p>';
+            messageDiv.innerHTML = '<p><strong>' + t('contract.msg.fullyExecuted') + '</strong></p>' +
+                '<p>' + t('contract.msg.bothSigned') + '</p>' +
+                '<p>' + t('contract.msg.contractDate') + (data.clientDate || 'N/A') + '</p>' +
+                '<p>' + t('common.finalized') + ': ' + (data.finalizedTimestamp ? new Date(data.finalizedTimestamp.toDate()).toLocaleDateString() : 'N/A') + '</p>';
             messageDiv.style.display = 'block';
             messageDiv.style.background = 'rgba(46, 204, 113, 0.15)';
             messageDiv.style.borderColor = 'rgba(46, 204, 113, 0.4)';
@@ -11250,7 +11396,7 @@ ContractFormHandler.prototype.validateContractTab = function() {
         var oldSubmitBtn = $('#submitBtn');
         if (oldSubmitBtn) {
             var newSubmitBtn = oldSubmitBtn.cloneNode(true);
-            newSubmitBtn.innerHTML = '<span>📄 Download Signed Contract</span>';
+            newSubmitBtn.innerHTML = '<span>' + t('contract.btn.downloadSigned') + '</span>';
             newSubmitBtn.style.display = 'inline-flex';
             newSubmitBtn.disabled = false;
             newSubmitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
@@ -11409,9 +11555,9 @@ ContractFormHandler.prototype.validateContractTab = function() {
         // Update the pending message
         var messageDiv = $('#clientSubmitMessage');
         if (messageDiv) {
-            messageDiv.innerHTML = '<p><strong>⏳ Your agreement is pending developer signature</strong></p>' +
-                '<p>You have already signed this agreement. The developer will review and sign it shortly.</p>' +
-                '<p>You will be able to download the fully executed contract once both parties have signed.</p>';
+            messageDiv.innerHTML = '<p><strong>' + t('contract.msg.pendingDev') + '</strong></p>' +
+                '<p>' + t('contract.msg.pendingDevDesc') + '</p>' +
+                '<p>' + t('contract.msg.pendingDevDownload') + '</p>';
             messageDiv.style.display = 'block';
             messageDiv.style.background = 'rgba(241, 196, 15, 0.15)';
             messageDiv.style.borderColor = 'rgba(241, 196, 15, 0.4)';
@@ -11454,9 +11600,9 @@ ContractFormHandler.prototype.validateContractTab = function() {
         var contractInfo = document.createElement('div');
         contractInfo.id = 'pendingContractInfo';
         contractInfo.style.cssText = 'background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;';
-        contractInfo.innerHTML = '<p style="margin: 0; color: #fff;"><strong>📋 Pending Contract from Client</strong></p>' +
-            '<p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.8);">Client: <strong>' + (data.clientName || 'N/A') + '</strong> | ' +
-            'Submitted: <strong>' + (data.clientDate || 'N/A') + '</strong></p>';
+        contractInfo.innerHTML = '<p style="margin: 0; color: #fff;"><strong>' + t('contract.msg.pendingFromClient') + '</strong></p>' +
+            '<p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.8);">' + t('common.client') + ': <strong>' + (data.clientName || 'N/A') + '</strong> | ' +
+            t('common.submitted') + ': <strong>' + (data.clientDate || 'N/A') + '</strong></p>';
         
         // Insert at the top of the signatures section
         var signaturesSection = $('.signatures');
@@ -11487,7 +11633,7 @@ ContractFormHandler.prototype.validateContractTab = function() {
             // Add a label showing this is the client's signature
             var clientHeader = clientBlock.querySelector('h3');
             if (clientHeader) {
-                clientHeader.innerHTML = 'Client Signature — ' + (data.clientName || 'Client') + ' <span style="font-size: 12px; color: #10b981;">✓ Signed</span>';
+                clientHeader.innerHTML = t('contract.label.clientSig') + (data.clientName || t('common.client')) + ' <span style="font-size: 12px; color: #10b981;">' + t('contract.label.signed') + '</span>';
             }
             
             // Update client signer name and date (read-only)
@@ -11542,7 +11688,7 @@ ContractFormHandler.prototype.validateContractTab = function() {
             
             var devHeader = devBlock.querySelector('h3');
             if (devHeader) {
-                devHeader.innerHTML = 'Developer Signature — Scarlo <span style="font-size: 12px; color: #f59e0b;">⏳ Sign Below</span>';
+                devHeader.innerHTML = t('contract.label.devSig') + ' <span style="font-size: 12px; color: #f59e0b;">' + t('contract.label.signBelow') + '</span>';
             }
         }
         
@@ -11554,7 +11700,7 @@ ContractFormHandler.prototype.validateContractTab = function() {
 
         // Validate that SOW is attached (required)
         if (!this.currentSOW) {
-            alert('A Statement of Work (SOW) must be attached before signing the contract.');
+            alert(t('contract.val.sowRequired'));
             return;
         }
 
@@ -11564,30 +11710,30 @@ ContractFormHandler.prototype.validateContractTab = function() {
         // Validate client name from hidden field (populated from SOW)
         var clientName = $('#clientName');
         if (!clientName || !clientName.value.trim()) {
-            errors.push('Client information is missing. Please ensure a SOW is attached.');
+            errors.push(t('contract.val.clientInfoMissing'));
         }
 
         var acknowledgment = $('#acknowledgment');
         if (!acknowledgment || !acknowledgment.checked) {
-            errors.push('Please acknowledge that you have read and agree to the terms');
+            errors.push(t('contract.val.acknowledgment'));
         }
 
         var clientSignerName = $('#clientSignerName');
         if (!clientSignerName || !clientSignerName.value.trim()) {
-            errors.push('Please enter your full name');
+            errors.push(t('contract.val.enterName'));
         }
         
         if (!this.clientSignaturePad || this.clientSignaturePad.isEmpty()) {
-            errors.push('Your signature is required');
+            errors.push(t('contract.val.signatureRequired'));
         }
         
         var clientDate = $('#clientDate');
         if (!clientDate || !clientDate.value) {
-            errors.push('Signature date is required');
+            errors.push(t('contract.val.dateRequired'));
         }
         
         if (errors.length > 0) {
-            alert('Please complete all required fields:\n\n' + errors.join('\n'));
+            alert(t('contract.val.completeRequired') + errors.join('\n'));
             return;
         }
         
@@ -11601,7 +11747,7 @@ ContractFormHandler.prototype.validateContractTab = function() {
         if (this.currentSOW) {
             this.submitBothSignatures();
         } else {
-            alert('A Statement of Work (SOW) must be attached before signing the contract.');
+            alert(t('contract.val.sowRequired'));
         }
     };
 
@@ -11612,20 +11758,20 @@ ContractFormHandler.prototype.validateContractTab = function() {
         var errors = [];
         
         if (!this.devSignaturePad || this.devSignaturePad.isEmpty()) {
-            errors.push('Developer signature is required');
+            errors.push(t('contract.val.devSignRequired'));
         }
         
         var devDate = $('#devDate');
         if (!devDate || !devDate.value) {
-            errors.push('Developer signature date is required');
+            errors.push(t('contract.val.devDateRequired'));
         }
         
         if (!this.currentContract) {
-            errors.push('No pending contract found to finalize');
+            errors.push(t('contract.val.noPending'));
         }
         
         if (errors.length > 0) {
-            alert('Please complete all required fields:\n\n' + errors.join('\n'));
+            alert(t('contract.val.completeRequired') + errors.join('\n'));
             return;
         }
         
@@ -11640,7 +11786,7 @@ ContractFormHandler.prototype.validateContractTab = function() {
     
     // Validate contract signature
     if (!this.clientSignaturePad || this.clientSignaturePad.isEmpty()) {
-        alert('Please sign the contract first (Tab 1)');
+        alert(t('contract.val.signContract'));
         this.switchSigningTab('contract');
         return;
     }
@@ -11650,27 +11796,27 @@ ContractFormHandler.prototype.validateContractTab = function() {
     var sowDate = $('#sowClientDate');
     
     if (!sowName || !sowName.value.trim()) {
-        alert('Please enter your name on the SOW');
+        alert(t('contract.val.sowName'));
         return;
     }
     
     if (!sowDate || !sowDate.value) {
-        alert('Please enter the signature date on the SOW');
+        alert(t('contract.val.sowDate'));
         return;
     }
     
     // Validate SOW signature  
     if (!window.sowClientPad || window.sowClientPad.isEmpty()) {
-        alert('Please sign the Statement of Work');
+        alert(t('contract.val.signSow'));
         return;
     }
     
     var submitBtn = $('#submitBothBtn');
     if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span>Submitting...</span>';
+        submitBtn.innerHTML = '<span>' + t('contract.btn.submitting') + '</span>';
     }
-    
+
     var user = firebase.auth().currentUser;
     var clientEmail = user.email || '';
     var clientPhone = user.phoneNumber || '';
@@ -11751,10 +11897,10 @@ ContractFormHandler.prototype.validateContractTab = function() {
         })
         .catch(function(error) {
             console.error('Error submitting signatures:', error);
-            alert('Error: ' + error.message);
+            alert(t('contract.err.prefix') + error.message);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>✍️ Submit for Developer Signature</span>';
+                submitBtn.innerHTML = '<span>' + t('contract.btn.submitForDev') + '</span>';
             }
         });
 };
@@ -11822,6 +11968,19 @@ ContractFormHandler.prototype.showExistingCompletion = function(contractData) {
 
 ContractFormHandler.prototype.renderExistingCompletionView = function(contractData, sowData, isFullySigned) {
     var self = this;
+
+    // Ensure close button is visible and sticky
+    var closeBtnRef = $('#closeModalBtn');
+    if (closeBtnRef) {
+        closeBtnRef.style.display = 'flex';
+        closeBtnRef.style.position = 'sticky';
+        closeBtnRef.style.top = '1rem';
+        closeBtnRef.style.alignSelf = 'flex-end';
+        closeBtnRef.style.marginRight = '1.5rem';
+        closeBtnRef.style.marginTop = '1rem';
+        closeBtnRef.style.marginBottom = '-2.5rem';
+        closeBtnRef.style.flexShrink = '0';
+    }
 
     // Create or get completed container
     var completedContainer = document.getElementById('dualSigningCompleted');
@@ -12238,11 +12397,24 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
     // Hide contract form
     var contractForm = $('#contractForm');
     if (contractForm) contractForm.style.display = 'none';
-    
+
+    // Ensure close button is visible and sticky
+    var closeBtnEl = $('#closeModalBtn');
+    if (closeBtnEl) {
+        closeBtnEl.style.display = 'flex';
+        closeBtnEl.style.position = 'sticky';
+        closeBtnEl.style.top = '1rem';
+        closeBtnEl.style.alignSelf = 'flex-end';
+        closeBtnEl.style.marginRight = '1.5rem';
+        closeBtnEl.style.marginTop = '1rem';
+        closeBtnEl.style.marginBottom = '-2.5rem';
+        closeBtnEl.style.flexShrink = '0';
+    }
+
     // Create completed view
     var modalContent = $('.modal-content');
     if (!modalContent) return;
-    
+
     // Create completed container
     var completedContainer = document.createElement('div');
     completedContainer.id = 'dualSigningCompleted';
@@ -12336,7 +12508,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
     }
     
     // Show success alert
-    alert('✓ Success!\n\nBoth your Contract and Statement of Work have been submitted.\n\nThe developer will review and sign shortly.');
+    alert(t('contract.msg.submitSuccess'));
 };
     ContractFormHandler.prototype.finalizeContract = function() {
         var self = this;
@@ -12345,11 +12517,11 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span>Finalizing...</span>';
+            submitBtn.innerHTML = '<span>' + t('contract.btn.finalizing') + '</span>';
         }
         
         if (!this.currentContract) {
-            alert('No pending contract found to finalize');
+            alert(t('contract.val.noPending'));
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
@@ -12388,7 +12560,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
             })
             .catch(function(error) {
                 console.error('Error finalizing contract:', error);
-                alert('Error finalizing contract: ' + error.message + '\n\nPlease try again.');
+                alert(t('contract.err.finalize') + error.message + t('contract.err.finalizeSuffix'));
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalText;
@@ -12426,7 +12598,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         var submitBtn = $('#submitBtn');
         
         if (submitBtn) {
-            submitBtn.innerHTML = '<span>✓ Uploaded! Click to Download PDF</span>';
+            submitBtn.innerHTML = '<span>' + t('contract.btn.uploadedDownload') + '</span>';
             submitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
             submitBtn.disabled = false;
             
@@ -12447,7 +12619,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
             };
         }
         
-        alert('Contract uploaded successfully! Click the button to download the PDF.');
+        alert(t('contract.msg.uploadSuccess'));
     };
 
     // ============================================================
@@ -12459,7 +12631,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         var contractId = this.currentContract ? this.currentContract.id : null;
 
         if (!contractData) {
-            alert('No contract data available to generate PDF');
+            alert(t('pdf.err.noContract'));
             return;
         }
 
@@ -12467,7 +12639,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         var printWindow = window.open('', '_blank');
 
         if (!printWindow) {
-            alert('Please allow popups to download the PDF');
+            alert(t('pdf.err.popups'));
             return;
         }
 
@@ -12536,126 +12708,126 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         // HEADER
         '<div class="header">' +
         '<img src="' + getLogoForPDF() + '" alt="Scarlo Logo" class="logo" />' +
-        '<h1>Website Development Agreement</h1>' +
-        '<div class="subtitle">Scarlo — Professional Web Development Services</div>' +
+        '<h1>' + t('pdf.contract.title') + '</h1>' +
+        '<div class="subtitle">' + t('pdf.contract.subtitle') + '</div>' +
         '</div>' +
 
         // PARTIES
         '<div class="section">' +
-        '<h2>1. Parties</h2>' +
-        '<p>This Agreement is entered into as of <strong>' + clientDate + '</strong> between:</p>' +
+        '<h2>' + t('pdf.contract.parties') + '</h2>' +
+        '<p>' + t('pdf.contract.partiesIntro') + ' <strong>' + clientDate + '</strong> ' + t('pdf.contract.between') + '</p>' +
         '<div class="parties">' +
-        '<p><strong>Developer:</strong> Scarlo (Carlos Martin), Fresno County, California</p>' +
+        '<p><strong>' + t('pdf.contract.developer') + '</strong> ' + t('pdf.contract.developerDesc') + '</p>' +
         (isBusinessEntity
-            ? '<p><strong>Client:</strong> ' + businessName + ', a ' + entityType + (stateOfFormation ? ' formed in ' + stateOfFormation : '') + (clientEmail ? ' (' + clientEmail + ')' : '') + '</p>'
-            : '<p><strong>Client:</strong> ' + clientName + (clientEmail ? ' (' + clientEmail + ')' : '') + '</p>') +
+            ? '<p><strong>' + t('pdf.contract.client') + '</strong> ' + businessName + ', a ' + entityType + (stateOfFormation ? ' ' + t('common.formedIn') + ' ' + stateOfFormation : '') + (clientEmail ? ' (' + clientEmail + ')' : '') + '</p>'
+            : '<p><strong>' + t('pdf.contract.client') + '</strong> ' + clientName + (clientEmail ? ' (' + clientEmail + ')' : '') + '</p>') +
         '</div>' +
         '</div>' +
 
         // SCOPE & SOW
         '<div class="section">' +
-        '<h2>2. Scope of Work</h2>' +
-        '<p>Developer agrees to design, develop, and deliver a custom website as detailed in the attached Statement of Work (SOW). The SOW specifies all features, deliverables, timeline, and pricing. Only items in the approved SOW are included; additional requests require a written Change Order with revised pricing.</p>' +
+        '<h2>' + t('pdf.contract.scope') + '</h2>' +
+        '<p>' + t('pdf.contract.scopeText') + '</p>' +
         '</div>' +
 
         // PAYMENT
         '<div class="section">' +
-        '<h2>3. Payment Terms</h2>' +
-        '<p><strong>Payment Schedule:</strong></p>' +
+        '<h2>' + t('pdf.contract.paymentTerms') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.paymentSchedule') + '</strong></p>' +
         '<ul>' +
-        '<li><strong>50% Deposit</strong> — Due before work begins</li>' +
-        '<li><strong>25% Milestone</strong> — Due upon design approval</li>' +
-        '<li><strong>25% Final</strong> — Due before deployment</li>' +
+        '<li><strong>' + t('pdf.contract.depositLine') + '</strong> ' + t('pdf.contract.depositDesc') + '</li>' +
+        '<li><strong>' + t('pdf.contract.milestoneLine') + '</strong> ' + t('pdf.contract.milestoneDesc') + '</li>' +
+        '<li><strong>' + t('pdf.contract.finalLine') + '</strong> ' + t('pdf.contract.finalDesc') + '</li>' +
         '</ul>' +
-        '<p><strong>Cancellation Policy:</strong> If Client cancels, Developer retains: 15% (before design), 35% (during design), or full deposit (after development starts). These amounts reflect Developer\'s actual estimated damages per California Civil Code §1671.</p>' +
-        '<p><strong>Late Payments:</strong> Payments over 7 days late incur 1.5% monthly interest. Developer may pause work if payment is 14+ days overdue.</p>' +
+        '<p><strong>' + t('pdf.contract.cancellationPolicy') + '</strong> ' + t('pdf.contract.cancellationText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.latePayments') + '</strong> ' + t('pdf.contract.latePaymentsText') + '</p>' +
         '</div>' +
 
         // IP
         '<div class="section">' +
-        '<h2>4. Intellectual Property</h2>' +
-        '<p><strong>Upon full payment, Client receives:</strong> The final website design, custom graphics, and production build.</p>' +
-        '<p><strong>Developer retains:</strong> Source code, backend architecture, reusable components, and development tools. Client receives a license to use these as part of the delivered website.</p>' +
-        '<p><strong>Important:</strong> No IP rights transfer until full payment is received.</p>' +
+        '<h2>' + t('pdf.contract.ip') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.ipClient') + '</strong> ' + t('pdf.contract.ipClientDesc') + '</p>' +
+        '<p><strong>' + t('pdf.contract.ipDev') + '</strong> ' + t('pdf.contract.ipDevDesc') + '</p>' +
+        '<p><strong>' + t('pdf.contract.ipImportant') + '</strong> ' + t('pdf.contract.ipImportantDesc') + '</p>' +
         '</div>' +
 
         // REVISIONS & CHANGES
         '<div class="section">' +
-        '<h2>5. Revisions & Changes</h2>' +
-        '<p>Client receives <strong>2 revision rounds per milestone</strong>. Additional revisions or scope changes require a Change Order. Client must provide materials and feedback within 5 business days of request; delays extend the timeline accordingly.</p>' +
+        '<h2>' + t('pdf.contract.revisions') + '</h2>' +
+        '<p>' + t('pdf.contract.revisionsText') + '</p>' +
         '</div>' +
 
         // WARRANTY & LIABILITY
         '<div class="section">' +
-        '<h2>6. Warranty & Liability</h2>' +
-        '<p><strong>Warranty:</strong> Developer warrants the website will function as specified for 30 days after delivery. This excludes issues from Client modifications, third-party service changes, or hosting problems.</p>' +
+        '<h2>' + t('pdf.contract.warranty') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.warranty').split('.')[0] + ':</strong> ' + t('pdf.contract.warrantyText') + '</p>' +
         '<div class="highlight-box">' +
-        '<p class="caps-section"><strong>WARRANTY DISCLAIMER:</strong> EXCEPT FOR THE EXPRESS 30-DAY WARRANTY ABOVE, ALL DELIVERABLES ARE PROVIDED "AS IS" WITHOUT ANY IMPLIED WARRANTIES, INCLUDING WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.</p>' +
-        '<p class="caps-section" style="margin-top: 10px;"><strong>LIMITATION OF LIABILITY:</strong> DEVELOPER\'S TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT PAID BY CLIENT. DEVELOPER IS NOT LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR LOST PROFIT DAMAGES, EVEN IF ADVISED OF THEIR POSSIBILITY.</p>' +
+        '<p class="caps-section"><strong>' + t('pdf.contract.warrantyDisclaimer') + '</strong> ' + t('pdf.contract.warrantyDisclaimerText') + '</p>' +
+        '<p class="caps-section" style="margin-top: 10px;"><strong>' + t('pdf.contract.liabilityLimit') + '</strong> ' + t('pdf.contract.liabilityLimitText') + '</p>' +
         '</div>' +
         '</div>' +
 
         // INDEMNIFICATION
         '<div class="section">' +
-        '<h2>7. Indemnification</h2>' +
-        '<p><strong>Client indemnifies Developer</strong> from any claims, damages, or expenses (including attorneys\' fees) arising from: (a) content or materials provided by Client; (b) Client\'s use of deliverables in violation of law; or (c) infringement claims caused by Client-provided materials.</p>' +
-        '<p><strong>Developer indemnifies Client</strong> from IP infringement claims for Developer\'s original work (excluding Client content and third-party materials), limited to fees paid under this Agreement.</p>' +
+        '<h2>' + t('pdf.contract.indemnification') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.clientIndemnifies') + '</strong> ' + t('pdf.contract.clientIndemnifiesText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.devIndemnifies') + '</strong> ' + t('pdf.contract.devIndemnifiesText') + '</p>' +
         '</div>' +
 
         // TERMINATION
         '<div class="section">' +
-        '<h2>8. Termination</h2>' +
-        '<p><strong>By Client:</strong> 14 days written notice; cancellation policy applies.</p>' +
-        '<p><strong>By Developer:</strong> May terminate if Client fails to provide materials for 15+ days, is unresponsive for 30+ days, or engages in abusive behavior.</p>' +
-        '<p><strong>For Cause:</strong> Either party may terminate for material breach not cured within 15 days of notice.</p>' +
+        '<h2>' + t('pdf.contract.termination') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.termByClient') + '</strong> ' + t('pdf.contract.termByClientText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.termByDev') + '</strong> ' + t('pdf.contract.termByDevText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.termForCause') + '</strong> ' + t('pdf.contract.termForCauseText') + '</p>' +
         '</div>' +
 
         // DISPUTE RESOLUTION
         '<div class="section">' +
-        '<h2>9. Dispute Resolution</h2>' +
-        '<p><strong>Process:</strong> Parties shall first negotiate in good faith for 30 days. If unresolved, disputes shall be submitted to mediation in Fresno County, California. If mediation fails, either party may pursue litigation in Fresno County courts.</p>' +
-        '<p><strong>Attorneys\' Fees:</strong> The prevailing party in any dispute shall recover reasonable attorneys\' fees and costs from the other party.</p>' +
+        '<h2>' + t('pdf.contract.disputeResolution') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.disputeProcess') + '</strong> ' + t('pdf.contract.disputeProcessText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.attorneysFees') + '</strong> ' + t('pdf.contract.attorneysFeesText') + '</p>' +
         '</div>' +
 
         // GENERAL TERMS
         '<div class="section">' +
-        '<h2>10. General Terms</h2>' +
-        '<p><strong>Governing Law:</strong> This Agreement is governed by California law.</p>' +
-        '<p><strong>Force Majeure:</strong> Neither party is liable for delays caused by circumstances beyond reasonable control (natural disasters, pandemic, internet outages, acts of government).</p>' +
-        '<p><strong>Assignment:</strong> Client may not assign this Agreement without Developer\'s written consent. Developer may assign to a successor upon notice.</p>' +
-        '<p><strong>Severability:</strong> If any provision is unenforceable, it shall be modified to the minimum extent necessary; remaining provisions continue in effect.</p>' +
-        '<p><strong>Confidentiality:</strong> Both parties agree to keep confidential information private for 3 years after termination.</p>' +
-        '<p><strong>Independent Contractor:</strong> Developer is not an employee of Client.</p>' +
-        '<p><strong>Entire Agreement:</strong> This Agreement and the attached SOW constitute the complete agreement. Amendments require written consent from both parties. Electronic signatures are valid.</p>' +
+        '<h2>' + t('pdf.contract.generalTerms') + '</h2>' +
+        '<p><strong>' + t('pdf.contract.governingLaw') + '</strong> ' + t('pdf.contract.governingLawText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.forceMajeure') + '</strong> ' + t('pdf.contract.forceMajeureText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.assignment') + '</strong> ' + t('pdf.contract.assignmentText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.severability') + '</strong> ' + t('pdf.contract.severabilityText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.confidentiality') + '</strong> ' + t('pdf.contract.confidentialityText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.independentContractor') + '</strong> ' + t('pdf.contract.independentContractorText') + '</p>' +
+        '<p><strong>' + t('pdf.contract.entireAgreement') + '</strong> ' + t('pdf.contract.entireAgreementText') + '</p>' +
         '</div>' +
 
         // SIGNATURE PAGE
         '<div class="signature-page">' +
-        '<h2 style="text-align: center; border: none; margin-bottom: 20px;">Agreement & Signatures</h2>' +
-        '<p style="text-align: center; margin-bottom: 30px;">By signing below, both parties agree to the terms of this Agreement and the attached Statement of Work.</p>' +
+        '<h2 style="text-align: center; border: none; margin-bottom: 20px;">' + t('pdf.contract.signaturePage') + '</h2>' +
+        '<p style="text-align: center; margin-bottom: 30px;">' + t('pdf.contract.signatureIntro') + '</p>' +
 
         '<div style="display: flex; justify-content: space-between; margin-top: 30px;">' +
 
         '<div class="signature-block">' +
-        '<h3 style="font-size: 10pt;">DEVELOPER: Scarlo</h3>' +
+        '<h3 style="font-size: 10pt;">' + t('pdf.contract.devSignature') + '</h3>' +
         '<div class="signature-line">' +
-        (devSignature ? '<img src="' + devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">Awaiting Signature</span>') +
+        (devSignature ? '<img src="' + devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">' + t('pdf.contract.awaitingSignature') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Authorized Signature</div>' +
+        '<div class="signature-label">' + t('pdf.contract.authorizedSignature') + '</div>' +
         '<div class="signature-name">' + devName + '</div>' +
-        '<div class="signature-date">Date: ' + devDate + '</div>' +
-        '<div class="signature-email">Email: ' + devEmail + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + devDate + '</div>' +
+        '<div class="signature-email">' + t('common.email') + ' ' + devEmail + '</div>' +
         '</div>' +
 
         '<div class="signature-block">' +
-        '<h3 style="font-size: 10pt;">CLIENT: ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
+        '<h3 style="font-size: 10pt;">' + t('pdf.contract.clientSignature') + ' ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
         (isBusinessEntity ? '<p style="font-size: 9pt; margin-bottom: 5px;">' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</p>' : '') +
         '<div class="signature-line">' +
-        (clientSignature ? '<img src="' + clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">Awaiting Signature</span>') +
+        (clientSignature ? '<img src="' + clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">' + t('pdf.contract.awaitingSignature') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Authorized Signature</div>' +
-        '<div class="signature-name">' + (isBusinessEntity ? 'By: ' + representativeName + ', ' + representativeTitle : clientSignerName) + '</div>' +
-        '<div class="signature-date">Date: ' + clientDate + '</div>' +
+        '<div class="signature-label">' + t('pdf.contract.authorizedSignature') + '</div>' +
+        '<div class="signature-name">' + (isBusinessEntity ? t('common.by') + ' ' + representativeName + ', ' + representativeTitle : clientSignerName) + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + clientDate + '</div>' +
         '<div class="signature-email">' + clientContactLabel + ': ' + clientContact + '</div>' +
         '</div>' +
 
@@ -12665,7 +12837,7 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         // FOOTER
         '<div class="footer">' +
         '<p><strong>© ' + new Date().getFullYear() + ' Scarlo — Carlos Martin</strong></p>' +
-        '<p>Professional Web Development Services</p>' +
+        '<p>' + t('pdf.contract.professionalServices') + '</p>' +
         '<p class="contract-id">Contract ID: ' + (contractId || 'DRAFT') + '</p>' +
         '<p class="contract-id">Generated: ' + new Date().toLocaleString() + '</p>' +
         '</div>' +
@@ -12696,19 +12868,19 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
     var contractData = this.currentContract ? this.currentContract.data : null;
     
     if (!contractData) {
-        alert('No contract data available');
+        alert(t('pdf.err.noContractData'));
         return;
     }
     
     if (!sowData) {
-        alert('No SOW data available');
+        alert(t('pdf.err.noSowData'));
         return;
     }
     
     var printWindow = window.open('', '_blank');
     
     if (!printWindow) {
-        alert('Please allow popups to download the PDF');
+        alert(t('pdf.err.popups'));
         return;
     }
     
@@ -12736,43 +12908,43 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
 
     // SOW data
     var packageNames = {
-        'essential': 'Essential — Landing Page',
-        'starter': 'Tier 1 — Starter',
-        'growth': 'Tier 2 — Growth',
-        'professional': 'Tier 3 — Professional',
-        'enterprise': 'Tier 4 — Enterprise',
-        'custom': 'Custom Quote'
+        'essential': t('pkg.essential'),
+        'starter': t('pkg.starter'),
+        'growth': t('pkg.growth'),
+        'professional': t('pkg.professional'),
+        'enterprise': t('pkg.enterprise'),
+        'custom': t('pkg.custom')
     };
 
     var packageDetails = {
         'essential': {
-            includes: ['Single-page landing page (1-3 sections)', 'Cross-device optimization', 'Clean, modern React/Next.js design', 'Contact form with validation', 'Basic SEO setup', 'DNS & hosting configuration (client pays for domain)']
+            includes: [t('pkg.essential.i1'), t('pkg.essential.i2'), t('pkg.essential.i3'), t('pkg.essential.i4'), t('pkg.essential.i5'), t('pkg.essential.i6')]
         },
         'starter': {
-            includes: ['Multi-section React/Next.js website', 'Brand-matched design system', 'Scroll animations & micro-interactions', 'Multi-step contact forms', 'GA4 + custom event tracking', 'Full technical SEO', 'DNS & hosting configuration (client pays for domain)']
+            includes: [t('pkg.starter.i1'), t('pkg.starter.i2'), t('pkg.starter.i3'), t('pkg.starter.i4'), t('pkg.starter.i5'), t('pkg.starter.i6'), t('pkg.starter.i7')]
         },
         'growth': {
-            includes: ['Everything in Starter', 'Firebase Authentication', 'Protected content areas', 'Form data capture & storage', 'Newsletter integration', '3 rounds of revisions', 'Domain, hosting & SSL included (first year)']
+            includes: [t('pkg.growth.i1'), t('pkg.growth.i2'), t('pkg.growth.i3'), t('pkg.growth.i4'), t('pkg.growth.i5'), t('pkg.growth.i6'), t('pkg.growth.i7')]
         },
         'professional': {
-            includes: ['Everything in Growth', 'Full Firebase backend', 'User dashboard & profiles', 'File/media upload system', 'API integrations', 'Email notifications (SendGrid)', '2 months of maintenance included', 'Domain, hosting & SSL included (first year)']
+            includes: [t('pkg.professional.i1'), t('pkg.professional.i2'), t('pkg.professional.i3'), t('pkg.professional.i4'), t('pkg.professional.i5'), t('pkg.professional.i6'), t('pkg.professional.i7'), t('pkg.professional.i8')]
         },
         'enterprise': {
-            includes: ['Everything in Professional', 'Multi-page application', 'Role-based access control', 'In-app notifications', 'Admin dashboards', 'Documentation & training', '3 months of premium maintenance included', 'Domain, hosting & SSL included (first year)']
+            includes: [t('pkg.enterprise.i1'), t('pkg.enterprise.i2'), t('pkg.enterprise.i3'), t('pkg.enterprise.i4'), t('pkg.enterprise.i5'), t('pkg.enterprise.i6'), t('pkg.enterprise.i7'), t('pkg.enterprise.i8')]
         }
     };
-    
+
     var packageInfo = packageDetails[sowData.packageType] || { includes: [] };
     var totalPrice = sowData.payment ? sowData.payment.total : 0;
     var deposit = totalPrice * 0.50;
     var milestone1 = totalPrice * 0.25;
     var finalPayment = totalPrice * 0.25;
-    
+
     var maintenanceDetails = {
-        'none': { name: 'No Maintenance Plan', cost: '$0/month' },
-        'basic': { name: 'Basic Care', cost: '$167/month', desc: 'Minor updates, security patches (2-3 hrs/month)' },
-        'professional': { name: 'Professional Care', cost: '$335/month', desc: 'Regular updates, performance optimization (4-6 hrs/month)' },
-        'premium': { name: 'Premium Care', cost: '$670/month', desc: 'Priority support, new components, SEO optimization (8-12 hrs/month)' }
+        'none': { name: t('maint.none.name'), cost: t('maint.none.price') },
+        'basic': { name: t('maint.basic.name'), cost: t('maint.basic.price'), desc: t('maint.basic.desc') },
+        'professional': { name: t('maint.professional.name'), cost: t('maint.professional.price'), desc: t('maint.professional.desc') },
+        'premium': { name: t('maint.premium.name'), cost: t('maint.premium.price'), desc: t('maint.premium.desc') }
     };
     
     var maintenanceInfo = maintenanceDetails[sowData.maintenancePlan || 'none'] || maintenanceDetails['none'];
@@ -12823,153 +12995,153 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
         // ==================== CONTRACT SECTION ====================
         '<div class="header">' +
         '<img src="' + getLogoForPDF() + '" alt="Scarlo Logo" class="logo" />' +
-        '<h1>Website Development Agreement</h1>' +
-        '<div class="subtitle">Scarlo — Professional Web Development Services</div>' +
+        '<h1>' + t('pdf.contract.title') + '</h1>' +
+        '<div class="subtitle">' + t('pdf.contract.subtitle') + '</div>' +
         '</div>' +
 
         '<div class="section">' +
-        '<h2>PARTIES TO THE AGREEMENT</h2>' +
-        '<p>This Website Development Agreement ("Agreement") is made effective as of <strong>' + clientDate + '</strong> (the "Effective Date") and is entered into by and between:</p>' +
+        '<h2>' + t('pdf.combined.partiesToAgreement') + '</h2>' +
+        '<p>' + t('pdf.combined.partiesIntro') + ' <strong>' + clientDate + '</strong> ' + t('pdf.combined.effectiveDate') + '</p>' +
         '<div class="parties">' +
-        '<p><strong>Scarlo</strong>, a sole proprietorship owned and operated by Carlos Martin (the "Developer"),</p>' +
-        '<p>and</p>' +
+        '<p><strong>Scarlo</strong>, ' + t('pdf.combined.devDesc') + '</p>' +
+        '<p>' + t('pdf.combined.and') + '</p>' +
         (isBusinessEntity
-            ? '<p><strong>' + businessName + '</strong>, a ' + entityType + (stateOfFormation ? ' formed in ' + stateOfFormation : '') + ' (the "Client")</p>'
-            : '<p><strong>' + clientName + '</strong> (the "Client")</p>') +
-        '<p style="font-size: 10pt; font-style: italic; margin-top: 10px;">The Developer and Client may be referred to individually as a "Party" and collectively as the "Parties."</p>' +
+            ? '<p><strong>' + businessName + '</strong>, a ' + entityType + (stateOfFormation ? ' ' + t('common.formedIn') + ' ' + stateOfFormation : '') + ' ' + t('pdf.combined.theClient') + '</p>'
+            : '<p><strong>' + clientName + '</strong> ' + t('pdf.combined.theClient') + '</p>') +
+        '<p style="font-size: 10pt; font-style: italic; margin-top: 10px;">' + t('pdf.combined.partyNote') + '</p>' +
         '</div>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>1. PROJECT SCOPE</h2>' +
-        '<h3>1.1 Overview</h3>' +
-        '<p>Developer agrees to design, build, and deliver a custom website or web application using modern technologies, which may include but are not limited to: Visual Studio Code, React, Next.js, Firebase, Vite, REST/Graph APIs, and associated development tools.</p>' +
-        '<h3>1.2 Statement of Work (SOW)</h3>' +
-        '<p>All features, functionalities, pages, integrations, and deliverables will be detailed in a separate Proposal or Statement of Work ("SOW") prepared by Developer and approved by Client.</p>' +
-        '<h3>1.3 Scope Limitations</h3>' +
-        '<p>Only items expressly included in the SOW form part of the Project Scope. Any request beyond that scope—whether new features, design changes, additional pages, or system enhancements—requires an approved Change Order (Section 10).</p>' +
+        '<h2>' + t('pdf.combined.projectScope') + '</h2>' +
+        '<h3>' + t('pdf.combined.overview') + '</h3>' +
+        '<p>' + t('pdf.combined.overviewText') + '</p>' +
+        '<h3>' + t('pdf.combined.sowSection') + '</h3>' +
+        '<p>' + t('pdf.combined.sowText') + '</p>' +
+        '<h3>' + t('pdf.combined.scopeLimitations') + '</h3>' +
+        '<p>' + t('pdf.combined.scopeLimitationsText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>2. PACKAGES & PRICING</h2>' +
-        '<p>Developer offers multiple service tiers, including Starter, Professional, Premium, and Elite website/application packages. The applicable pricing, deliverables, and package level for this Agreement will be specified in the attached SOW, which forms an integral part of this Agreement.</p>' +
+        '<h2>' + t('pdf.combined.packagesPricing') + '</h2>' +
+        '<p>' + t('pdf.combined.packagesPricingText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>3. PAYMENT TERMS</h2>' +
-        '<p>Unless otherwise specified in the SOW:</p>' +
-        '<h3>3.1 Deposit</h3>' +
-        '<p>A non-refundable deposit of 50% is required before any work begins, unless the Developer chooses to accept a different amount at their discretion.</p>' +
-        '<h3>3.2 Milestone Payments</h3>' +
-        '<p>If no custom timetable is specified in the SOW, the standard schedule is:</p>' +
+        '<h2>' + t('pdf.combined.paymentTerms') + '</h2>' +
+        '<p>' + t('pdf.combined.unlessSpecified') + '</p>' +
+        '<h3>' + t('pdf.combined.deposit') + '</h3>' +
+        '<p>' + t('pdf.combined.depositText') + '</p>' +
+        '<h3>' + t('pdf.combined.milestonePayments') + '</h3>' +
+        '<p>' + t('pdf.combined.milestonePaymentsIntro') + '</p>' +
         '<ul>' +
-        '<li>25% due upon UI/UX design approval</li>' +
-        '<li>25% due at final delivery or prior to deployment, whichever the Developer determines is appropriate</li>' +
+        '<li>' + t('pdf.combined.milestonePayment1') + '</li>' +
+        '<li>' + t('pdf.combined.milestonePayment2') + '</li>' +
         '</ul>' +
-        '<h3>3.3 Late Payments</h3>' +
-        '<p>Payments not received within 7 days of the due date may, at the Developer\'s discretion, incur a monthly late fee of up to 5%. The Developer may also pause or delay work until any outstanding balance is paid.</p>' +
+        '<h3>' + t('pdf.combined.latePayments') + '</h3>' +
+        '<p>' + t('pdf.combined.latePaymentsText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>4. CLIENT RESPONSIBILITIES</h2>' +
-        '<p>Client agrees to provide all necessary materials—including copy, images, brand assets, credentials, and requested information—within 5 business days of Developer\'s request.</p>' +
-        '<p>Any delays in providing required materials will directly extend the project timeline. Developer is not responsible for delays caused by the Client.</p>' +
+        '<h2>' + t('pdf.combined.clientResponsibilities') + '</h2>' +
+        '<p>' + t('pdf.combined.clientRespText') + '</p>' +
+        '<p>' + t('pdf.combined.clientRespText2') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>5. REVISIONS</h2>' +
-        '<p>Unless otherwise stated in the SOW:</p>' +
+        '<h2>' + t('pdf.combined.revisions') + '</h2>' +
+        '<p>' + t('pdf.combined.revisionsIntro') + '</p>' +
         '<ul>' +
-        '<li>Client receives up to two (2) rounds of revisions per milestone</li>' +
-        '<li>Additional revisions or redesigns require a Change Order and may incur additional charges</li>' +
+        '<li>' + t('pdf.combined.revision1') + '</li>' +
+        '<li>' + t('pdf.combined.revision2') + '</li>' +
         '</ul>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>6. INTELLECTUAL PROPERTY RIGHTS</h2>' +
-        '<h3>6.1 Developer Ownership</h3>' +
-        '<p>Developer retains full ownership of all proprietary materials, including source code, backend logic and architecture, custom components, scripts, and utilities, and Developer\'s internal systems, tools, libraries, and workflows.</p>' +
-        '<h3>6.2 Client Ownership</h3>' +
-        '<p>Upon full payment, Client gains ownership of the final website design, all content supplied by Client (text, images, media), and the compiled, minified production build of the project.</p>' +
+        '<h2>' + t('pdf.combined.ipRights') + '</h2>' +
+        '<h3>' + t('pdf.combined.devOwnership') + '</h3>' +
+        '<p>' + t('pdf.combined.devOwnershipText') + '</p>' +
+        '<h3>' + t('pdf.combined.clientOwnership') + '</h3>' +
+        '<p>' + t('pdf.combined.clientOwnershipText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>7. MAINTENANCE & SUPPORT</h2>' +
-        '<p>Maintenance plans (Basic, Professional, Premium) may be purchased separately and will be defined in the SOW. Maintenance plans do not include new pages or sections, new features or functionalities, major redesigns, third-party outages, policy changes from platforms, or fixes related to Client misuse.</p>' +
+        '<h2>' + t('pdf.combined.maintenanceSupport') + '</h2>' +
+        '<p>' + t('pdf.combined.maintenanceSupportText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>8. TIMELINE & DELIVERY</h2>' +
-        '<p>Developer will provide an estimated project timeline. Client acknowledges these timelines are estimates, not guarantees. Any Client-caused delay automatically extends the project schedule.</p>' +
+        '<h2>' + t('pdf.combined.timelineDelivery') + '</h2>' +
+        '<p>' + t('pdf.combined.timelineDeliveryText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>9. CHANGE ORDERS</h2>' +
-        '<p>Any request modifying the Project Scope—including added features, redesigns, advanced animations, dashboards, APIs, or system logic—requires a signed Change Order that includes revised pricing and timelines.</p>' +
+        '<h2>' + t('pdf.combined.changeOrders') + '</h2>' +
+        '<p>' + t('pdf.combined.changeOrdersText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>10. WARRANTY & LIMITATIONS</h2>' +
-        '<h3>10.1 Developer Warranty</h3>' +
-        '<p>Developer warrants that the delivered website will function substantially as described in the SOW for 30 days after deployment.</p>' +
-        '<h3>10.2 Exclusions</h3>' +
-        '<p>This warranty does not apply to issues caused by Client-modified code, third-party service changes, library updates, hosting issues, improper access, or security breaches caused by Client.</p>' +
-        '<h3>10.3 Liability Limitations</h3>' +
-        '<p>Developer\'s total liability under this Agreement is limited to the total amount paid by Client.</p>' +
+        '<h2>' + t('pdf.combined.warrantyLimitations') + '</h2>' +
+        '<h3>' + t('pdf.combined.devWarranty') + '</h3>' +
+        '<p>' + t('pdf.combined.devWarrantyText') + '</p>' +
+        '<h3>' + t('pdf.combined.exclusions') + '</h3>' +
+        '<p>' + t('pdf.combined.exclusionsText') + '</p>' +
+        '<h3>' + t('pdf.combined.liabilityLimitations') + '</h3>' +
+        '<p>' + t('pdf.combined.liabilityLimitationsText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>11. CONFIDENTIALITY</h2>' +
-        '<p>Both Parties agree to maintain the confidentiality of all proprietary or sensitive information exchanged during the course of this project.</p>' +
+        '<h2>' + t('pdf.combined.confidentiality') + '</h2>' +
+        '<p>' + t('pdf.combined.confidentialityText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>12. INDEMNIFICATION</h2>' +
-        '<p>Client agrees to indemnify and hold Developer harmless from any claims arising out of content supplied by Client, misuse of the website, unauthorized access, or business decisions made using data produced by the website.</p>' +
+        '<h2>' + t('pdf.combined.indemnification') + '</h2>' +
+        '<p>' + t('pdf.combined.indemnificationText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>13. TERMINATION</h2>' +
-        '<p>Either Party may terminate this Agreement with 7 days written notice. If Client terminates early, all deposits are forfeited, all completed work must be paid for immediately, and Developer retains all rights to unfinished work.</p>' +
+        '<h2>' + t('pdf.combined.termination') + '</h2>' +
+        '<p>' + t('pdf.combined.terminationText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>14. GOVERNING LAW</h2>' +
-        '<p>This Agreement shall be governed by and construed in accordance with the laws of the State of California without regard to conflict-of-law principles.</p>' +
+        '<h2>' + t('pdf.combined.governingLaw') + '</h2>' +
+        '<p>' + t('pdf.combined.governingLawText') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>15. ENTIRE AGREEMENT</h2>' +
-        '<p>This Agreement, together with all attached SOWs, proposals, and addenda, constitutes the entire and complete agreement between the Parties and supersedes all prior discussions, negotiations, or understandings.</p>' +
+        '<h2>' + t('pdf.combined.entireAgreement') + '</h2>' +
+        '<p>' + t('pdf.combined.entireAgreementText') + '</p>' +
         '</div>' +
-        
+
         // Contract Signatures
         '<div class="signature-page">' +
-        '<h2 style="text-align: center; border: none;">CONTRACT SIGNATURES</h2>' +
-        '<p style="text-align: center; margin-bottom: 30px;">By signing below, both parties acknowledge that they have read, understood, and agree to all terms and conditions outlined in this Agreement.</p>' +
-        
+        '<h2 style="text-align: center; border: none;">' + t('pdf.combined.contractSignatures') + '</h2>' +
+        '<p style="text-align: center; margin-bottom: 30px;">' + t('pdf.combined.contractSignIntro') + '</p>' +
+
         '<div style="display: flex; justify-content: space-between; margin-top: 40px;">' +
-        
+
         '<div class="signature-block">' +
-        '<h3>Developer — Scarlo</h3>' +
+        '<h3>' + t('pdf.combined.devSignature') + '</h3>' +
         '<div class="signature-line">' +
-        (devSignature ? '<img src="' + devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">Pending</span>') +
+        (devSignature ? '<img src="' + devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">' + t('pdf.combined.pending') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Signature</div>' +
+        '<div class="signature-label">' + t('pdf.combined.signature') + '</div>' +
         '<div class="signature-name">' + devName + '</div>' +
-        '<div class="signature-date">Date: ' + devDate + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + devDate + '</div>' +
         '<div class="signature-email">' + devEmail + '</div>' +
         '</div>' +
-        
+
         '<div class="signature-block">' +
-        '<h3>Client — ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
+        '<h3>' + t('pdf.combined.clientSignature') + ' ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
         (isBusinessEntity ? '<p style="font-size: 9pt; margin-bottom: 5px;">' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</p>' : '') +
         '<div class="signature-line">' +
-        (clientSignature ? '<img src="' + clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">Pending</span>') +
+        (clientSignature ? '<img src="' + clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">' + t('pdf.combined.pending') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Signature</div>' +
-        '<div class="signature-name">' + (isBusinessEntity ? 'By: ' + representativeName + ', ' + representativeTitle : clientSignerName) + '</div>' +
-        '<div class="signature-date">Date: ' + clientDate + '</div>' +
+        '<div class="signature-label">' + t('pdf.combined.signature') + '</div>' +
+        '<div class="signature-name">' + (isBusinessEntity ? t('common.by') + ' ' + representativeName + ', ' + representativeTitle : clientSignerName) + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + clientDate + '</div>' +
         '<div class="signature-email">' + clientContactLabel + ': ' + clientContact + '</div>' +
         '</div>' +
 
@@ -12981,79 +13153,88 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
 
         '<div class="header">' +
         '<img src="' + getLogoForPDF() + '" alt="Scarlo Logo" class="logo" />' +
-        '<h1>STATEMENT OF WORK</h1>' +
-        '<div class="subtitle">Scarlo — Professional Web Development</div>' +
-        '<div style="font-size: 10pt; font-style: italic; margin-top: 10px;">Generated: ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '</div>' +
+        '<h1>' + t('pdf.combined.sowSection2') + '</h1>' +
+        '<div class="subtitle">' + t('pdf.combined.sowSubtitle') + '</div>' +
+        '<div style="font-size: 10pt; font-style: italic; margin-top: 10px;">' + t('pdf.sow.generated') + ' ' + new Date().toLocaleDateString(getCurrentLang() === 'es' ? 'es-MX' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '</div>' +
         '</div>' +
-        
+
         '<div class="info-box">' +
-        '<h3>Client Information</h3>' +
+        '<h3>' + t('pdf.combined.clientInfo') + '</h3>' +
         (isBusinessEntity
-            ? '<p><strong>Business Name:</strong> ' + businessName + '</p>' +
-              '<p><strong>Entity Type:</strong> ' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</p>' +
-              '<p><strong>Representative:</strong> ' + representativeName + ', ' + representativeTitle + '</p>'
-            : '<p><strong>Client Name:</strong> ' + (sowData.clientName || clientName) + '</p>') +
-        '<p><strong>Contact:</strong> ' + (sowData.clientEmail || sowData.clientPhone || clientEmail || 'N/A') + '</p>' +
-        '<p><strong>Package:</strong> ' + (packageNames[sowData.packageType] || sowData.packageType) + ' <span class="highlight">$' + totalPrice.toFixed(0) + '</span></p>' +
-        '<p><strong>Estimated Timeline:</strong> ' + (sowData.estimatedWeeks || 'TBD') + ' weeks' + (sowData.startDate ? ' (Starting ' + new Date(sowData.startDate).toLocaleDateString() + ')' : '') + '</p>' +
+            ? '<p><strong>' + t('pdf.sow.businessName') + '</strong> ' + businessName + '</p>' +
+              '<p><strong>' + t('pdf.sow.entityType') + '</strong> ' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</p>' +
+              '<p><strong>' + t('pdf.sow.representative') + '</strong> ' + representativeName + ', ' + representativeTitle + '</p>'
+            : '<p><strong>' + t('pdf.sow.clientName') + '</strong> ' + (sowData.clientName || clientName) + '</p>') +
+        '<p><strong>' + t('pdf.sow.contact') + '</strong> ' + (sowData.clientEmail || sowData.clientPhone || clientEmail || t('common.na')) + '</p>' +
+        '<p><strong>' + t('sow.package') + '</strong> ' + (packageNames[sowData.packageType] || sowData.packageType) + ' <span class="highlight">$' + totalPrice.toFixed(0) + '</span></p>' +
+        '<p><strong>' + t('pdf.sow.estimatedTimeline') + '</strong> ' + (sowData.estimatedWeeks || t('common.tbd')) + ' ' + t('sow.weeks') + (sowData.startDate ? ' (' + new Date(sowData.startDate).toLocaleDateString() + ')' : '') + '</p>' +
         '</div>' +
-        
+
         '<div class="section">' +
-        '<h2>Package Includes</h2>' +
+        '<h2>' + t('pdf.combined.packageIncludes') + '</h2>' +
         '<ul>';
     
-    if (packageInfo.includes && packageInfo.includes.length > 0) {
-        packageInfo.includes.forEach(function(item) {
-            htmlContent += '<li>' + item + '</li>';
-        });
+    if (sowData.packageType === 'custom') {
+        // Custom packages: all selected features ARE the package
+        if (sowData.features && sowData.features.length > 0) {
+            sowData.features.forEach(function(feature) {
+                htmlContent += '<li>' + translateStoredFeature(feature) + '</li>';
+            });
+        }
+    } else {
+        if (packageInfo.includes && packageInfo.includes.length > 0) {
+            packageInfo.includes.forEach(function(item) {
+                htmlContent += '<li>' + item + '</li>';
+            });
+        }
     }
-    
+
     htmlContent += '</ul></div>';
-    
-    // Additional Features
-    if (sowData.features && sowData.features.length > 0) {
+
+    // Additional Features (non-custom packages only — custom shows features above)
+    if (sowData.packageType !== 'custom' && sowData.features && sowData.features.length > 0) {
         htmlContent += '<div class="section">' +
-            '<h2>Additional Features & Deliverables</h2>' +
+            '<h2>' + t('pdf.combined.additionalFeatures') + '</h2>' +
             '<ul>';
         sowData.features.forEach(function(feature) {
-            htmlContent += '<li>' + feature + '</li>';
+            htmlContent += '<li>' + translateStoredFeature(feature) + '</li>';
         });
         htmlContent += '</ul></div>';
     }
-    
+
     // Special Requirements
     if (sowData.notes) {
         htmlContent += '<div class="section">' +
-            '<h2>Special Requirements</h2>' +
+            '<h2>' + t('pdf.combined.specialRequirements') + '</h2>' +
             '<p>' + sowData.notes + '</p>' +
             '</div>';
     }
-    
+
     // Payment Structure
     htmlContent += '<div class="section">' +
-        '<h2>Payment Structure</h2>' +
+        '<h2>' + t('pdf.combined.paymentStructure') + '</h2>' +
         '<table class="payment-table">' +
-        '<thead><tr><th>Payment Milestone</th><th>Description</th><th>Amount</th></tr></thead>' +
+        '<thead><tr><th>' + t('pdf.combined.paymentMilestone') + '</th><th>' + t('sow.description') + '</th><th>' + t('sow.amount') + '</th></tr></thead>' +
         '<tbody>' +
-        '<tr><td><strong>Initial Deposit</strong></td><td>Due before work begins (50%)</td><td><strong>$' + deposit.toFixed(0) + '</strong></td></tr>' +
-        '<tr><td><strong>Milestone 1</strong></td><td>UI/UX Design Approval (25%)</td><td><strong>$' + milestone1.toFixed(0) + '</strong></td></tr>' +
-        '<tr><td><strong>Final Payment</strong></td><td>Prior to deployment (25%)</td><td><strong>$' + finalPayment.toFixed(0) + '</strong></td></tr>' +
-        '<tr class="total-row"><td colspan="2">Total Project Cost</td><td>$' + totalPrice.toFixed(0) + '</td></tr>' +
+        '<tr><td><strong>' + t('pdf.combined.initialDeposit') + '</strong></td><td>' + t('pdf.combined.dueBeforeWork') + '</td><td><strong>$' + deposit.toFixed(0) + '</strong></td></tr>' +
+        '<tr><td><strong>' + t('pdf.combined.milestone1') + '</strong></td><td>' + t('pdf.combined.designApproval') + '</td><td><strong>$' + milestone1.toFixed(0) + '</strong></td></tr>' +
+        '<tr><td><strong>' + t('pdf.combined.finalPayment') + '</strong></td><td>' + t('pdf.combined.priorToDeployment') + '</td><td><strong>$' + finalPayment.toFixed(0) + '</strong></td></tr>' +
+        '<tr class="total-row"><td colspan="2">' + t('pdf.combined.totalProjectCost') + '</td><td>$' + totalPrice.toFixed(0) + '</td></tr>' +
         '</tbody></table>' +
         '</div>';
     
     // Maintenance
     if (sowData.maintenancePlan === 'none') {
         htmlContent += '<div class="section">' +
-            '<h2>Ongoing Maintenance</h2>' +
+            '<h2>' + t('pdf.combined.ongoingMaintenance') + '</h2>' +
             '<div class="info-box" style="background: #fff3cd; border-color: #856404;">' +
-            '<h3 style="color: #856404;">No Maintenance Plan — $0/month</h3>' +
-            '<p style="color: #856404;"><strong>⚠️ IMPORTANT:</strong> Developer will NOT provide any ongoing maintenance, updates, security patches, bug fixes, or technical support after the post-launch period ends. Client is solely responsible for website maintenance.</p>' +
+            '<h3 style="color: #856404;">' + t('pdf.combined.noMaintenanceTitle') + '</h3>' +
+            '<p style="color: #856404;"><strong>' + t('pdf.combined.noMaintenanceWarning') + '</strong> ' + t('pdf.combined.noMaintenanceText') + '</p>' +
             '</div>' +
             '</div>';
     } else if (sowData.maintenancePlan) {
         htmlContent += '<div class="section">' +
-            '<h2>Ongoing Maintenance</h2>' +
+            '<h2>' + t('pdf.combined.ongoingMaintenance') + '</h2>' +
             '<div class="info-box">' +
             '<h3>' + maintenanceInfo.name + ' — ' + maintenanceInfo.cost + '</h3>' +
             '<p>' + (maintenanceInfo.desc || '') + '</p>' +
@@ -13063,37 +13244,37 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
     
     // Terms
     htmlContent += '<div class="section">' +
-        '<h2>Terms & Conditions</h2>' +
-        '<p>This Statement of Work is subject to the terms outlined in the Website Development Agreement between Scarlo and <strong>' + clientName + '</strong>. All work will be performed using modern technologies including React, Next.js, Firebase, and associated development tools in accordance with industry best practices.</p>' +
-        '<p>The project timeline is an estimate and may be adjusted based on client feedback, content delivery, and scope changes. Any requests beyond the defined scope require a signed Change Order.</p>' +
+        '<h2>' + t('pdf.combined.termsConditions') + '</h2>' +
+        '<p>' + t('sow.termsText1') + ' <strong>' + clientName + '</strong>' + t('sow.termsText2') + '</p>' +
+        '<p>' + t('sow.termsText3') + '</p>' +
         '</div>';
-    
+
     // SOW Signatures
     htmlContent += '<div class="signature-page">' +
-        '<h2 style="text-align: center; border: none;">SOW SIGNATURES</h2>' +
-        '<p style="text-align: center; margin-bottom: 30px;">By signing below, both parties acknowledge agreement to the scope, timeline, and payment terms outlined in this Statement of Work.</p>' +
-        
+        '<h2 style="text-align: center; border: none;">' + t('pdf.combined.sowSignatures') + '</h2>' +
+        '<p style="text-align: center; margin-bottom: 30px;">' + t('pdf.combined.sowSignIntro') + '</p>' +
+
         '<div style="display: flex; justify-content: space-between; margin-top: 40px;">' +
-        
+
         '<div class="signature-block">' +
-        '<h3>Developer — Scarlo</h3>' +
+        '<h3>' + t('pdf.combined.devSignature') + '</h3>' +
         '<div class="signature-line">' +
-        (sowData.devSignature ? '<img src="' + sowData.devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">Pending</span>') +
+        (sowData.devSignature ? '<img src="' + sowData.devSignature + '" alt="Developer Signature" />' : '<span style="font-style: italic;">' + t('pdf.combined.pending') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Signature</div>' +
+        '<div class="signature-label">' + t('pdf.combined.signature') + '</div>' +
         '<div class="signature-name">' + (sowData.devSignerName || 'Carlos Martin') + '</div>' +
-        '<div class="signature-date">Date: ' + (sowData.devSignedDate || 'N/A') + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + (sowData.devSignedDate || t('common.na')) + '</div>' +
         '</div>' +
-        
+
         '<div class="signature-block">' +
-        '<h3>Client — ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
+        '<h3>' + t('pdf.combined.clientSignature') + ' ' + (isBusinessEntity ? businessName : clientName) + '</h3>' +
         (isBusinessEntity ? '<p style="font-size: 9pt; margin-bottom: 5px;">' + entityType + (stateOfFormation ? ' (' + stateOfFormation + ')' : '') + '</p>' : '') +
         '<div class="signature-line">' +
-        (sowData.clientSignature ? '<img src="' + sowData.clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">Pending</span>') +
+        (sowData.clientSignature ? '<img src="' + sowData.clientSignature + '" alt="Client Signature" />' : '<span style="font-style: italic;">' + t('pdf.combined.pending') + '</span>') +
         '</div>' +
-        '<div class="signature-label">Signature</div>' +
-        '<div class="signature-name">' + (isBusinessEntity ? 'By: ' + representativeName + ', ' + representativeTitle : (sowData.clientSignerName || clientName)) + '</div>' +
-        '<div class="signature-date">Date: ' + (sowData.clientSignedDate || 'N/A') + '</div>' +
+        '<div class="signature-label">' + t('pdf.combined.signature') + '</div>' +
+        '<div class="signature-name">' + (isBusinessEntity ? t('common.by') + ' ' + representativeName + ', ' + representativeTitle : (sowData.clientSignerName || clientName)) + '</div>' +
+        '<div class="signature-date">' + t('common.date') + ' ' + (sowData.clientSignedDate || t('common.na')) + '</div>' +
         '</div>' +
 
         '</div>' +
@@ -13101,9 +13282,9 @@ ContractFormHandler.prototype.showDualSigningCompleted = function(contractData, 
 
         // Footer
         '<div class="footer">' +
-        '<p><strong>© ' + new Date().getFullYear() + ' Scarlo</strong> — Crafted with precision</p>' +
-        '<p style="margin-top: 8px;">Carlos Martin | Professional Web Development</p>' +
-        '<p class="contract-id">Contract ID: ' + (self.currentContract ? self.currentContract.id : 'N/A') + ' | SOW ID: ' + sowData.id + '</p>' +
+        '<p><strong>© ' + new Date().getFullYear() + ' Scarlo</strong> — ' + t('pdf.combined.footer') + '</p>' +
+        '<p style="margin-top: 8px;">' + t('pdf.combined.footerDev') + '</p>' +
+        '<p class="contract-id">Contract ID: ' + (self.currentContract ? self.currentContract.id : t('common.na')) + ' | SOW ID: ' + sowData.id + '</p>' +
         '</div>' +
 
         '<script>' +
@@ -13472,7 +13653,7 @@ var SectionSeparatorGlow = function() {
     new HelpRequestHandler();
 
     new Navigation();
-    new RotatingText();
+    window.rotatingText = new RotatingText();
     new ScrollAnimations();
     new PortfolioHandler();
     new FormHandler();
