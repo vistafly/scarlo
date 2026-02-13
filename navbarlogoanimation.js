@@ -93,11 +93,10 @@
         waitForImages() {
             const allImages = [...this.logos, ...this.texts, ...this.footerLogos];
             const promises = allImages.map(img => {
-                if (img.complete) return Promise.resolve();
-                return new Promise(resolve => {
-                    img.onload = resolve;
-                    img.onerror = resolve;
-                });
+                const loaded = img.complete
+                    ? Promise.resolve()
+                    : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+                return loaded.then(() => img.decode ? img.decode().catch(() => {}) : Promise.resolve());
             });
             return Promise.all(promises);
         }
