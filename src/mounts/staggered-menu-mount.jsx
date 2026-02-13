@@ -11,18 +11,29 @@ const menuItemDefs = [
   { i18nKey: 'nav.connect', fallback: 'Connect', ariaLabel: 'Get in touch', link: '#contact' }
 ];
 
-// Helper to get translated label using the global t() function
+// Self-sufficient translation helper — works even if window.t isn't ready
 const translate = (key, fallback) => {
+  const lang = localStorage.getItem('scarlo-lang') || 'en';
+  // Try window.t first (most reliable when available)
   if (typeof window.t === 'function') {
     const result = window.t(key);
-    return (result && result !== key) ? result : fallback;
+    if (result && result !== key) return result;
   }
+  // Fallback: read directly from TRANSLATIONS object
+  const T = window.TRANSLATIONS;
+  if (T && T[lang] && T[lang][key]) return T[lang][key];
+  if (T && T['en'] && T['en'][key]) return T['en'][key];
   return fallback;
 };
 
-const getLang = () => {
-  if (typeof window.getCurrentLang === 'function') return window.getCurrentLang();
-  return localStorage.getItem('scarlo-lang') || 'en';
+const getLang = () => localStorage.getItem('scarlo-lang') || 'en';
+
+const setLangGlobal = (lang) => {
+  // Always write to localStorage directly (production-safe)
+  localStorage.setItem('scarlo-lang', lang);
+  document.documentElement.lang = lang;
+  // Also call window.setLang if available
+  if (typeof window.setLang === 'function') window.setLang(lang);
 };
 
 // Build translated menu items
@@ -91,40 +102,70 @@ const handleMenuClose = () => {
   document.body.classList.remove('staggered-menu-open');
 };
 
-// Language Toggle Component for inside the menu
-const MenuLanguageToggle = ({ lang, onSwitch }) => {
-  return (
-    <div className="sm-lang-toggle" role="radiogroup" aria-label="Language">
-      <button
-        className={`sm-lang-btn${lang === 'en' ? ' active' : ''}`}
-        onClick={() => onSwitch('en')}
-        aria-checked={lang === 'en'}
-        role="radio"
-        type="button"
-      >
-        EN
-      </button>
-      <span className="sm-lang-divider">|</span>
-      <button
-        className={`sm-lang-btn${lang === 'es' ? ' active' : ''}`}
-        onClick={() => onSwitch('es')}
-        aria-checked={lang === 'es'}
-        role="radio"
-        type="button"
-      >
-        ES
-      </button>
-    </div>
-  );
+// Apply translations to the entire page (mirrors Navigation.prototype.applyLanguage)
+const applyPageTranslations = () => {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const translated = translate(key, null);
+    if (translated) {
+      if (el.classList.contains('rotating-text')) return;
+      el.textContent = translated;
+    }
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const key = el.getAttribute('data-i18n-html');
+    const translated = translate(key, null);
+    if (translated) el.innerHTML = translated;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    const translated = translate(key, null);
+    if (translated) el.placeholder = translated;
+  });
+  // Auth button
+  const authText = document.getElementById('authStatusText');
+  if (authText) {
+    const isLoggedIn = authText.textContent === 'Sign Out' || authText.textContent === 'Cerrar Sesión';
+    authText.textContent = isLoggedIn ? translate('nav.signOut', 'Sign In') : translate('nav.signIn', 'Sign In');
+  }
+  // Rotating text
+  if (window.rotatingText && window.rotatingText.switchLanguage) {
+    window.rotatingText.switchLanguage();
+  }
 };
+
+// Language Toggle Component rendered in navbar area
+const MenuLanguageToggle = ({ lang, onSwitch }) => (
+  <div className="sm-lang-toggle" role="radiogroup" aria-label="Language">
+    <button
+      className={`sm-lang-btn${lang === 'en' ? ' active' : ''}`}
+      onClick={() => onSwitch('en')}
+      aria-checked={lang === 'en'}
+      role="radio"
+      type="button"
+    >
+      EN
+    </button>
+    <span className="sm-lang-divider">|</span>
+    <button
+      className={`sm-lang-btn${lang === 'es' ? ' active' : ''}`}
+      onClick={() => onSwitch('es')}
+      aria-checked={lang === 'es'}
+      role="radio"
+      type="button"
+    >
+      ES
+    </button>
+  </div>
+);
 
 // Wrapper component that handles language state and re-renders
 const StaggeredMenuApp = () => {
   const [lang, setLangState] = useState(getLang);
 
   const handleLangSwitch = useCallback((newLang) => {
-    // Update global state
-    if (typeof window.setLang === 'function') window.setLang(newLang);
+    // Write to localStorage + global (production-safe)
+    setLangGlobal(newLang);
     setLangState(newLang);
 
     // Sync the navbar toggle buttons
@@ -135,37 +176,8 @@ const StaggeredMenuApp = () => {
       });
     }
 
-    // Apply translations to the rest of the page using the Navigation prototype
-    if (typeof window.t === 'function') {
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        const translated = window.t(key);
-        if (translated && translated !== key) {
-          if (el.classList.contains('rotating-text')) return;
-          el.textContent = translated;
-        }
-      });
-      document.querySelectorAll('[data-i18n-html]').forEach(el => {
-        const key = el.getAttribute('data-i18n-html');
-        const translated = window.t(key);
-        if (translated && translated !== key) el.innerHTML = translated;
-      });
-      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        const key = el.getAttribute('data-i18n-placeholder');
-        const translated = window.t(key);
-        if (translated && translated !== key) el.placeholder = translated;
-      });
-      // Auth button
-      const authText = document.getElementById('authStatusText');
-      if (authText) {
-        const isLoggedIn = authText.textContent === 'Sign Out' || authText.textContent === 'Cerrar Sesión';
-        authText.textContent = isLoggedIn ? window.t('nav.signOut') : window.t('nav.signIn');
-      }
-      // Rotating text
-      if (window.rotatingText && window.rotatingText.switchLanguage) {
-        window.rotatingText.switchLanguage();
-      }
-    }
+    // Apply translations to the page
+    applyPageTranslations();
   }, []);
 
   // Listen for language changes from the navbar toggle

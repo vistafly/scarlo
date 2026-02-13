@@ -295,11 +295,20 @@
   transform: scale(1.1);
 }
 
-/* Language Toggle Section - top-left of panel */
+/* Language Toggle - pinned to top bar of panel, between logo and close */
 .sm-lang-section {
-  padding: 1.5rem 0 0 0;
-  align-self: flex-start;
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  right: 3.5rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.sm-lang-section .sm-lang-toggle {
+  pointer-events: auto;
 }
 
 .sm-lang-toggle {
