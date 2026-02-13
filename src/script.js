@@ -2888,7 +2888,7 @@ $$('.btn-resolve-help').forEach(function(btn) {
     var logoFramesHtml = '';
     for (var i = 0; i < 20; i++) {
         var pad = i < 10 ? '0' + i : '' + i;
-        logoFramesHtml += '<img id="dashLogo' + i + '"' + (i === 0 ? ' class="visible"' : '') + ' src="/images/morph-logo' + pad + '.png" alt=""' + (i > 0 ? ' loading="lazy"' : ' alt="Scarlo Logo"') + '>';
+        logoFramesHtml += '<img id="dashLogo' + i + '"' + (i === 0 ? ' class="visible"' : '') + ' src="/images/morph-logo' + pad + '.png"' + (i === 0 ? ' alt="Scarlo Logo"' : ' alt=""') + '>';
     }
     html += '<div class="dashboard-header">' +
         '<div class="header-content">' +
@@ -3103,7 +3103,17 @@ html += '<div class="dashboard-tabs">' +
             }
             rafId = requestAnimationFrame(animate);
         }
-        rafId = requestAnimationFrame(animate);
+        // Wait for all images to load before starting animation
+        Promise.all(frames.map(function(img) {
+            if (img.complete) return Promise.resolve();
+            return new Promise(function(resolve) {
+                img.onload = resolve;
+                img.onerror = resolve;
+            });
+        })).then(function() {
+            lastTime = performance.now();
+            rafId = requestAnimationFrame(animate);
+        });
         // Stop when dashboard is removed
         var observer = new MutationObserver(function() {
             if (!document.getElementById('dashLogo0')) {

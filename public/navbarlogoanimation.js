@@ -86,8 +86,20 @@
                 }
             });
 
-            // Start animation loop
-            this.startLoop();
+            // Wait for all images to load before starting animation
+            this.waitForImages().then(() => this.startLoop());
+        }
+
+        waitForImages() {
+            const allImages = [...this.logos, ...this.texts, ...this.footerLogos];
+            const promises = allImages.map(img => {
+                if (img.complete) return Promise.resolve();
+                return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                });
+            });
+            return Promise.all(promises);
         }
 
         showFrame(index) {
