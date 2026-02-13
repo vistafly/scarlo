@@ -3088,6 +3088,9 @@ html += '<div class="dashboard-tabs">' +
             if (el) frames.push(el);
         }
         if (frames.length === 0) return;
+        // Hide the logo container until all images are ready
+        var logoContainer = frames[0].closest('.dash-logo-animated');
+        if (logoContainer) logoContainer.style.visibility = 'hidden';
         var idx = 0;
         var dir = 1;
         var lastTime = performance.now();
@@ -3110,6 +3113,7 @@ html += '<div class="dashboard-tabs">' +
                 : new Promise(function(resolve) { img.onload = resolve; img.onerror = resolve; });
             return loaded.then(function() { return img.decode ? img.decode().catch(function() {}) : Promise.resolve(); });
         })).then(function() {
+            if (logoContainer) logoContainer.style.visibility = '';
             lastTime = performance.now();
             rafId = requestAnimationFrame(animate);
         });
