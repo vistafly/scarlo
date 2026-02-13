@@ -8738,7 +8738,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.milestone:last-child { margin-bottom: 0; }' +
     '.milestone-title { font-weight: bold; font-size: 9pt; }' +
     '.milestone-desc { font-size: 9pt; }' +
-    '.assumptions-box { border: 1px solid #000; border-left: 3px solid #000; padding: 8px 12px; margin: 8px 0; }' +
+    '.assumptions-box { border: 1px solid #000; border-left: 3px solid #000; padding: 8px 12px; margin: 8px 0; page-break-inside: avoid; break-inside: avoid; }' +
     '.assumptions-box h3 { margin-top: 0; font-size: 9pt; }' +
     '.assumptions-box li { font-size: 9pt; }' +
     '.legal-notice { border: 1px solid #000; padding: 8px 12px; margin: 10px 0; font-size: 9pt; }' +
@@ -8759,7 +8759,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.maintenance-name { font-weight: bold; font-size: 10pt; }' +
     '.maintenance-price { font-weight: bold; }' +
     '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-    '@media print { body { padding: 0; margin: 0; } .sow-container { max-width: 100%; } .info-box, .package-box, .timeline-box, .maintenance-box, .payment-table, .legal-notice, .deferred-terms { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; } }' +
+    '@media print { body { padding: 0; margin: 0; orphans: 3; widows: 3; } .sow-container { max-width: 100%; } .info-box, .package-box, .timeline-box, .maintenance-box, .legal-notice, .deferred-terms, .assumptions-box, .section-compact { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; break-after: avoid !important; } h2 + div, h3 + div, h2 + table, h3 + table { page-break-before: avoid !important; break-before: avoid !important; } }' +
     '@page { margin: 0.5in 0.6in; size: letter; }' +
     '</style>' +
     '</head><body>' +
