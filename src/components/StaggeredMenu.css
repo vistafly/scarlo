@@ -299,7 +299,7 @@
 .sm-lang-section {
   position: absolute;
   top: 0;
-  right: 5rem;
+  right: 7.5rem;
   height: 4rem;
   display: flex;
   align-items: center;
@@ -391,7 +391,7 @@
   }
 
   .sm-lang-section {
-    right: 4.5rem;
+    right: 6.5rem;
   }
 }
 
@@ -437,7 +437,7 @@
   }
 
   .sm-lang-section {
-    right: 4rem;
+    right: 5rem;
   }
 }
 
