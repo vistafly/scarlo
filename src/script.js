@@ -8717,7 +8717,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.info-box h3 { margin-top: 0; }' +
     '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 20px; margin-top: 6px; }' +
     '.info-item { font-size: 9pt; word-wrap: break-word; overflow-wrap: break-word; }' +
-    '.section { margin-bottom: 10px; }' +
+    '.section { margin-bottom: 10px; page-break-inside: avoid; break-inside: avoid; }' +
     '.deferred-terms { page-break-inside: avoid; break-inside: avoid; }' +
     '.section-compact { page-break-inside: avoid; break-inside: avoid; }' +
     '.package-box { border: 1px solid #000; padding: 8px 12px; margin: 8px 0; page-break-inside: avoid; break-inside: avoid; }' +
@@ -8759,7 +8759,7 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     '.maintenance-name { font-weight: bold; font-size: 10pt; }' +
     '.maintenance-price { font-weight: bold; }' +
     '.logo { max-width: 180px; max-height: 60px; margin-bottom: 15px; }' +
-    '@media print { body { padding: 0; margin: 0; orphans: 3; widows: 3; } .sow-container { max-width: 100%; } .info-box, .package-box, .timeline-box, .maintenance-box, .legal-notice, .deferred-terms, .assumptions-box, .section-compact { page-break-inside: avoid !important; break-inside: avoid !important; } h2, h3 { page-break-after: avoid !important; break-after: avoid !important; } h2 + div, h3 + div, h2 + table, h3 + table { page-break-before: avoid !important; break-before: avoid !important; } }' +
+    '@media print { body { padding: 0; margin: 0; orphans: 3; widows: 3; } .sow-container { max-width: 100%; } .info-box, .package-box, .timeline-box, .maintenance-box, .legal-notice, .deferred-terms, .assumptions-box, .section-compact { page-break-inside: avoid !important; break-inside: avoid !important; } }' +
     '@page { margin: 0.5in 0.6in; size: letter; }' +
     '</style>' +
     '</head><body>' +
@@ -9073,12 +9073,14 @@ ContractFormHandler.prototype.generateSOWPDF = function(sowData) {
     if (sowData.payment && sowData.payment.deferred && sowData.payment.deferred.enabled) {
         var deferred = sowData.payment.deferred;
 
-        htmlContent += '<div class="section">' +
+        htmlContent += '<div class="section" style="page-break-inside: auto; break-inside: auto;">' +
+        '<div style="page-break-inside: avoid; break-inside: avoid;">' +
         '<h2>' + sectionNum + '. ' + t('pdf.sow.deferredPaymentAgreement') + '</h2>' +
 
         '<div style="background: #fff8e6; border: 2px solid #f59e0b; padding: 10px; margin-bottom: 10px;">' +
         '<p style="font-size: 9pt; margin: 0 0 5px; color: #92400e; font-weight: bold;">' + t('pdf.sow.deferredPaymentTerms') + '</p>' +
         '<p style="font-size: 8pt; margin: 0; color: #78350f;">' + t('pdf.sow.deferredPaymentIntro') + '</p>' +
+        '</div>' +
         '</div>' +
 
         '<table class="payment-table">' +
