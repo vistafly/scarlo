@@ -57,7 +57,7 @@ const portfolioProjects = [
   },
   {
     preview: `${BASE_URL}images/logo9.png`,
-    url: 'https://eltacochingonllc.vercel.app/',
+    url: 'https://www.eltacochingonfresno.com/',
     alt: 'El Taco Chingon - Authentic Mexican Street Food in Fresno, CA',
     type: 'iframe'
   },
