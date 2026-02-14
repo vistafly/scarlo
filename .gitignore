@@ -54,3 +54,6 @@ firestore.rules
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# Internal instructions (not for public)
+SCARLO-CREDIT-INSTRUCTIONS.md
