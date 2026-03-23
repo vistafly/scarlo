@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <script>
+    (function() {
+        var vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--stable-vh', vh + 'px');
+    })();
+    </script>
     <title>Terms of Service | Scarlo</title>
     <meta name="description" content="Terms of Service for scarlo.dev - Terms and conditions governing your use of our website.">
     <meta name="robots" content="index, follow">

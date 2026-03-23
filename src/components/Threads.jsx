@@ -163,7 +163,8 @@ class PerformanceMonitor {
 // Get responsive scaling factors based on viewport
 function getResponsiveScaling() {
   const width = window.innerWidth;
-  const height = window.innerHeight;
+  const stableVh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--stable-vh'));
+  const height = stableVh ? stableVh * 100 : window.innerHeight;
   const aspectRatio = width / height;
   
   // Distance scaling - tighter spacing on smaller screens

@@ -13558,6 +13558,10 @@ CustomCursor.prototype.animate = function() {
     ViewportFix.prototype.setVH = function() {
         var vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', vh + 'px');
+        // Also update --stable-vh for in-app browser compatibility
+        if (!document.documentElement.style.getPropertyValue('--stable-vh')) {
+            document.documentElement.style.setProperty('--stable-vh', vh + 'px');
+        }
     };
 
     // === ACCESSIBILITY ===

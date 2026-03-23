@@ -2,7 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <script>
+    (function() {
+        var vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--stable-vh', vh + 'px');
+    })();
+    </script>
     <title>Privacy Policy | Scarlo</title>
     <meta name="description" content="Privacy Policy for scarlo.dev - How we collect, use, and protect your personal information.">
     <meta name="robots" content="index, follow">

@@ -2,7 +2,13 @@
 <html lang="en" translate="no">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <script>
+    (function() {
+        var vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--stable-vh', vh + 'px');
+    })();
+    </script>
     <title>Scarlo — Web & App Design That Feels Right</title>
     <meta name="description" content="Scarlo designs and builds custom websites and apps that just work. Clean, intuitive, and tailored to your brand — powered by React, Next.js, and Firebase.">    <meta name="keywords" content="web design, web development, React, Next.js, Firebase, custom websites, web applications, UI/UX design, Scarlo, Carlos Martin">
     <meta name="author" content="Scarlo - Carlos Martin">
