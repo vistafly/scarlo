@@ -7,6 +7,7 @@ const menuItemDefs = [
   { i18nKey: 'nav.home', fallback: 'Home', ariaLabel: 'Go to home section', link: '#home' },
   { i18nKey: 'nav.services', fallback: 'Services', ariaLabel: 'View our services', link: '#philosophy' },
   { i18nKey: 'nav.portfolio', fallback: 'Portfolio', ariaLabel: 'See our work', link: '#portfolio' },
+  { i18nKey: 'nav.pricing', fallback: 'Pricing', ariaLabel: 'View pricing guide', link: '/pricing/' },
   { i18nKey: 'nav.agreement', fallback: 'Agreement', ariaLabel: 'View development agreement', link: '#contract' },
   { i18nKey: 'nav.connect', fallback: 'Connect', ariaLabel: 'Get in touch', link: '#contact' }
 ];

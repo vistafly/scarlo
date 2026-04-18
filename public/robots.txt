@@ -13,5 +13,9 @@ Allow: /favicons/
 Disallow: /admin/
 Disallow: /private/
 
+# Disallow private Statement-of-Work routes (dynamic, query-param driven)
+Disallow: /sow
+Disallow: /sow/
+
 # Sitemap location
 Sitemap: https://scarlo.dev/sitemap.xml
